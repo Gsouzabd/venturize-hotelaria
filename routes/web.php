@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\HomeController;
+use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\ImportarUsuarioController;
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [LoginController::class, 'login']);
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [LoginController::class, 'login']);
+    Route::middleware(['auth:admin'])->group(function () {
+
+        Route::get('logout', [LoginController::class, 'logout'])->name('logout');
+        Route::get('/', [HomeController::class, 'index'])->name('home');
+
+
+        $prefixes = [
+            'usuarios' => UsuarioController::class,
+        ];
+
+        foreach ($prefixes as $prefix => $controller) {
+            Route::prefix($prefix)->name($prefix . '.')->controller($controller)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('/create', 'edit')->name('create');
+                Route::match(['post', 'put'], '/', 'save')->name('save');
+                Route::get('/{id}/edit', 'edit')->name('edit');
+                Route::delete('/{id}', 'destroy')->name('destroy');
+            });
+        }
+        Route::get('/importar-usuarios', [ImportarUsuarioController::class, 'index'])->name('importar-usuarios.index');
+        Route::post('/importar-usuarios', [ImportarUsuarioController::class, 'store'])->name('importar-usuarios.store');
+        Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
+    });
+});
