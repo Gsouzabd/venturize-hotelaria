@@ -88,7 +88,7 @@ class UsuarioController extends Controller
     public function destroy($id)
     {
         $usuario = $this->model->findOrFail($id);
-        abort_if($usuario->associacoes()->exists(), 403, 'Não é possível excluir porque está vinculado a uma associação.');
+        abort_if($usuario->reservas()->exists(), 403, 'Não é possível excluir porque está vinculado a uma reserva.');
 
         $usuario->delete();
 

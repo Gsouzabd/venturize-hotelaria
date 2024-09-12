@@ -24,6 +24,12 @@ class Usuario extends Authenticatable
         return $this->belongsTo(GrupoUsuario::class);
     }
 
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class, 'cliente_id');
+   
+    }
+
     // Verificar permissões
     public function temPermissao(string $permissao): bool
     {

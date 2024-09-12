@@ -215,3 +215,98 @@ html:not(.material-style) .material-style-only {
     color: white;
     background-color: #9c3a9c;
 }
+
+
+.authentication-wrapper {
+    background-image: url(https://aldeiadoscamaras.com.br/wp-content/uploads/2023/01/1920x800.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.authentication-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Ajuste a opacidade e cor conforme necessário */
+    z-index: 1;
+    pointer-events: none; /* Para garantir que o overlay não bloqueie cliques */
+}
+
+.authentication-wrapper .authentication-inner {
+    color: black;
+    font-size: 18px;
+    width: 100%;
+    position: relative;
+    z-index: 999;
+    background: #ffffffec;
+    border: 2px solid #ffffff75;
+    max-width: 600px !important;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 1px 4px 3px 0px #414141ab;
+}
+
+.authentication-wrapper .authentication-inner .form-control {
+ height: 50px;
+}
+
+/* dashboard.css */
+
+/* Cores personalizadas para os cartões */
+.card-bg-info {
+    background: linear-gradient(135deg, #36d1dc, #5b86e5); /* Gradiente azul */
+    color: #fff;
+}
+
+.card-bg-success {
+    background: linear-gradient(135deg, #11998e, #38ef7d); /* Gradiente verde */
+    color: #fff;
+}
+
+.card-bg-warning {
+    background: linear-gradient(135deg, #f7971e, #ffd200); /* Gradiente amarelo */
+    color: #333; /* Texto escuro para contraste */
+}
+
+.card-bg-primary {
+    background: linear-gradient(135deg, #0072ff, #00c6ff); /* Gradiente azul escuro */
+    color: #fff;
+}
+
+.card-bg-danger {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b); /* Gradiente vermelho */
+    color: #fff;
+}
+
+/* Adiciona uma sombra leve e arredonda os cantos dos cartões */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+/* Espaçamento dentro dos cartões */
+.card-body {
+    padding: 20px;
+}
+
+/* Título do cartão */
+.card-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Texto do cartão */
+.card-text {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Margem adicional nas colunas */
+.mb-4 {
+    margin-bottom: 1.5rem !important;
+}

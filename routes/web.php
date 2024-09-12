@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Admin\QuartoController;
+use App\Http\Controllers\Admin\ClienteController;
+use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -18,6 +21,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         $prefixes = [
             'usuarios' => UsuarioController::class,
+            'clientes' => ClienteController::class,
+            'quartos' => QuartoController::class,
+            'reservas' => ReservaController::class,
         ];
 
         foreach ($prefixes as $prefix => $controller) {
@@ -32,5 +38,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/importar-usuarios', [ImportarUsuarioController::class, 'index'])->name('importar-usuarios.index');
         Route::post('/importar-usuarios', [ImportarUsuarioController::class, 'store'])->name('importar-usuarios.store');
         Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
+
+        Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
     });
 });

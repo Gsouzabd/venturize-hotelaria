@@ -65,12 +65,14 @@
                     <td>{{ timestamp_br($usuario->created_at) }}</td>
                     <td>{{ timestamp_br($usuario->updated_at) }}</td>
                     <td class="cell-nowrap">
-                        <button type="button"
+                        {{-- <button type="button"
                                 class="btn btn-xs btn-outline-secondary btn-resend-password"
                                 data-route="{{ route('admin.usuarios.resend-password', ['id' => $usuario->id]) }}">
                             Enviar nova senha
-                        </button>
+                        </button> --}}
                         <x-admin.edit-btn route="admin.usuarios.edit" :route-params="['id' => $usuario->id]"/>
+                        <x-admin.delete-btn route="admin.usuarios.destroy" :route-params="['id' => $usuario->id]"/>
+
                     </td>
                 </tr>
             @empty

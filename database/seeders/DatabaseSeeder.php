@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Usuario;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\ClienteSeeder;
 use Illuminate\Support\Facades\Hash;
 use Database\Seeders\GrupoUsuarioSeeder;
 
@@ -29,6 +30,13 @@ class DatabaseSeeder extends Seeder
 
 
         $this->call(GrupoUsuarioSeeder::class);
+
+        $this->call(ClienteSeeder::class);
+
+        $this->call(QuartoSeeder::class);
+
+        $this->call(ReservaSeeder::class);
+
 
     }
 }
