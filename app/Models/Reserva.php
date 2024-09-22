@@ -13,7 +13,9 @@ class Reserva extends Model
         'previsao_saida',
         'data_checkin', // Novo campo
         'data_checkout', // Novo campo
-        'cliente_id',
+        'cliente_solicitante_id',
+        'cliente_responsavel_id',
+        
         'quarto_id',
         'usuario_operador_id',
         'email_solicitante',
@@ -25,19 +27,59 @@ class Reserva extends Model
         'observacoes_internas',
     ];
 
+
+    const TIPOSRESERVA = [
+        'INDIVIDUAL' => 'Individual',
+        'GRUPO' => 'Grupo',
+    ];
+
+    const SITUACOESRESERVA = [
+        'PRÉ RESERVA' => [
+            'label' => 'Pré Reserva',
+            'background' => '#b2b2b2',
+        ],
+        'CONFIRMADA' => [
+            'label' => 'Confirmada',
+            'background' => 'green',
+        ],
+        'CANCELADA' => [
+            'label' => 'Cancelada',
+            'background' => 'red',
+        ]
+    ];
+
     // Relacionamentos
-    public function cliente()
+    public function clienteSolicitante()
     {
-        return $this->belongsTo(Cliente::class);
+        return $this->belongsTo(Cliente::class, 'cliente_solicitante_id');
+    
+    }
+
+    public function clienteResponsavel()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_responsavel_id');
+    
     }
 
     public function quarto()
     {
-        return $this->belongsTo(Quarto::class);
+        return $this->belongsTo(Quarto::class, 'quarto_id');
+    
     }
 
     public function operador()
     {
         return $this->belongsTo(Usuario::class, 'usuario_operador_id');
     }
+
+    public function empresaFaturamento()
+    {
+        return $this->belongsTo(Empresa::class, 'empresa_faturamento_id');
+    }
+
+    public function empresaSolicitante()
+    {
+        return $this->belongsTo(Empresa::class, 'empresa_solicitante_id');
+    }
+
 }

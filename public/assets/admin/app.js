@@ -95,3 +95,20 @@ jQuery(function ($) {
     $(".integer-mask").unmask().mask("#");
     $(".money-mask").unmask().mask("#.##0,00", {reverse: true});
 });
+
+
+function incrementValue(inputId) {
+    const input = document.getElementById(inputId);
+    let value = parseInt(input.value, 10);
+    value = isNaN(value) ? 0 : value;
+    value++;
+    input.value = value;
+}
+
+function decrementValue(inputId) {
+    const input = document.getElementById(inputId);
+    let value = parseInt(input.value, 10);
+    value = isNaN(value) ? 0 : value;
+    value = value > 0 ? value - 1 : 0;
+    input.value = value;
+}

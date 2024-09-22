@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Empresa;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\LoginController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Admin\QuartoController;
 use App\Http\Controllers\Admin\ClienteController;
 use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
@@ -40,5 +42,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
 
         Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
+
+
+        Route::get('/clientes/{id}', [ClienteController::class, 'findById'])->name('admin.clientes.findById');
+        Route::get('/clientes/cpf/{cpf}', [ClienteController::class, 'findByCpf'])->name('admin.clientes.findByCpf');
+
+
+
+        Route::get('/empresa/cnpj/cnpj', function($cpf) {
+            $empresa = Empresa::where('cpf', $cpf)->firstOrFail();
+            return response()->json($empresa);
+        });
+        Route::post('/verificar-disponibilidade', [DisponibilidadeController::class, 'verificar'])->name('verificar.disponibilidade');
+
     });
 });

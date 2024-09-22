@@ -28,7 +28,7 @@ class HomeController extends Controller
         $dataFinal = $dataInicial->copy()->addDays($intervaloDias - 1); // -1 para garantir que o último dia seja incluído
 
         // Buscar reservas dentro do intervalo
-        $reservas = Reserva::with(['cliente', 'quarto'])
+        $reservas = Reserva::with(['clienteResponsavel', 'quarto'])
             ->where(function ($query) use ($dataInicial, $dataFinal) {
                 $query->whereBetween('data_checkin', [$dataInicial, $dataFinal]) // Chegada dentro do intervalo
                     ->orWhereBetween('data_checkout', [$dataInicial, $dataFinal])  // Saída dentro do intervalo
@@ -61,7 +61,7 @@ class HomeController extends Controller
                 ->keyBy('dia'); // Chaveia o array pelo dia do mês
     
             // Últimas 5 reservas
-            $ultimasReservas = Reserva::with('cliente', 'quarto', 'operador')
+            $ultimasReservas = Reserva::with('clienteResponsavel', 'quarto', 'operador')
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get();

@@ -38,7 +38,7 @@
             @forelse($clientes as $cliente)
                 <tr>
                     <td>{{ $cliente->id }}</td>
-                    <td>{{ $cliente->nome }}</td>
+                    <td>{{ $clienteSolicitante->nome }}</td>
                     <td>{{ $cliente->email }}</td>
                     <td>{{ $cliente->telefone }}</td>
                     <td>{{ timestamp_br($cliente->created_at) }}</td>

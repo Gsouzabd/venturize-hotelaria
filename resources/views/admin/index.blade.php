@@ -83,7 +83,7 @@
                         @foreach($ultimasReservas as $reserva)
                         <tr>
                             <td>{{ $reserva->id }}</td>
-                            <td>{{ $reserva->cliente->nome }}</td>
+                            <td>{{ $reserva->clienteSolicitante->nome}}</td>
                             <td>{{ $reserva->quarto->numero }}</td>
                             <td>{{ $reserva->operador->nome }}</td>
                             <td>

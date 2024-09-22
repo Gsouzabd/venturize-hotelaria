@@ -83,10 +83,14 @@
                         @endphp
                         @if($reservaNoDia)
                             <td class="{{ $cor }}">
-                                {{ $reservaNoDia->cliente->nome }}
+                                {{ $reservaNoDia->clienteResponsavel->nome }}
                             </td>
                         @else
-                            <td></td>
+                            <td style="padding: 0px; height: 30px;">
+                                <a href="{{ route('admin.reservas.create', ['quarto_id' => $quarto->id, 'data_checkin' => $diaAtual->format('Y-m-d'), 'data_checkout' => $diaAtual->copy()->addDay()->format('Y-m-d')]) }}" class="text-white"
+                                    style="display:block; width: 100%; height: 100%;">
+                                </a>
+                            </td>
                         @endif
                     @endfor
                 </tr>

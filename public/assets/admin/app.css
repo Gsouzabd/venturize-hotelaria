@@ -1,3 +1,30 @@
+form.edit-form button[type="submit"] {
+    border: 1px solid white;
+    background: green;
+    padding: 8px 50px;
+}
+
+.notice-error {
+    background: #ec4e4e;
+    border-radius: 5px;
+    padding: 10px;
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    margin: 10px;
+}
+
+.notice-success {
+    margin: 10px;
+
+    background: #4caf50;
+    border-radius: 5px;
+    padding: 10px;
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+}
+
 .default-style .sidenav .app-brand.demo {
     height: 66px;
 }
@@ -309,4 +336,124 @@ html:not(.material-style) .material-style-only {
 /* Margem adicional nas colunas */
 .mb-4 {
     margin-bottom: 1.5rem !important;
+}
+
+
+
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+    color: #ffffff !important;
+    background-color: #027bff !important;
+    border-color: #dee2e6 #dee2e6 #fff;
+    box-shadow: 1px -1px 10px #969696;
+}
+
+
+#resultadoDisponibilidade {
+    margin-top: 20px;
+}
+
+#resultadoDisponibilidade h3 {
+    font-size: 1.5rem;
+    color: #343a40;
+    font-weight: bold;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background-color: #fafafa !important;
+    border: 1px solid #f2f2f2 !important;
+    border-radius: 5px !important;
+    padding: 10px 5px;
+    margin: 10px 0px;
+    box-shadow: none;
+    transition: background-color 0.3s ease;
+}
+
+#cart-items {
+    border-top: 0.70px solid #ebebeb;
+}
+
+.cart-item {
+    border-bottom: 1px solid #0000001a;
+}
+
+.card:hover {
+    background-color: #f8f9fa;
+}
+
+.card .icon {
+    color: #007bff;
+    margin-right: 10px;
+    min-width: 20px;
+    font-size: 15px;
+    text-align: center;
+}
+
+.card .info {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.card .info strong {
+    color: #343a40;
+}
+
+
+@keyframes fadeInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(100%); /* Começa fora da tela à direita */
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0); /* Termina em sua posição original */
+    }
+}
+
+.fade-in-right {
+    animation: fadeInRight 0.5s ease forwards;
+}
+
+
+#cart-col {
+    border-left: 1px solid #80808042;
+    box-shadow: -7px 3px 15px -1px #00000033;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+
+.container.has-sidebar {
+    padding-right: 0px;
+    /* width: 100%; */
+    margin-right: 0px;
+}
+
+
+#informacoesGeraisForm h5 {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #d1d2d3;
+    font-size: 16px;
+}
+
+
+div#informacoesGeraisForm h5 i {
+    background: white;
+    border: 1px solid #d1d2d3;
+    color: #d1d2d3;
+    padding: 2px;
+    height: 15px;
+    width: 15px;
+    font-size: 8px;
+    text-align: center;
+    border-radius: 100%;
+}
+
+
+.status-reserva {
+    padding: 5px; color: white; border-radius: 10px;
 }

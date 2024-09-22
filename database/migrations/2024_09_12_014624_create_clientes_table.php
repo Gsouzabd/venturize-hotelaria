@@ -10,8 +10,8 @@ class CreateClientesTable extends Migration
     {
         Schema::create('clientes', function (Blueprint $table) {
             $table->id();
-            $table->enum('tipo', ['Pessoa Física', 'Pessoa Jurídica']);
-            $table->enum('estrangeiro', ['Sim', 'Não']);
+            $table->enum('tipo', ['Pessoa Física', 'Pessoa Jurídica'])->default('Pessoa Física');
+            $table->enum('estrangeiro', ['Sim', 'Não'])->default('Não');
             $table->enum('sexo', ['M', 'F'])->nullable();
             $table->string('nome');
             $table->date('data_nascimento')->nullable();

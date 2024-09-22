@@ -70,4 +70,21 @@ class ClienteController extends Controller
             ->route('admin.clientes.index')
             ->with('notice', config('app.messages.delete'));
     }
+
+
+    public function findById($id)
+    {
+        $cliente = $this->model->findOrFail($id);
+        return response()->json($cliente);
+    } 
+
+    public function findByCpf($cpf)
+    {
+        $cliente = $this->model->where('cpf', $cpf)->firstOrFail();
+        if(!$cliente) {
+            return response()->json(['message' => 'Cliente não encontrado'], 404);
+        }
+       
+        return response()->json($cliente);
+    }
 }
