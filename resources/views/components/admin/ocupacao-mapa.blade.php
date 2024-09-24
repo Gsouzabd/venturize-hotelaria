@@ -51,22 +51,22 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($quartos as $quarto)
+                       @foreach($quartos ?? [] as $quarto)
                 <tr>
-                    <td>{{ $quarto->numero }}</td>
-                    @for($i = 0; $i < $intervaloDias; $i++)
+                    <td>{{ $quarto->numero ?? '' }}</td>
+                    @for($i = 0; $i < ($intervaloDias ?? 0); $i++)
                         @php
-                            $diaAtual = $dataInicial->copy()->addDays($i);
-                            $reservaNoDia = $reservas->filter(function($reserva) use ($quarto, $diaAtual) {
-                                return $reserva->quarto_id == $quarto->id &&
-                                       $reserva->data_checkin <= $diaAtual &&
-                                       $reserva->data_checkout >= $diaAtual;
+                            $diaAtual = ($dataInicial ?? now())->copy()->addDays($i);
+                            $reservaNoDia = ($reservas ?? collect())->filter(function($reserva) use ($quarto, $diaAtual) {
+                                return ($reserva->quarto_id ?? 0) == ($quarto->id ?? 0) &&
+                                       ($reserva->data_checkin ?? now()) <= $diaAtual &&
+                                       ($reserva->data_checkout ?? now()) >= $diaAtual;
                             })->first();
-
+            
                             // Definir a cor da célula com base na situação da reserva
                             $cor = '';
                             if ($reservaNoDia) {
-                                switch ($reservaNoDia->situacao_reserva) {
+                                switch ($reservaNoDia->situacao_reserva ?? '') {
                                     case 'CONFIRMADA':
                                         $cor = 'bg-success text-white';
                                         break;
@@ -83,11 +83,21 @@
                         @endphp
                         @if($reservaNoDia)
                             <td class="{{ $cor }}">
-                                {{ $reservaNoDia->clienteResponsavel->nome }}
+                                {{ $reservaNoDia->clienteResponsavel->nome ?? '' }}
                             </td>
                         @else
                             <td style="padding: 0px; height: 30px;">
-                                <a href="{{ route('admin.reservas.create', ['quarto_id' => $quarto->id, 'data_checkin' => $diaAtual->format('Y-m-d'), 'data_checkout' => $diaAtual->copy()->addDay()->format('Y-m-d')]) }}" class="text-white"
+                                <a href="{{ route('admin.reservas.create', 
+                                        [
+                                            'quarto_id' => $quarto->id ?? '',
+                                            'quarto_numero' => $quarto->numero ?? '',
+                                            'quarto_classificacao' => $quarto->classificacao ?? '',
+                                            'quarto_andar' => $quarto->andar ?? '',
+                                            'data_checkin' => $diaAtual->format('Y-m-d') ?? '',
+                                            'data_checkout' => $diaAtual->copy()->addDay()->format('Y-m-d') ?? '',
+                                        ]
+                                    ) }}" 
+                                    class="text-white"
                                     style="display:block; width: 100%; height: 100%;">
                                 </a>
                             </td>

@@ -132,6 +132,16 @@ return [
             'administrador' => 'Administrador',
             'cliente' => 'Cliente',
         ],
-    ]
+    ],
 
+
+
+    'messages' => [
+        'logged_in' => 'Login efetuado com sucesso.',
+        'no_rows' => 'Nenhum registro encontrado.',
+        'insert' => 'Dados inseridos com sucesso!',
+        'update' => 'Dados atualizados com sucesso!',
+        'delete' => 'Dados excluídos com sucesso!',
+        'send_new_password' => 'Nova senha enviada com sucesso!',
+    ],
 ];

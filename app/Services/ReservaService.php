@@ -3,6 +3,7 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use App\Models\Cliente;
+use App\Models\Empresa;
 use App\Models\Reserva;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,6 +11,46 @@ class ReservaService
 {
     public function criarOuAtualizarReserva(array $data)
     {
+        // Verificar e processar CNPJ do solicitante
+        if (!empty($data['cnpj_solicitante'])) {
+            $empresaSolicitante = Empresa::where('cnpj', $data['cnpj_solicitante'])->first();
+
+            if (!$empresaSolicitante) {
+                $empresaSolicitante = Empresa::create([
+                    'nome_fantasia' => $data['nome_fantasia_solicitante'] ?? '',
+                    'razao_social' => $data['razao_social'] ?? '',
+                    'cnpj' => $data['cnpj_solicitante'],
+                    'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
+                    'email' => $data['email_solicitante'] ?? '',
+                    'telefone' => $data['telefone_solicitante'] ?? '',
+                ]);
+            }
+
+            $data['empresa_solicitante_id'] = $empresaSolicitante->id;
+        }
+
+        // Verificar e processar CNPJ de faturamento
+        if (!empty($data['cnpj_faturamento'])) {
+            $empresaFaturamento = Empresa::where('cnpj', $data['cnpj_faturamento'])->first();
+
+            if (!$empresaFaturamento) {
+                $empresaFaturamento = Empresa::create([
+                    'nome_fantasia' => $data['nome_fantasia_faturamento'] ?? '',
+                    'razao_social' => $data['razao_social'] ?? '',
+                    'cnpj' => $data['cnpj_faturamento'],
+                    'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
+                    'email' => $data['email_empresa_faturamento'] ?? '',
+                    'telefone' => $data['telefone_faturamento'] ?? '',
+                ]);
+            }
+
+            $data['empresa_faturamento_id'] = $empresaFaturamento->id;
+        }
+
+        if (!empty($data['data_nascimento'])) {
+            $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
+        }
+        
         // Buscar ou criar o cliente solicitante
         $clienteSolicitante = Cliente::firstOrCreate(
             ['cpf' => $data['cpf']],

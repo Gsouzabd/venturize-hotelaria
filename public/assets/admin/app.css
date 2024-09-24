@@ -1,7 +1,7 @@
 form.edit-form button[type="submit"] {
     border: 1px solid white;
     background: green;
-    padding: 8px 50px;
+    padding: 8px 30px;
 }
 
 .notice-error {
@@ -234,7 +234,7 @@ html:not(.material-style) .material-style-only {
 
 
 
-.alert, .alert-dark-success {
+/* .alert, .alert-dark-success {
     align-self: end;
     position: relative;
     width: 30%;
@@ -242,7 +242,7 @@ html:not(.material-style) .material-style-only {
     color: white;
     background-color: #9c3a9c;
 }
-
+ */
 
 .authentication-wrapper {
     background-image: url(https://aldeiadoscamaras.com.br/wp-content/uploads/2023/01/1920x800.png);
@@ -352,7 +352,8 @@ html:not(.material-style) .material-style-only {
     margin-top: 20px;
 }
 
-#resultadoDisponibilidade h3 {
+#resultadoDisponibilidade h3,
+#cart-preview h3 {
     font-size: 1.5rem;
     color: #343a40;
     font-weight: bold;
@@ -456,4 +457,15 @@ div#informacoesGeraisForm h5 i {
 
 .status-reserva {
     padding: 5px; color: white; border-radius: 10px;
+}
+
+
+a.btn.btn-primary.select-quarto.disabled {
+    background: gray !important;
+}
+
+
+.reservarForm a#cancel-btn {
+    background: red;
+    color: white;
 }

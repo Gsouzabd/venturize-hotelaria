@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\QuartoController;
 use App\Http\Controllers\Admin\ClienteController;
+use App\Http\Controllers\Admin\EmpresaController;
 use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\DisponibilidadeController;
@@ -52,7 +53,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/empresa/cnpj/cnpj', function($cpf) {
             $empresa = Empresa::where('cpf', $cpf)->firstOrFail();
             return response()->json($empresa);
-        });
+        });        
+        Route::get('/buscar-empresa/{cnpj}', [EmpresaController::class, 'buscarPorCnpj'])->name('buscar.empresa');
+        
         Route::post('/verificar-disponibilidade', [DisponibilidadeController::class, 'verificar'])->name('verificar.disponibilidade');
 
     });
