@@ -2,104 +2,103 @@
     <div id="informacoesGeraisForm">
         <h5><i class="fa-solid fa-1"></i>Sobre </h5>
         <x-admin.field-group>
-            <!-- Campo de Tipo -->
+            {{-- <!-- Campo de Tipo -->
             <x-admin.field cols="3">
                 <x-admin.label label="Tipo de Reserva" required/>
                 <x-admin.select name="tipo_reserva" id="tipo" class="form-control" required
-                                :items="['Individual' => 'Individual', 'Grupo' => 'Grupo']"
-                                selectedItem="{{ old('tipo_reserva') }}">
+                                :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo']"
+                                selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? '') }}">
                 </x-admin.select>
-            </x-admin.field>
+            </x-admin.field> --}}
 
             <!-- Campo de Situação -->
             <x-admin.field cols="3">
                 <x-admin.label label="Situação da Reserva" required/>
                 <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
-                                :items="['PRÉ RESERVA' => 'Pré Reserva', 'CONFIRMADA' => 'Confirmada', 'CANCELADA' => 'Cancelada']"
-                                selectedItem="{{ old('situacao_reserva') }}">
+                                :items="['CONFIRMADA' => 'Confirmada', 'CANCELADA' => 'Cancelada']"
+                                selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? '') }}">
                 </x-admin.select>
             </x-admin.field>
 
             <x-admin.field cols="3">
                 <x-admin.label label="Tipo de Solicitante" required/>
                 <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
-                                :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"/>   
+                                :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
+                                selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? '') }}"/>   
             </x-admin.field>
         </x-admin.field-group>
             
-            <h5><i class="fa-solid fa-2"></i>Dados do Solicitante </h5>
+        <h5><i class="fa-solid fa-2"></i>Dados do Solicitante </h5>
             
-            <!-- Campos Comuns -->
-            <x-admin.field-group>
-                <x-admin.field cols="6">
-                    <x-admin.label label="Solicitante" required/>
-                    <x-admin.text name="nome" id="nomeSolicitante" :value="old('nome')" required/>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
-                        <label class="form-check-label" for="solicitanteHospedeCheckbox">
-                            Solicitante será o hóspede?
-                        </label>
-                    </div>
-                </x-admin.field>
-            
-                <x-admin.field cols="6">
-                    <x-admin.label label="CPF" required/>
-                    <x-admin.text name="cpf" id="cpf" :value="old('cpf')" required placeholder="Digite o CPF"/>
-                    <button type="button" id="buscarCpfButton" class="btn btn-secondary mt-2">Buscar</button>
-                    <small>Buscar CPF na base de clientes.</small>
-                    <div id="cpfError" class="text-danger mt-2" style="display: none;">Nenhum cliente encontrado com o CPF informado.</div>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group>
-                <x-admin.field cols="6">
-                    <x-admin.label label="Data de Nascimento" required/>
-                    <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento')" required/>
-                </x-admin.field>
+        <!-- Campos Comuns -->
+        <x-admin.field-group>
+            <x-admin.field cols="6">
+                <x-admin.label label="Solicitante" required/>
+                <x-admin.text name="nome" id="nomeSolicitante" :value="old('nome', $reserva->clienteSolicitante->nome ?? '')" required/>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
+                    <label class="form-check-label" for="solicitanteHospedeCheckbox">
+                        Solicitante será o hóspede?
+                    </label>
+                </div>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="CPF" required/>
+                <x-admin.text name="cpf" id="cpf" :value="old('cpf', $reserva->clienteSolicitante->cpf ?? '')" required placeholder="Digite o CPF"/>
+                <button type="button" id="buscarCpfButton" class="btn btn-secondary mt-2">Buscar</button>
+                <small>Buscar CPF na base de clientes.</small>
+                <div id="cpfError" class="text-danger mt-2" style="display: none;">Nenhum cliente encontrado com o CPF informado.</div>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group>
+            <x-admin.field cols="6">
+                <x-admin.label label="Data de Nascimento" required/>
+                <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>            </x-admin.field>
 
-                <x-admin.field cols="6">
-                    <x-admin.label label="Telefone" required/>
-                    <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone')" required/>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group>
-                <x-admin.field cols="6">
-                    <x-admin.label label="Email" required/>
-                    <x-admin.text name="email" id="modal_email" :value="old('email')" required/>
-                </x-admin.field>
-            
-                <x-admin.field cols="6">
-                    <x-admin.label label="Email de Faturamento"/>
-                    <x-admin.text name="email_faturamento" id="email_faturamento" :value="old('email_faturamento')"/>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group class="pj-hide">
-                <x-admin.field cols="6">
-                    <x-admin.label label="RG"/>
-                    <x-admin.text name="rg" id="rg" :value="old('rg')"/>
-                </x-admin.field>
-            
-                <x-admin.field cols="6">
-                    <x-admin.label label="Celular"/>
-                    <x-admin.text name="celular" id="celular" :value="old('celular')"/>
-                </x-admin.field>
-            </x-admin.field-group>
+            <x-admin.field cols="6">
+                <x-admin.label label="Telefone" required/>
+                <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group>
+            <x-admin.field cols="6">
+                <x-admin.label label="Email" required/>
+                <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="Email de Faturamento"/>
+                <x-admin.text name="email_faturamento" id="email_faturamento" :value="old('email_faturamento', $reserva->email_faturamento ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group class="pj-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="RG"/>
+                <x-admin.text name="rg" id="rg" :value="old('rg', $reserva->clienteSolicitante->rg ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="Celular"/>
+                <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
 
-
-        <h5 class="pf-hide"><i class="fa-solid fa-3"></i>Dados da Empresa de Faturamento</h5>
+                <h5 class="pf-hide"><i class="fa-solid fa-3"></i>Dados da Empresa de Faturamento</h5>
         <x-admin.field-group class="pf-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="Empresa de Faturamento (<small>Nome Fantasia</small>)"/> 
-                <x-admin.text name="nome_fantasia_faturamento" id="nome_fantasia_faturamento" :value="old('nome_fantasia_faturamento')"/>
-                <input type="hidden" name="empresa_faturamento_id" id="empresa_faturamento_id" :value="old('empresa_faturamento_id')"/>
+                <x-admin.text name="nome_fantasia_faturamento" id="nome_fantasia_faturamento" :value="old('nome_fantasia_faturamento', $reserva->empresaFaturamento->nome_fantasia ?? '')"/>
+                <input type="hidden" name="empresa_faturamento_id" id="empresa_faturamento_id" :value="old('empresa_faturamento_id', $reserva->empresa_faturamento_id ?? '')"/>
             </x-admin.field>
-
+        
             <x-admin.field cols="6">
                 <x-admin.label label="CNPJ Faturamento"/>
                 <div class="input-group">
-                    <x-admin.text name="cnpj_faturamento" id="cnpj_faturamento" :value="old('cnpj_faturamento')" />
+                    <x-admin.text name="cnpj_faturamento" id="cnpj_faturamento" :value="old('cnpj_faturamento', $reserva->empresaFaturamento->cnpj ?? '')" />
                     <div class="input-group-append">
                         <button type="button" id="verificarCnpjFaturamento" class="btn btn-secondary">Buscar</button>
                     </div>
@@ -107,53 +106,59 @@
                 <div id="cnpjFaturamentoError" class="text-danger mt-2" style="display: none;">Nenhuma empresa encontrada com o CNPJ informado.</div>
             </x-admin.field>
         </x-admin.field-group>
-
+        
         <x-admin.field-group class="pf-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="Razão Social"/>
-                <x-admin.text name="razao_social" id="razao_social" :value="old('razao_social')"/>
+                <x-admin.text name="razao_social_faturamento" id="razao_social_faturamento" :value="old('razao_social_faturamento', $reserva->empresaFaturamento->razao_social ?? '')"/>
             </x-admin.field>
-
+        
             <x-admin.field cols="6">
                 <x-admin.label label="Inscrição Estadual"/>
-                <x-admin.text name="inscricao_estadual" id="inscricao_estadual" :value="old('inscricao_estadual')"/>
+                <x-admin.text name="inscricao_estadual_faturamento" id="inscricao_estadual_faturamento" :value="old('inscricao_estadual_faturamento', $reserva->empresaFaturamento->inscricao_estadual ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
-
+        
         <x-admin.field-group class="pf-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="Email"/>
-                <x-admin.text name="email_empresa_faturamento" id="email_empresa_faturamento" :value="old('email_empresa_faturamento')"/>
+                <x-admin.text name="email_empresa_faturamento" id="email_empresa_faturamento" :value="old('email_empresa_faturamento', $reserva->empresaFaturamento->email ?? '')"/>
             </x-admin.field>
-
+        
             <x-admin.field cols="6">
                 <x-admin.label label="Telefone"/>
-                <x-admin.text name="telefone_faturamento" id="telefone_faturamento" :value="old('telefone_faturamento')"/>
+                <x-admin.text name="telefone_faturamento" id="telefone_faturamento" :value="old('telefone_faturamento', $reserva->empresaFaturamento->telefone ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
-
+        
         <x-admin.field-group class="pf-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="CEP"/>
-                <x-admin.text name="CEP_faturamento" id="CEP_faturamento" :value="old('CEP_faturamento')"/>
+                <x-admin.text name="cep_faturamento" id="cep_faturamento" :value="old('cep_faturamento', $reserva->empresaFaturamento->cep ?? '')"/>
             </x-admin.field>
-
+            <x-admin.field cols="6"  style="display: flex; align-items:end;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="copy_faturamento_to_solicitante">
+                    <label class="form-check-label" for="copy_faturamento_to_solicitante">
+                        Empresa de Faturamento será a solicitante?
+                    </label>
+                </div>
+            </x-admin.field>
         </x-admin.field-group>
-                
-
+        
         <h5 class="pf-hide"><i class="fa-solid fa-4"></i>Dados da Empresa Solicitante</h5>
-
-          <x-admin.field-group class="pf-hide">
+        
+        <x-admin.field-group class="pf-hide on-copy-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="Empresa Solicitante (<small>Nome Fantasia</small>)"/> 
-                <x-admin.text name="nome_fantasia_solicitante" id="nome_fantasia_solicitante" :value="old('nome_fantasia_solicitante')"/>
-                <input type="hidden" name="empresa_solicitante_id" id="empresa_solicitante_id" :value="old('empresa_solicitante_id')"/>
+                <x-admin.text name="nome_fantasia_solicitante" id="nome_fantasia_solicitante" :value="old('nome_fantasia_solicitante', $reserva->empresaSolicitante->nome_fantasia ?? '')"/>
+                <input type="hidden" name="empresa_solicitante_id" id="empresa_solicitante_id" :value="old('empresa_solicitante_id', $reserva->empresa_solicitante_id ?? '')"/>
             </x-admin.field>
         
             <x-admin.field cols="6">
                 <x-admin.label label="CNPJ Solicitante"/>
                 <div class="input-group">
-                    <x-admin.text name="cnpj_solicitante" id="cnpj_solicitante" :value="old('cnpj_solicitante')" />
+                    <x-admin.text name="cnpj_solicitante" id="cnpj_solicitante" :value="old('cnpj_solicitante', $reserva->empresaSolicitante->cnpj ?? '')" />
                     <div class="input-group-append">
                         <button type="button" id="verificarCnpjSolicitante" class="btn btn-secondary">Buscar</button>
                     </div>
@@ -162,43 +167,50 @@
             </x-admin.field>
         </x-admin.field-group>
         
-        <x-admin.field-group class="pf-hide">
+        <x-admin.field-group class="pf-hide ">
             <x-admin.field cols="6">
                 <x-admin.label label="Razão Social"/>
-                <x-admin.text name="razao_social" id="razao_social" :value="old('razao_social')"/>
+                <x-admin.text name="razao_social_solicitante" id="razao_social_solicitante" :value="old('razao_social_solicitante', $reserva->empresaSolicitante->razao_social ?? '')"/>
             </x-admin.field>
         
             <x-admin.field cols="6">
                 <x-admin.label label="Inscrição Estadual"/>
-                <x-admin.text name="inscricao_estadual" id="inscricao_estadual" :value="old('inscricao_estadual')"/>
+                <x-admin.text name="inscricao_estadual_solicitante" id="inscricao_estadual_solicitante" :value="old('inscricao_estadual_solicitante', $reserva->empresaSolicitante->inscricao_estadual ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
         
         <x-admin.field-group class="pf-hide">
             <x-admin.field cols="6">
                 <x-admin.label label="Email"/>
-                <x-admin.text name="email_solicitante" id="email_solicitante" :value="old('email_solicitante')"/>
+                <x-admin.text name="email_solicitante" id="email_solicitante" :value="old('email_solicitante', $reserva->empresaSolicitante->email ?? '')"/>
             </x-admin.field>
         
             <x-admin.field cols="6">
                 <x-admin.label label="Telefone"/>
-                <x-admin.text name="telefone_solicitante" id="telefone_solicitante" :value="old('telefone_solicitante')"/>
+                <x-admin.text name="telefone_solicitante" id="telefone_solicitante" :value="old('telefone_solicitante', $reserva->empresaSolicitante->telefone ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
-
+        
+        <x-admin.field-group class="pf-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="CEP"/>
+                <x-admin.text name="cep_solicitante" id="cep_solicitante" :value="old('cep_solicitante', $reserva->empresaSolicitante->cep ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
         <!-- Observações -->
         <x-admin.field-group>
             <x-admin.field cols="6">
                 <x-admin.label label="Observações"/>
-                <x-admin.textarea name="observacoes" id="modal_observacoes" :value="old('observacoes')" rows="3"/>
+                <x-admin.textarea name="observacoes" id="modal_observacoes" :value="old('observacoes', $reserva->observacoes ?? '')" rows="3"/>
             </x-admin.field>
-
+        
             <x-admin.field cols="6">
                 <x-admin.label label="Observações Internas"/>
-                <x-admin.textarea name="observacoes_internas" id="modal_observacoes_internas" :value="old('observacoes_internas')" rows="3"/>
+                <x-admin.textarea name="observacoes_internas" id="modal_observacoes_internas" :value="old('observacoes_internas', $reserva->observacoes_internas ?? '')" rows="3"/>
             </x-admin.field>
         </x-admin.field-group>
-
+        
         <button type="button" id="saveInfoButton" class="btn btn-primary">Salvar Informações Gerais</button>
     </div>
 </div>
@@ -230,5 +242,179 @@
     
         // Adiciona um evento de mudança ao select
         tipoSolicitanteSelect.addEventListener('change', atualizarCampos);
+  
+
+        const buscarCpfButton = document.getElementById('buscarCpfButton');
+        const cpfInput = document.getElementById('cpf');
+        const clienteInfo = document.getElementById('clienteInfo');
+        const modalElement = document.getElementById('criarClienteModal');
+        const modal = modalElement ? new bootstrap.Modal(modalElement) : null;
+        $('#cpf').mask('000.000.000-00', {reverse: true});
+        $('#responsavelCpf').mask('000.000.000-00', {reverse: true});
+        $('#responsavelReservaCpf').mask('000.000.000-00', {reverse: true});
+
+
+        buscarCpfButton.addEventListener('click', function () {
+            const cpf = cpfInput.value;
+
+            // Faz uma requisição AJAX para buscar o cliente pelo CPF
+            fetch(`/admin/clientes/cpf/${cpf}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        // Preenche os campos do cliente se encontrado
+                        document.getElementById('nomeSolicitante').value = data.nome ?? '';
+                        document.getElementById('cpf').value = data.cpf ?? '';
+                        document.getElementById('rg').value = data.rg ?? '';
+                        document.getElementById('modal_email').value = data.email ?? '';
+                        document.getElementById('celular').value = data.celular ?? '';
+                    }
+                })
+                .catch(error => {
+                    // console.error('Erro ao buscar o cliente:', error);
+                    cpfError.style.display = 'block'; // Mostra a mensagem de erro
+                    console.log(error);
+                    
+
+                    // Esconde a mensagem de erro após 5 segundos
+                    setTimeout(() => {
+                        cpfError.style.display = 'none';
+                    }, 2000);
+                });
+        });
+
+        const verificarCnpjFaturamentoButton = document.getElementById('verificarCnpjFaturamento');
+        const verificarCnpjSolicitanteButton = document.getElementById('verificarCnpjSolicitante');
+        const cnpjFaturamentoError = document.getElementById('cnpjFaturamentoError');
+
+        const cnpjSolicitanteError = document.getElementById('cnpjSolicitanteError');
+
+        verificarCnpjFaturamentoButton.addEventListener('click', function () {
+            let cnpj = document.getElementById('cnpj_faturamento').value;
+            cnpj = cnpj.replace(/[^\d]+/g, '');
+
+            fetch(`/admin/buscar-empresa/${cnpj}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.id) {
+                        document.getElementById('nome_fantasia_faturamento').value = data.nome_fantasia || data.razao_social;
+                        document.getElementById('empresa_faturamento_id').value = data.id;
+                        document.getElementById('razao_social_faturamento').value = data.razao_social;
+                        document.getElementById('inscricao_estadual_faturamento').value = data.inscricao_estadual;
+                        document.getElementById('email_empresa_faturamento').value = data.email;
+                        document.getElementById('telefone_faturamento').value = data.telefone;
+                        document.getElementById('cep_faturamento').value = data.cep;      
+                        
+                        cnpjFaturamentoError.style.display = 'none'; // Esconde a mensagem de erro
+                    } else {
+                        cnpjFaturamentoError.style.display = 'block'; // Mostra a mensagem de erro
+                        setTimeout(() => {
+                            cnpjFaturamentoError.style.display = 'none';
+                        }, 5000); // Esconde a mensagem de erro após 5 segundos
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar a empresa:', error);
+                    cnpjFaturamentoError.style.display = 'block'; // Mostra a mensagem de erro
+                    setTimeout(() => {
+                        cnpjFaturamentoError.style.display = 'none';
+                    }, 5000); // Esconde a mensagem de erro após 5 segundos
+                });
+        });
+
+        verificarCnpjSolicitanteButton.addEventListener('click', function () {
+            let cnpj = document.getElementById('cnpj_solicitante').value;
+            console.log(cnpj);
+            
+            cnpj = cnpj.replace(/[^\d]+/g, '');
+
+            fetch(`/admin/buscar-empresa/${cnpj}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.id){
+                        document.getElementById('nome_fantasia_solicitante').value = data.nome_fantasia || data.razao_social;
+                        document.getElementById('empresa_solicitante_id').value = data.id;
+                        document.getElementById('razao_social_solicitante').value = data.razao_social;
+                        document.getElementById('inscricao_estadual_solicitante').value = data.inscricao_estadual;
+                        document.getElementById('email_solicitante').value = data.email;
+                        document.getElementById('telefone_solicitante').value = data.telefone;
+                        document.getElementById('cep_solicitante').value = data.cep;
+                       
+                    
+                        
+                        cnpjSolicitanteError.style.display = 'none'; // Esconde a mensagem de erro
+                    } else {
+                        cnpjSolicitanteError.style.display = 'block'; // Mostra a mensagem de erro
+                        setTimeout(() => {
+                            cnpjSolicitanteError.style.display = 'none';
+                        }, 5000); // Esconde a mensagem de erro após 5 segundos
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar a empresa:', error);
+                    cnpjSolicitanteError.style.display = 'block'; // Mostra a mensagem de erro
+                    setTimeout(() => {
+                        cnpjSolicitanteError.style.display = 'none';
+                    }, 5000); // Esconde a mensagem de erro após 5 segundos
+                });
+            
+        });
+
+
+        function validateCPF(cpf) {
+            cpf = cpf.replace(/[^\d]+/g, ''); // Remove all non-numeric characters
+
+            if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+                return false; // Invalid CPF length or all digits are the same
+            }
+
+            let sum = 0;
+            let remainder;
+
+            for (let i = 1; i <= 9; i++) {
+                sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+            }
+
+            remainder = (sum * 10) % 11;
+
+            if (remainder === 10 || remainder === 11) {
+                remainder = 0;
+            }
+
+            if (remainder !== parseInt(cpf.substring(9, 10))) {
+                return false;
+            }
+
+            sum = 0;
+
+            for (let i = 1; i <= 10; i++) {
+                sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+            }
+
+            remainder = (sum * 10) % 11;
+
+            if (remainder === 10 || remainder === 11) {
+                remainder = 0;
+            }
+
+            if (remainder !== parseInt(cpf.substring(10, 11))) {
+                return false;
+            }
+
+            return true;
+        }
+
+
+        document.getElementById('copy_faturamento_to_solicitante').addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('nome_fantasia_solicitante').value = document.getElementById('nome_fantasia_faturamento').value;
+                document.getElementById('cnpj_solicitante').value = document.getElementById('cnpj_faturamento').value;
+                document.getElementById('razao_social_solicitante').value = document.getElementById('razao_social_faturamento').value;
+                document.getElementById('inscricao_estadual_solicitante').value = document.getElementById('inscricao_estadual_faturamento').value;
+                document.getElementById('email_solicitante').value = document.getElementById('email_empresa_faturamento').value;
+                document.getElementById('telefone_solicitante').value = document.getElementById('telefone_faturamento').value;
+                document.getElementById('cep_solicitante').value = document.getElementById('cep_faturamento').value;
+            }
+        });
     });
 </script>

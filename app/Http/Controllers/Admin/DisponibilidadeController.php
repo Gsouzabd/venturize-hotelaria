@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\Quarto;
 use App\Models\Reserva;
 use Illuminate\Http\Request;
@@ -14,8 +15,8 @@ class DisponibilidadeController extends Controller
     {
         // Obtém os parâmetros validados da requisição
         $validated = $request->validated();
-        $dataEntrada = $validated['data_entrada'];
-        $dataSaida = $validated['data_saida'];
+        $dataEntrada = Carbon::createFromFormat('d/m/Y', $validated['data_entrada'])->format('Y/m/d');
+        $dataSaida = Carbon::createFromFormat('d/m/Y', $validated['data_saida'])->format('Y/m/d');
         $tipoQuarto = $request['tipo_quarto'] ?? null;
         $apartamentosNecessarios = $validated['apartamentos'];
 

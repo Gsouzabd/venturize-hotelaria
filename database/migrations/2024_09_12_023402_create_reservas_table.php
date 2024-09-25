@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('reservas', function (Blueprint $table) {
             $table->id();
-            $table->enum('tipo_reserva', ['INDIVIDUAL', 'GRUPO']);
+            $table->enum('tipo_reserva', ['INDIVIDUAL', 'GRUPO'])->nullable();
             $table->enum('situacao_reserva', ['PRÉ RESERVA', 'CONFIRMADA', 'CANCELADA'])->default('PRÉ RESERVA');
             $table->time('previsao_chegada')->nullable();
             $table->time('previsao_saida')->nullable();

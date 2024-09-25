@@ -8,6 +8,7 @@ class Reserva extends Model
 {
     protected $fillable = [
         'tipo_reserva',
+        'tipo_solicitante',
         'situacao_reserva',
         'previsao_chegada',
         'previsao_saida',

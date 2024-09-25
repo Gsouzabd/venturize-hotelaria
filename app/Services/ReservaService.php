@@ -38,6 +38,8 @@ class ReservaService
                     'nome_fantasia' => $data['nome_fantasia_faturamento'] ?? '',
                     'razao_social' => $data['razao_social'] ?? '',
                     'cnpj' => $data['cnpj_faturamento'],
+                    'cep' => $data['CEP_faturamento'] ?? '',
+                    
                     'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
                     'email' => $data['email_empresa_faturamento'] ?? '',
                     'telefone' => $data['telefone_faturamento'] ?? '',
@@ -52,7 +54,7 @@ class ReservaService
         }
         
         // Buscar ou criar o cliente solicitante
-        $clienteSolicitante = Cliente::firstOrCreate(
+        $clienteSolicitante = Cliente::updateOrCreate(
             ['cpf' => $data['cpf']],
             [
                 'nome' => $data['nome'],
@@ -72,14 +74,19 @@ class ReservaService
                 ['cpf' => $quartoData['responsavel_cpf']],
                 ['nome' => $quartoData['responsavel_nome']]
             );
-
+     
+            $dataCheckin = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkin'])->format('Y-m-d');
+            $dataCheckout = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkout'])->format('Y-m-d');
+        
+                      
             // Preparar os dados da reserva
             $reservaData = [
-                'tipo_reserva' => $data['tipo_reserva'],
+                'tipo_reserva' => $data['tipo_reserva'] ?? null,
+                'tipo_solicitante' => $data['tipo_solicitante'],
                 'situacao_reserva' => $data['situacao_reserva'] ?? 'PRÉ RESERVA', // ou outro valor padrão
-                'data_checkin' => Carbon::createFromFormat('d/m/Y', $data['data_entrada'])->format('Y-m-d'),
-                'data_checkout' => Carbon::createFromFormat('d/m/Y', $data['data_saida'])->format('Y-m-d'),
-               
+                'data_checkin' => $dataCheckin,
+                'data_checkout' => $dataCheckout,
+                'estrangeiro' => 'Não', 
                 'cliente_solicitante_id' => $clienteSolicitante->id,
                 'cliente_responsavel_id' => $clienteResponsavel->id,
                 'quarto_id' => $quartoId,
@@ -93,9 +100,11 @@ class ReservaService
                 'observacoes_internas' => $data['observacoes_internas'],
             ];
 
+            
+
             // Criar ou atualizar a reserva
-            if (isset($data['id'])) {
-                Reserva::findOrFail($data['id'])->update($reservaData);
+            if (isset($data['reserva_id'])) {
+                Reserva::findOrFail($data['reserva_id'])->update($reservaData);
             } else {
                 Reserva::create($reservaData);
             }

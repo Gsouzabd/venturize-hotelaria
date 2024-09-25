@@ -15,7 +15,7 @@ class ReservaRequest extends FormRequest
     public function rules()
     {
         return [
-            'tipo_reserva' => 'required|string',
+            'tipo_reserva' => 'string',            
             'nome' => 'required|string|max:255',
             'cpf' => ['required', 'string', 'max:14', new Cpf],
             'rg' => 'nullable|string|max:20',
@@ -36,13 +36,16 @@ class ReservaRequest extends FormRequest
             'data_entrada' => 'required|date_format:d/m/Y',
             'data_saida' => 'required|date_format:d/m/Y|after_or_equal:data_entrada',
             'tipo_quarto' => 'nullable|string|max:255',
-            'apartamentos' => 'required|integer|min:1',
-            'adultos' => 'required|integer|min:1',
-            'criancas' => 'required|integer|min:0',
+            // 'apartamentos' => 'integer|min:1',
+            // 'adultos' => 'integer|min:1',
+            // 'criancas' => 'integer|min:0',
             'quartos' => 'required|array|min:1',
             'quartos.*.numero' => 'required|string|max:10',
             'quartos.*.andar' => 'required|string|max:50',
             'quartos.*.classificacao' => 'required|string|max:50',
+            'quartos.*.data_checkin' => 'required',
+            'quartos.*.data_checkout' => 'required|after_or_equal:quartos.*.data_checkin',
+            
             'quartos.*.responsavel_nome' => 'required|string|max:255',
             'quartos.*.responsavel_cpf' => ['required', 'string', 'max:14', new Cpf],
         ];

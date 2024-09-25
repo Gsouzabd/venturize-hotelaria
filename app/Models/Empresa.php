@@ -13,5 +13,6 @@ class Empresa extends Model
         'inscricao_estadual', // Inscrição Estadual (IE)
         'email',              // Email
         'telefone',           // Telefone
+        'cep',                // CEP
     ];
 }
