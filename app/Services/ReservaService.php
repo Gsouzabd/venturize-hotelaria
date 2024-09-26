@@ -90,6 +90,7 @@ class ReservaService
                 'cliente_solicitante_id' => $clienteSolicitante->id,
                 'cliente_responsavel_id' => $clienteResponsavel->id,
                 'quarto_id' => $quartoId,
+                'tipo_acomodacao' => $quartoData['tipo_acomodacao'],
                 'usuario_operador_id' => Auth::id(), // ou outro valor apropriado
                 'email_solicitante' => $data['email'],
                 'celular' => $data['celular'],

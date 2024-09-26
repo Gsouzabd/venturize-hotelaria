@@ -30,10 +30,17 @@
     <x-admin.field-group>
         <!-- Tipo de Quarto -->
         <x-admin.field cols="6">
-            <x-admin.label label="Tipo"/>
+            <x-admin.label label="Tipo do Quarto"/>
             <x-admin.select name="tipo_quarto" id="tipo_quarto" class="form-control"
                 :items="['Embaúba' => 'Embaúba', 'Camará' => 'Camará']"
                 selectedItem="{{ old('tipo_quarto', $reserva->tipo_quarto ?? '') }}"/>
+        </x-admin.field>
+
+        <x-admin.field cols="6">
+            <x-admin.label label="Tipo de Acomodação"/>
+            <x-admin.select name="tipo_acomodacao" id="tipo_acomodacao" class="form-control"
+                :items="['Solteiro' => 'Solteiro', 'Casal' => 'Casal']"
+                selectedItem="{{ old('tipo_acomodacao', $reserva->tipo_acomodacao ?? '') }}"/>
         </x-admin.field>
     </x-admin.field-group>
 

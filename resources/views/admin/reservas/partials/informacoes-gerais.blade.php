@@ -15,7 +15,8 @@
             <x-admin.field cols="3">
                 <x-admin.label label="Situação da Reserva" required/>
                 <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
-                                :items="['CONFIRMADA' => 'Confirmada', 'CANCELADA' => 'Cancelada']"
+                                :items="['CONFIRMADA' => 'Confirmada', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
+                                
                                 selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? '') }}">
                 </x-admin.select>
             </x-admin.field>
@@ -223,8 +224,6 @@
         const pjHideFields = document.querySelectorAll('.pj-hide');
         const pfHideFields = document.querySelectorAll('.pf-hide');
     
-       
-    
         // Função para atualizar a visibilidade dos campos
         function atualizarCampos() {
             if (tipoSolicitanteSelect.value === 'PJ') {
@@ -262,12 +261,18 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data) {
+                         // Verificar e formatar as datas se necessário
+                         if( data.data_nascimento !== null){
+                            var formattedDataNascimento= isFormattedDate(data.data_nascimento) ? data.data_nascimento : formatDate(data.data_nascimento);
+                         }
+
                         // Preenche os campos do cliente se encontrado
                         document.getElementById('nomeSolicitante').value = data.nome ?? '';
                         document.getElementById('cpf').value = data.cpf ?? '';
+                        document.querySelector('input[name="data_nascimento"]').value = formattedDataNascimento ?? '';
                         document.getElementById('rg').value = data.rg ?? '';
                         document.getElementById('modal_email').value = data.email ?? '';
-                        document.getElementById('celular').value = data.celular ?? '';
+                        document.getElementById('modal_telefone').value = data.telefone ?? '';
                     }
                 })
                 .catch(error => {
@@ -416,5 +421,24 @@
                 document.getElementById('cep_solicitante').value = document.getElementById('cep_faturamento').value;
             }
         });
+
+
+        const isFormattedDate = (dateStr) => {
+                const regex = /^\d{2}-\d{2}-\d{4}$/;
+                return regex.test(dateStr);
+            };
+
+        // Função para formatar a data de yyyy-mm-dd hh:mm:ss para dd-mm-yyyy
+        const formatDate = (dateStr) => {
+            if (dateStr.includes('-')) {
+                const [datePart] = dateStr.split(' ');
+                const [year, month, day] = datePart.split('-');
+                return `${day}/${month}/${year}`;
+            } else if (dateStr.includes('/')) {
+                const [day, month, year] = dateStr.split('/');
+                return `${day}-${month}-${year}`;
+            }
+            return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
+        };
     });
 </script>

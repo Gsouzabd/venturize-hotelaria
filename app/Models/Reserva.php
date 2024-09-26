@@ -16,8 +16,8 @@ class Reserva extends Model
         'data_checkout', // Novo campo
         'cliente_solicitante_id',
         'cliente_responsavel_id',
-        
         'quarto_id',
+        'tipo_acomodacao',
         'usuario_operador_id',
         'email_solicitante',
         'celular',
