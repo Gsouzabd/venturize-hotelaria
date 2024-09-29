@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
+use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -48,8 +49,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/clientes/{id}', [ClienteController::class, 'findById'])->name('admin.clientes.findById');
         Route::get('/clientes/cpf/{cpf}', [ClienteController::class, 'findByCpf'])->name('admin.clientes.findByCpf');
 
-
-
+        Route::get('quartos/{quartoId?}/planos-preco/edit/{id?}', [QuartoPlanoPrecoController::class, 'edit'])->name('quartos.planos-preco.edit');
+        Route::post('quartos/planos-preco/save/{id?}', [QuartoPlanoPrecoController::class, 'save'])->name('quartos.planos-preco.save');      Route::delete('quartos/planos-preco/delete/{id}', [QuartoPlanoPrecoController::class, 'delete'])->name('quartos.planos-preco.delete');
+        
         Route::get('/empresa/cnpj/cnpj', function($cpf) {
             $empresa = Empresa::where('cpf', $cpf)->firstOrFail();
             return response()->json($empresa);

@@ -43,12 +43,20 @@ class QuartoController extends Controller
         $edit = boolval($id);
         $quarto = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
+        
+
         return view('admin.quartos.form', compact('quarto', 'edit'));
     }
 
     public function save(Request $request)
     {
         $data = $request->all();
+
+
+        if($data['posicao_quarto'] == null){
+            $data['posicao_quarto'] = 'frente';
+        }
+
 
         if ($id = $request->get('id')) {
             $this->model->findOrFail($id)->update($data);

@@ -1,5 +1,6 @@
 @props([
     'saveRoute',
+    'routeParams' => [],
     'method' => 'post',
     'class' => '',
     'filesEnctype' => false,
@@ -7,22 +8,21 @@
     'ajaxRequest' => false,
     'submitTitle' => null,
     'backRoute' => '',
+    'backRouteParams' => [],
 ])
 
-<form action="{{ route($saveRoute) }}" method="{{ $method }}"
-      class="edit-form{{ $class ? ' ' . $class : '' }}"{!! ($filesEnctype ? ' enctype="multipart/form-data"' : '') . ($attributes ? ' ' . $attributes : '') !!}>
+<form action="{{ route($saveRoute, $routeParams) }}" method="{{ $method }}"
+      class="edit-form{{ $class ? ' ' . $class : '' }}" {!! $filesEnctype ? 'enctype="multipart/form-data"' : '' !!} {{ $attributes->merge(['class' => '']) }}>
     @if($isEdit)
         @method('PUT')
     @endif
-    @if($method === 'post')
-        @csrf
-    @endif
+    @csrf
     {{ $slot }}
 
     <div class="text-right mt-3">
         <x-admin.submit-btn :title="$submitTitle"/>
         @if($backRoute)
-            <x-admin.cancel-btn :back-route="$backRoute"/>
+            <x-admin.cancel-btn :back-route="$backRoute" :route-params="$backRouteParams"/>
         @endif
     </div>
 </form>

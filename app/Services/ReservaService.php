@@ -75,8 +75,13 @@ class ReservaService
                 ['nome' => $quartoData['responsavel_nome']]
             );
      
-            $dataCheckin = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkin'])->format('Y-m-d');
-            $dataCheckout = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkout'])->format('Y-m-d');
+            
+            $dataCheckin = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkin'])
+                ->setTime(14, 0)
+                ->format('Y-m-d H:i:s');          
+            $dataCheckout = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkout'])
+                ->setTime(12, 0)
+                ->format('Y-m-d H:i:s');         
         
                       
             // Preparar os dados da reserva

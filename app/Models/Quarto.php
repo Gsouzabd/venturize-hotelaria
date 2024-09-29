@@ -17,4 +17,22 @@ class Quarto extends Model
     {
         return $this->hasMany(Reserva::class);
     }
+
+    // Relação com QuartoPlanoPreco
+    public function planosPrecos()
+    {
+        return $this->hasMany(QuartoPlanoPreco::class, 'quarto_id');
+    
+    }
+
+    // Método para obter o plano de preço atual
+    public function getPlanoPrecoAtual($data)
+    {
+        return $this->planoPrecos()
+            ->where('data_inicio', '<=', $data)
+            ->where('data_fim', '>=', $data)
+            ->orWhere('is_default', true)
+            ->orderBy('is_default', 'desc')
+            ->first();
+    }
 }

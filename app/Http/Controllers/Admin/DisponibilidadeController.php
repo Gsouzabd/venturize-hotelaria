@@ -35,8 +35,16 @@ class DisponibilidadeController extends Controller
                       ->orWhereBetween('data_checkout', [$dataEntrada, $dataSaida])
                       // Verifica se a reserva cobre todo o período
                       ->orWhere(function ($query) use ($dataEntrada, $dataSaida) {
-                          $query->where('data_checkin', '<=', $dataEntrada)
-                                ->where('data_checkout', '>=', $dataSaida);
+                          $query->where('data_checkin', '<', $dataEntrada)
+                                ->where('data_checkout', '>', $dataSaida);
+                      })
+                      // Verifica se o check-out termina no $dataEntrada
+                      ->orWhere(function ($query) use ($dataEntrada) {
+                          $query->where('data_checkout', $dataEntrada);
+                      })
+                      // Verifica se o check-in começa no $dataSaida
+                      ->orWhere(function ($query) use ($dataSaida) {
+                          $query->where('data_checkin', $dataSaida);
                       });
             });
         })
@@ -44,9 +52,6 @@ class DisponibilidadeController extends Controller
 
         // dd query e parametros
         // dd($quartosQuery->toSql(), $quartosQuery->getBindings());
-
-        
-        
 
         // Verifica se há quartos suficientes disponíveis
         if ($quartosDisponiveis->count() < $apartamentosNecessarios) {

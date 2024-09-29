@@ -495,6 +495,10 @@
                             <i class="icon fas fa-star"></i>
                             <strong>Classificação:</strong> ${quarto.classificacao}
                         </div>
+                        <div class="info">
+                            <i class="icon fas fa-bed"></i>
+                            <strong>Preço:</strong> ${quarto.classificacao}
+
                         <a class="btn btn-primary select-quarto ${quartoNoCart ? 'disabled' : ''}" data-quarto-id="${quarto.id}" data-quarto-numero="${quarto.numero}" data-quarto-andar="${quarto.andar}" data-quarto-classificacao="${quarto.classificacao}" >Selecionar Quarto</a>
                     </div>
                 </div>`;

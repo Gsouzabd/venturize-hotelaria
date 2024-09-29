@@ -128,6 +128,9 @@ class ReservaController extends Controller
                       });
             })
             ->get();
+
+
+            // dd($reservas);
     
         // Buscar todos os quartos
         $quartos = Quarto::all();
