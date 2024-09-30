@@ -2,30 +2,29 @@
     <h3>Disponibilidade de Quartos</h3>
     <p>Após preencher as informações gerais, verifique a disponibilidade de quartos.</p>
 
+    <x-admin.field-group>
+        <!-- Data de Entrada -->
+        <x-admin.field cols="6">
+            <x-admin.label label="Data de Entrada"/>
+            <x-admin.datepicker 
+                id="data_entrada" 
+                name="data_entrada" 
+                class="form-control datepicker" 
+                placeholder="Selecione a data de entrada" 
+                :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d-m-Y') : '')"/>
+        </x-admin.field>
 
-        <x-admin.field-group>
-            <!-- Data de Entrada -->
-            <x-admin.field cols="6">
-                <x-admin.label label="Data de Entrada"/>
-                <x-admin.datepicker 
-                    id="data_entrada" 
-                    name="data_entrada" 
-                    class="form-control datepicker" 
-                    placeholder="Selecione a data de entrada" 
-                    :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d-m-Y') : '')"/>
-            </x-admin.field>
-        
-            <!-- Data de Saída -->
-            <x-admin.field cols="6">
-                <x-admin.label label="Data de Saída"/>
-                <x-admin.datepicker 
-                    id="data_saida" 
-                    name="data_saida" 
-                    class="form-control datepicker" 
-                    placeholder="Selecione a data de saída" 
-                    :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d-m-Y') : '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
+        <!-- Data de Saída -->
+        <x-admin.field cols="6">
+            <x-admin.label label="Data de Saída"/>
+            <x-admin.datepicker 
+                id="data_saida" 
+                name="data_saida" 
+                class="form-control datepicker" 
+                placeholder="Selecione a data de saída" 
+                :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d-m-Y') : '')"/>
+        </x-admin.field>
+    </x-admin.field-group>
 
     <x-admin.field-group>
         <!-- Tipo de Quarto -->
@@ -77,6 +76,33 @@
     </x-admin.field-group>
 
     <!-- Botão para verificar disponibilidade -->
-    <a type="button" class="btn btn-primary" id="verificarDisponibilidade">Verificar Disponibilidade</a>
+    <div class="row d-flex justify-content-between">
+        <a type="button" class="btn btn-primary" id="verificarDisponibilidade">Verificar Disponibilidade</a>
+        <!-- Botão para avançar para a aba Pagamento -->
+        <a type="button" class="btn btn-success" id="avancarPagamento">Avançar para Pagamento</a>
+    </div>
+
     <div id="resultadoDisponibilidade" class="mt-4"></div>
+
 </div>
+
+<!-- Script para avançar para a aba Pagamento -->
+<script>
+    document.getElementById('avancarPagamento').addEventListener('click', function() {
+        var pagamentoTab = document.querySelector('#pagamento-tab');
+        var disponibilidadeTab = document.querySelector('#disponibilidade-tab');
+        
+        // Remove a classe ativa da aba atual e ativa a aba pagamento
+        disponibilidadeTab.classList.remove('active');
+        pagamentoTab.classList.add('active');
+        
+        // Ativa o conteúdo da aba de pagamento
+        var disponibilidadePane = document.querySelector('#disponibilidade');
+        var pagamentoPane = document.querySelector('#pagamento');
+        disponibilidadePane.classList.remove('show', 'active');
+        pagamentoPane.classList.add('show', 'active');
+
+        // Alterna para a aba pagamento
+        pagamentoTab.click();
+    });
+</script>

@@ -21,6 +21,12 @@
                         <i class="fas fa-calendar-alt"></i> Disponibilidade
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
+                        <i class="fas fa-credit-card"></i> Pagamento
+                    </a>
+                </li>
+                
             </ul>
 
             <!-- Conteúdo das tabs -->
@@ -33,6 +39,10 @@
 
                 <!-- Tab 2: Disponibilidade -->
                 @include('admin.reservas.partials.disponibilidade')
+
+                <!-- Tab 3: Pagamento -->
+                @include('admin.reservas.partials.pagamento')
+
             </div>
         </div>
 
@@ -168,8 +178,10 @@
                         id: quartoId,
                         numero: quartoNumero,
                         classificacao: quartoClassificacao,
-                        andar: quartoAndar
-                    }]
+                        andar: quartoAndar,
+                    }],
+                    dataEntrada: dataCheckin, // Exemplo de data de entrada
+                    dataSaida: dataCheckout, // Exemplo de data de saída
                 });
                 const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
                 const infoGeraisTabLink = document.getElementById('informacoes-gerais-tab');
@@ -272,55 +284,32 @@
             const adultos = document.getElementById('adultos').value;
             const criancas = document.getElementById('criancas').value;
 
-            // Faz a requisição AJAX para verificar a disponibilidade
-            fetch('/admin/verificar-disponibilidade', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.APP_CSRF_TOKEN // Token CSRF para segurança
-                },
-                body: JSON.stringify({
-                    data_entrada: dataEntrada,
-                    data_saida: dataSaida,
-                    tipo_quarto: tipoQuarto,
-                    apartamentos: apartamentos,
-                    adultos: adultos,
-                    criancas: criancas
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarQuartosDisponiveis(data)
+            const data = {
+                dataEntrada,
+                dataSaida,
+                tipoQuarto,
+                apartamentos,
+                adultos,
+                criancas
+            };
 
-                } else if (data.errors) {
-
-                        // Se houver erros de validação, mostra os erros
-                        let output = '<h3>Erros de Validação</h3><ul style="list-style-type: none;">';
-                        for (const [field, messages] of Object.entries(data.errors)) {
-                            messages.forEach(message => {
-                                output += `<li class="notice-error">${message}</li>`;
-                            });
-                        }
-                        output += '</ul>';
-                        document.getElementById('resultadoDisponibilidade').innerHTML = output;
-                    } else {
-                        // Se não houver disponibilidade, mostra a mensagem de erro
-                        document.getElementById('resultadoDisponibilidade').innerHTML = `<p>${data.message}</p>`;
-                    }
-                })
-
-            .catch(error => {
-                console.error('Erro ao verificar disponibilidade:', error);
-                alert('Erro ao verificar disponibilidade.');
-            });
+            mostrarQuartosDisponiveis(data)
         });
 
 
 
-        function adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout) {
-            console.log('Adicionando quarto ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout);
-            // Função para verificar se a data está no formato dd-mm-yyyy
+        // Função para obter planos de preços de um quarto
+        async function obterPlanosPrecos(quartoId, dataEntrada, dataSaida) {
+            const response = await fetch(`/admin/quartos/${quartoId}/planos-preco?data_entrada=${dataEntrada}&data_saida=${dataSaida}`);                    
+            const data = await response.json();
+            return data;
+        }
+    
+        // Função para adicionar um quarto ao carrinho
+        async function adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout) {
+            const precosData = await obterPlanosPrecos(quartoId, dataCheckin, dataCheckout);
+            const precosDiarios = precosData.precosDiarios;
+            const total = precosData.total;
             const isFormattedDate = (dateStr) => {
                 const regex = /^\d{2}-\d{2}-\d{4}$/;
                 return regex.test(dateStr);
@@ -341,12 +330,12 @@
             // Verificar e formatar as datas se necessário
             var formattedCheckin = isFormattedDate(dataCheckin) ? dataCheckin : formatDate(dataCheckin);
             var formattedCheckout = isFormattedDate(dataCheckout) ? dataCheckout : formatDate(dataCheckout);
-
-
+            console.log('Adicionando quarto ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout, precosDiarios, total);
+    
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout });
+            cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout, precosDiarios, total });
             localStorage.setItem('cart', JSON.stringify(cart));
-        
+    
             const cartItems = document.getElementById('cart-items');
             const cartItem = document.createElement('div');
             cartItem.classList.add('cart-item');
@@ -377,9 +366,8 @@
                             <option value="Solteiro" ${tipoAcomodacao === 'Solteiro' || tipoAcomodacao === '' ? 'selected' : ''}>
                                 Solteiro
                             </option>   
-                             <option value="Casal" ${tipoAcomodacao === 'Casal' ? 'selected' : ''}>Casal</option>
+                                <option value="Casal" ${tipoAcomodacao === 'Casal' ? 'selected' : ''}>Casal</option>
                         </select>
-                    
                     </div>
                     <div class="info">
                         <i class="icon fas fa-user"></i>
@@ -392,20 +380,32 @@
                     <div class="info">
                         <i class="icon fas fa-calendar-check"></i>
                         <strong>Check-in:</strong> 
-                         <span style="float:right;">${formattedCheckin}</span>
+                        <span style="float:right;">${formattedCheckin}</span>
                         <input type="hidden" name="quartos[${quartoId}][data_checkin]" value="${formattedCheckin}">
                     </div>
                     <div class="info">
                         <i class="icon fas fa-calendar-check"></i>
                         <strong>Check-out:</strong>
-                         <span style="float:right;">${formattedCheckout}</span>
+                        <span style="float:right;">${formattedCheckout}</span>
                         <input type="hidden" name="quartos[${quartoId}][data_checkout]" value="${formattedCheckout}">
+                    </div>
+
+                    <div class="info">
+                        <i class="icon fas fa-calendar-alt"></i>
+                        <strong>Preços Diários:</strong>
+                        ${Object.entries(precosDiarios).map(([data, preco]) => `<div class='subtotal-forday'><span>${formatDate(data)}:</span> <span>R$ ${preco.replace('.', ',')}</span></div>`).join('')}
+                    </div>
+                    <div class="info">
+                        <i class="icon fas fa-dollar-sign"></i>
+                        <strong>Valor Total:</strong> 
+                        <span style="float:right;">R$ ${total.replace('.', ',')}</span>
+                        <input type="hidden" name="quartos[${quartoId}][total]" value="${total}">
                     </div>
                     <a class="btn btn-danger remove-quarto" data-quarto-id="${quartoId}">Remover</a>
                 </div>
             `;
+    
             cartItems.appendChild(cartItem);
-     
             $('.cart-items-cpf').mask('000.000.000-00', {reverse: true});
             // Desabilitar o botão "Selecionar Quarto"
             const selectButton = document.querySelector(`.select-quarto[data-quarto-id="${quartoId}"]`);
@@ -413,10 +413,7 @@
                 selectButton.classList.add('disabled');
                 selectButton.setAttribute('disabled', 'disabled');
             }
-
-            
-
-            // Adicionar evento de clique para o botão de remover quarto
+            // Adicionar event listener para remover o quarto do carrinho
             cartItem.querySelector('.remove-quarto').addEventListener('click', function() {
                 const cartItem = this.closest('.cart-item');
                 const quartoId = this.getAttribute('data-quarto-id');
@@ -436,34 +433,63 @@
                 }
             });
 
-            // Exibir o Cart Preview com animação
-            const cartColumn = document.getElementById('cart-col');
-            cartColumn.style.display = 'block'; // Torna o elemento visível
-            cartColumn.classList.add('fade-in-right'); // Adiciona a animação de entrada
-
-        }
-
-    // {{-- Script do cart quando for tela de edição --}}
-    if(window.location.href.indexOf('edit') > -1) {
-        adicionarQuartoAoCart(
-            "{{ $reserva->quarto_id ?? '' }}",
-            "{{ $reserva->quarto->numero ?? '' }}",
-            "{{ $reserva->quarto->andar ?? '' }}",
-            "{{ $reserva->quarto->classificacao ?? '' }}",
-            "{{ $reserva->tipo_acomodacao ?? '' }}",
-            "{{ $reserva->clienteResponsavel->nome ?? '' }}",
-            "{{ $reserva->clienteResponsavel->cpf ?? '' }}",
-            "{{ $reserva->data_checkin ?? '' }}",
-            "{{ $reserva->data_checkout ?? '' }}"
-        );
+        // Exibir o Cart Preview com animação
+        const cartColumn = document.getElementById('cart-col');
+        cartColumn.style.display = 'block'; // Torna o elemento visível
+        cartColumn.classList.add('fade-in-right'); // Adiciona a animação de entrada
     }
 
+    // Função para remover o quarto do carrinho
+    function removerQuartoDoCart(quartoId) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart = cart.filter(item => item.quartoId !== quartoId);
+        localStorage.setItem('cart', JSON.stringify(cart));
 
-    function abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao) {
+    }
+
+    // {{-- Script do cart quando for tela de edição --}}
+    if (window.location.href.indexOf('edit') > -1) {
+        const quartoId = "{{ $reserva->quarto_id ?? '' }}";
+        const dataCheckin = "{{ $reserva->data_checkin ?? '' }}";
+        const dataCheckout = "{{ $reserva->data_checkout ?? '' }}";
+
+        obterPlanosPrecos(quartoId, dataCheckin, dataCheckout).then(precosData => {
+            const precosDiarios = Object.entries(precosData.precosDiarios).map(([data, preco]) => ({
+                data: new Date(data).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }),
+                preco: parseFloat(preco).toFixed(2)
+            }));
+            const total = parseFloat(precosData.total).toFixed(2);
+
+            adicionarQuartoAoCart(
+                quartoId,
+                "{{ $reserva->quarto->numero ?? '' }}",
+                "{{ $reserva->quarto->andar ?? '' }}",
+                "{{ $reserva->quarto->classificacao ?? '' }}",
+                "{{ $reserva->tipo_acomodacao ?? '' }}",
+                "{{ $reserva->clienteResponsavel->nome ?? '' }}",
+                "{{ $reserva->clienteResponsavel->cpf ?? '' }}",
+                dataCheckin,
+                dataCheckout,
+                precosDiarios,
+                total
+            );
+        }).catch(error => {
+            console.error('Erro ao obter planos de preços:', error);
+        });
+    }
+
+    function abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao, precosDiarios, total) {
         document.getElementById('responsavelModal').setAttribute('data-quarto-id', quartoId);
         document.getElementById('responsavelModal').setAttribute('data-quarto-numero', quartoNumero);
         document.getElementById('responsavelModal').setAttribute('data-quarto-andar', quartoAndar);
         document.getElementById('responsavelModal').setAttribute('data-quarto-classificacao', quartoClassificacao);
+        document.getElementById('responsavelModal').setAttribute('data-precos-diarios', JSON.stringify(precosDiarios));
+        document.getElementById('responsavelModal').setAttribute('data-total', total);
+        
         $('#responsavelModal').modal('show');
     }
 
@@ -471,40 +497,132 @@
      function mostrarQuartosDisponiveis(data) {
         const cart = JSON.parse(localStorage.getItem('cart')) || [];
         console.log(cart);
-        
-        
+
+        // Verifica se já existem quartos na data para evitar requisição AJAX
+        if (data.quartos && data.quartos.length > 0) {
+            montarOutputQuartosDisponiveis(data.quartos, data.dataEntrada, data.dataSaida);
+            return; // Não faz a requisição AJAX se já houver quartos
+        }
+
+        // Faz a requisição AJAX para verificar a disponibilidade
+        fetch('/admin/verificar-disponibilidade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': window.APP_CSRF_TOKEN // Token CSRF para segurança
+            },
+            body: JSON.stringify({
+                data_entrada: data.dataEntrada,
+                data_saida: data.dataSaida,
+                tipo_quarto: data.tipoQuarto,
+                apartamentos: data.apartamentos,
+                adultos: data.adultos,
+                criancas: data.criancas
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                montarOutputQuartosDisponiveis(data.quartos);
+            } else if (data.errors) {
+                // Se houver erros de validação, mostra os erros
+                let output = '<h3>Erros de Validação</h3><ul style="list-style-type: none;">';
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    messages.forEach(message => {
+                        output += `<li class="notice-error">${message}</li>`;
+                    });
+                }
+                output += '</ul>';
+                document.getElementById('resultadoDisponibilidade').innerHTML = output;
+            } else {
+                // Se não houver disponibilidade, mostra a mensagem de erro
+                document.getElementById('resultadoDisponibilidade').innerHTML = `<p>${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar disponibilidade:', error);
+            alert('Erro ao verificar disponibilidade.');
+        });
+    }
+
+    async function montarOutputQuartosDisponiveis(quartos, dataEntrada, dataSaida) {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
         let output = '<h3>Quartos Disponíveis</h3><div class="row">';
-        data.quartos.forEach(quarto => {
+
+        for (const quarto of quartos) {
             const quartoNoCart = cart.some(item => item.quartoId === String(quarto.id));
             console.log(quartoNoCart);
             console.log(quarto.id);
-            
-            output += `
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="info">
-                            <i class="icon fas fa-door-closed"></i>
-                            <strong>Quarto Número:</strong> 
-                            ${quarto.numero}
-                        </div>
-                        <div class="info">
-                            <i class="icon fas fa-building"></i>
-                            <strong>Andar:</strong> ${quarto.andar}
-                        </div>
-                        <div class="info">
-                            <i class="icon fas fa-star"></i>
-                            <strong>Classificação:</strong> ${quarto.classificacao}
-                        </div>
-                        <div class="info">
-                            <i class="icon fas fa-bed"></i>
-                            <strong>Preço:</strong> ${quarto.classificacao}
 
-                        <a class="btn btn-primary select-quarto ${quartoNoCart ? 'disabled' : ''}" data-quarto-id="${quarto.id}" data-quarto-numero="${quarto.numero}" data-quarto-andar="${quarto.andar}" data-quarto-classificacao="${quarto.classificacao}" >Selecionar Quarto</a>
+            let precosDiarios = quarto.precosDiarios || {};
+            let total = 0;
+            let count = Object.keys(precosDiarios).length;
+            let index = 0;
+            let precosHTML = '';
+            let precosDiariosArray = [];
+
+            // Se o quarto não tiver plano de preço, requisitar utilizando a função obterPlanosPrecos
+            if (count === 0) {
+                try {
+                    const precosData = await obterPlanosPrecos(quarto.id, dataEntrada, dataSaida);
+                    precosDiarios = precosData.precosDiarios;
+                    total = parseFloat(precosData.total).toFixed(2);
+                } catch (error) {
+                    console.error('Erro ao obter planos de preços:', error);
+                    alert('Erro ao obter planos de preços.');
+                    continue; // Pula para o próximo quarto
+                }
+            }
+
+            for (const [data, preco] of Object.entries(precosDiarios)) {
+                if (index < count - 1) {
+                    total += parseFloat(preco);
+                    let formattedDate = new Date(data).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    precosHTML += `<div>${formattedDate}: R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}</div>`;
+                    precosDiariosArray.push({ data: formattedDate, preco: parseFloat(preco).toFixed(2) });
+                }
+                index++;
+            }
+
+            total = parseFloat(total);
+
+            output += `
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="info">
+                        <i class="icon fas fa-door-closed"></i>
+                        <strong>Quarto Número:</strong> 
+                        ${quarto.numero}
                     </div>
-                </div>`;
-        });
+                    <div class="info">
+                        <i class="icon fas fa-building"></i>
+                        <strong>Andar:</strong> ${quarto.andar}
+                    </div>
+                    <div class="info">
+                        <i class="icon fas fa-star"></i>
+                        <strong>Classificação:</strong> ${quarto.classificacao}
+                    </div>
+                    <div class="info">
+                        <i class="icon fas fa-bed"></i>
+                        <strong>Tabela de Preço:</strong> 
+                        ${precosHTML}
+                    </div>
+                    <div class="info">
+                        <i class="icon fas fa-dollar-sign"></i>
+                        <strong>Valor Total:</strong> R$ ${total.toFixed(2).replace('.', ',')}
+                    </div>
+                    <a class="btn btn-primary select-quarto ${quartoNoCart ? 'disabled' : ''}" data-quarto-id="${quarto.id}" data-quarto-numero="${quarto.numero}" data-quarto-andar="${quarto.andar}" data-quarto-classificacao="${quarto.classificacao}" data-precos-diarios='${JSON.stringify(precosDiariosArray)}' data-total="${total.toFixed(2)}">
+                        Selecionar Quarto
+                    </a>
+                </div>
+            </div>`;
+        }
+
         output += '</div>';
-        
         document.getElementById('resultadoDisponibilidade').innerHTML = output;
 
         document.querySelectorAll('.select-quarto').forEach(button => {
@@ -517,21 +635,18 @@
                 const tipoAcomodacao = document.querySelector('select[name="tipo_acomodacao"]').value;
                 const dataCheckin = document.querySelector('input[name="data_entrada"]').value;
                 const dataCheckout = document.querySelector('input[name="data_saida"]').value;
-
-                
+                const precosDiarios = JSON.parse(this.getAttribute('data-precos-diarios'));
+                const total = this.getAttribute('data-total');
 
                 if (solicitanteHospede && responsaveis.length === 0) {
-                    // Se o solicitante é o hóspede e ainda não há responsáveis, use os dados do formulário anterior
                     const nome = document.getElementById('nomeSolicitante').value;
                     const cpf = document.getElementById('cpf').value;
                     responsaveis.push({ quartoId, nome, cpf });
-                    adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout);
+                    adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout, precosDiarios, total);
                 } else if (solicitanteHospede && responsaveis.length > 0) {
-                    // Se o solicitante já é responsável por um quarto, abrir o modal para adicionar novo responsável
-                    abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao);
+                    abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao, precosDiarios, total);
                 } else {
-                    // Se o solicitante não é o hóspede, abrir o modal para adicionar novo responsável
-                    abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao);
+                    abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao, precosDiarios, total);
                 }
             });
         });
@@ -546,30 +661,47 @@
         console.log(`Quarto ${quartoId} removido do carrinho`);
     }
 
-    document.getElementById('saveResponsavel').addEventListener('click', function() {
-        const nome = document.getElementById('responsavelNome').value;
-        const cpf = document.getElementById('responsavelCpf').value;
-        const quartoId = document.getElementById('responsavelModal').getAttribute('data-quarto-id');
-        const quartoNumero = document.getElementById('responsavelModal').getAttribute('data-quarto-numero');
-        const quartoAndar = document.getElementById('responsavelModal').getAttribute('data-quarto-andar');
-        const quartoClassificacao = document.getElementById('responsavelModal').getAttribute('data-quarto-classificacao');
-        const tipoAcomodacao = document.querySelector('select[name="tipo_acomodacao"]').value;
-
-        const dataCheckin = document.querySelector('input[name="data_entrada"]').value;
-        const dataCheckout = document.querySelector('input[name="data_saida"]').value;
-        const cpfJaExiste = responsaveis.some(responsavel => responsavel.cpf === cpf);
-
-        if (cpfJaExiste) {
-            alert('CPF já está atrelado a um quarto, informe um novo.');
-        } else {
-            responsaveis.push({ quartoId, nome, cpf });
-            adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout);
-            
-            $('#responsavelModal').modal('hide');
-            document.querySelector('.modal-footer .btn.btn-secondary').click();  
-        }
-    });
-})
+        document.getElementById('saveResponsavel').addEventListener('click', function() {
+            const nome = document.getElementById('responsavelNome').value;
+            const cpf = document.getElementById('responsavelCpf').value;
+            const quartoId = document.getElementById('responsavelModal').getAttribute('data-quarto-id');
+            const quartoNumero = document.getElementById('responsavelModal').getAttribute('data-quarto-numero');
+            const quartoAndar = document.getElementById('responsavelModal').getAttribute('data-quarto-andar');
+            const quartoClassificacao = document.getElementById('responsavelModal').getAttribute('data-quarto-classificacao');
+            const tipoAcomodacao = document.querySelector('select[name="tipo_acomodacao"]').value;
+    
+            const dataCheckin = document.querySelector('input[name="data_entrada"]').value;
+            const dataCheckout = document.querySelector('input[name="data_saida"]').value;
+            const precosDiarios = JSON.parse(document.getElementById('responsavelModal').getAttribute('data-precos-diarios'));
+            const total = document.getElementById('responsavelModal').getAttribute('data-total');
+    
+            const cpfJaExiste = responsaveis.some(responsavel => responsavel.cpf === cpf);
+    
+            console.log('foi aq')
+            if (cpfJaExiste) {
+                alert('CPF já está atrelado a um quarto, informe um novo.');
+            } else {
+                console.log(precosDiarios, total);
+                responsaveis.push({ quartoId, nome, cpf });
+                adicionarQuartoAoCart(
+                    quartoId, 
+                    quartoNumero, 
+                    quartoAndar, 
+                    quartoClassificacao, 
+                    tipoAcomodacao, 
+                    nome, 
+                    cpf, 
+                    dataCheckin, 
+                    dataCheckout, 
+                    precosDiarios, 
+                    total
+                );
+                
+                $('#responsavelModal').modal('hide');
+                document.querySelector('.modal-footer .btn.btn-secondary').click();  
+            }
+        });
+    })
 
     </script>
 

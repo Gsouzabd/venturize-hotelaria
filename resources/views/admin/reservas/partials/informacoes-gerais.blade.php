@@ -251,6 +251,8 @@
         $('#cpf').mask('000.000.000-00', {reverse: true});
         $('#responsavelCpf').mask('000.000.000-00', {reverse: true});
         $('#responsavelReservaCpf').mask('000.000.000-00', {reverse: true});
+        $('#modal_telefone').mask('00 00000-0000', {reverse: true});
+
 
 
         buscarCpfButton.addEventListener('click', function () {

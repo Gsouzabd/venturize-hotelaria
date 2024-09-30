@@ -83,4 +83,10 @@ class Reserva extends Model
         return $this->belongsTo(Empresa::class, 'empresa_solicitante_id');
     }
 
+
+    public function pagamentos()
+    {
+        return $this->hasMany(Pagamento::class);
+    }
+
 }

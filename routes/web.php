@@ -59,6 +59,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/buscar-empresa/{cnpj}', [EmpresaController::class, 'buscarPorCnpj'])->name('buscar.empresa');
         
         Route::post('/verificar-disponibilidade', [DisponibilidadeController::class, 'verificar'])->name('verificar.disponibilidade');
-
+        Route::get('/quartos/{quartoId}/planos-preco', [DisponibilidadeController::class, 'obterPlanosPrecos'])->name('obter-planos-preco');    
     });
 });

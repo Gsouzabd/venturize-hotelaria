@@ -3,6 +3,9 @@ form.edit-form button[type="submit"] {
     background: green;
     padding: 8px 30px;
 }
+form.edit-form button[type="submit"]:disabled {
+    background: gray !important;
+}
 
 .notice-error {
     background: #ec4e4e;
@@ -569,4 +572,12 @@ a.reserva-dia.intermediario {
     border-right: 0px;
     border-radius: 0px;
     width: 150%;
+}
+
+.subtotal-forday {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #dddddd;
+    border-radius: 5px;
+    padding: 5px;
 }

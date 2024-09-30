@@ -24,8 +24,8 @@
             {{ $slot }}
             <div class="col-md-3" id="cart-col" style="display: none">
                 @include('admin.reservas.partials.cart-preview')
-                <div class="text-right mt-3 d-flex justify-center" >
-                    <x-admin.submit-btn :title="$submitTitle" style="width: 45%"/>
+                <div class="text-right mt-3 d-flex justify-center">
+                    <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled=true/>
                     @if($backRoute)
                         <x-admin.cancel-btn :back-route="$backRoute" />
                     @endif
