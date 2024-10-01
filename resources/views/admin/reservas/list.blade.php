@@ -77,7 +77,7 @@ use App\Models\Reserva;
                     <td>{{ $reserva->id }}</td>
                     <td>{{ $reserva->clienteSolicitante->nome}}</td>
                     <td>{{ $reserva->quarto->numero }}</td>
-                    <td>{{ $reserva->clienteResponsavel->nome  }}</td>
+                    <td>{{ $reserva->clienteResponsavel ? $reserva->clienteResponsavel->nome : "Grupo de ".$reserva->clienteSolicitante->nome  }}</td>
                     <td>
                         <span class="status-reserva" style="background: {{Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}};">
                             {{ $reserva->situacao_reserva }}

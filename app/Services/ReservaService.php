@@ -70,10 +70,14 @@ class ReservaService
         // Iterar sobre cada quarto e criar uma reserva
         foreach ($data['quartos'] as $quartoId => $quartoData) {
             // Buscar ou criar o cliente responsável pelo quarto
-            $clienteResponsavel = Cliente::firstOrCreate(
-                ['cpf' => $quartoData['responsavel_cpf']],
-                ['nome' => $quartoData['responsavel_nome']]
-            );
+            $clienteResponsavel = null;
+            
+            if (!empty($quartoData['responsavel_cpf']) && !empty($quartoData['responsavel_nome'])) {
+                $clienteResponsavel = Cliente::firstOrCreate(
+                    ['cpf' => $quartoData['responsavel_cpf']],
+                    ['nome' => $quartoData['responsavel_nome']]
+                );
+            }
      
             
             $dataCheckin = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkin'])
@@ -93,13 +97,13 @@ class ReservaService
                 'data_checkout' => $dataCheckout,
                 'estrangeiro' => 'Não', 
                 'cliente_solicitante_id' => $clienteSolicitante->id,
-                'cliente_responsavel_id' => $clienteResponsavel->id,
+                'cliente_responsavel_id' => $clienteResponsavel ? $clienteResponsavel->id : null,
                 'quarto_id' => $quartoId,
                 'tipo_acomodacao' => $quartoData['tipo_acomodacao'],
                 'usuario_operador_id' => Auth::id(), // ou outro valor apropriado
                 'email_solicitante' => $data['email'],
                 'celular' => $data['celular'],
-                'email_faturamento' => $data['email_faturamento'],
+                'email_faturamento' => $data['email_faturamento'] ?? null,
                 'empresa_faturamento_id' => $data['empresa_faturamento_id'] ?? null,
                 'empresa_solicitante_id' => $data['empresa_solicitante_id'] ?? null,
                 'observacoes' => $data['observacoes'],

@@ -69,11 +69,6 @@
                 <x-admin.label label="Email" required/>
                 <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
             </x-admin.field>
-        
-            <x-admin.field cols="6">
-                <x-admin.label label="Email de Faturamento"/>
-                <x-admin.text name="email_faturamento" id="email_faturamento" :value="old('email_faturamento', $reserva->email_faturamento ?? '')"/>
-            </x-admin.field>
         </x-admin.field-group>
         
         <x-admin.field-group class="pj-hide">

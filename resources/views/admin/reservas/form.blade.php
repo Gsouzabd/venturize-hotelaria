@@ -17,12 +17,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link disabled" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
+                    <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
                         <i class="fas fa-calendar-alt"></i> Disponibilidade
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
+                <li class="nav-item ">
+                    <a class="nav-link {{$edit ? '' : 'disabled'}}" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
                         <i class="fas fa-credit-card"></i> Pagamento
                     </a>
                 </li>
@@ -119,7 +119,43 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            
             localStorage.removeItem('cart');
+
+            // {{-- Script do cart quando for tela de edição --}}
+            if (window.location.href.indexOf('edit') > -1) {
+                const quartoId = "{{ $reserva->quarto_id ?? '' }}";
+                const dataCheckin = "{{ $reserva->data_checkin ?? '' }}";
+                const dataCheckout = "{{ $reserva->data_checkout ?? '' }}";
+
+                obterPlanosPrecos(quartoId, dataCheckin, dataCheckout).then(precosData => {
+                    const precosDiarios = Object.entries(precosData.precosDiarios).map(([data, preco]) => ({
+                        data: new Date(data).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        }),
+                        preco: parseFloat(preco).toFixed(2)
+                    }));
+                    const total = parseFloat(precosData.total).toFixed(2);
+
+                    adicionarQuartoAoCart(
+                        quartoId,
+                        "{{ $reserva->quarto->numero ?? '' }}",
+                        "{{ $reserva->quarto->andar ?? '' }}",
+                        "{{ $reserva->quarto->classificacao ?? '' }}",
+                        "{{ $reserva->tipo_acomodacao ?? '' }}",
+                        "{{ $reserva->clienteResponsavel->nome ?? '' }}",
+                        "{{ $reserva->clienteResponsavel->cpf ?? '' }}",
+                        dataCheckin,
+                        dataCheckout,
+                        precosDiarios,
+                        total
+                    );
+                }).catch(error => {
+                    console.error('Erro ao obter planos de preços:', error);
+                });
+            }
             const saveInfoButton = document.getElementById('saveInfoButton');
             const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
             const formFields = document.querySelectorAll('#informacoes-gerais input, #informacoes-gerais textarea, #informacoes-gerais select');
@@ -309,12 +345,15 @@
         async function adicionarQuartoAoCart(quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout) {
             const precosData = await obterPlanosPrecos(quartoId, dataCheckin, dataCheckout);
             const precosDiarios = precosData.precosDiarios;
-            const total = precosData.total;
+            const total = parseFloat(precosData.total); // Garantir que total seja um número
+            
+
+            console.log(precosDiarios);
             const isFormattedDate = (dateStr) => {
                 const regex = /^\d{2}-\d{2}-\d{4}$/;
                 return regex.test(dateStr);
             };
-
+    
             // Função para formatar a data de yyyy-mm-dd hh:mm:ss para dd-mm-yyyy
             const formatDate = (dateStr) => {
                 if (dateStr.includes('-')) {
@@ -327,15 +366,22 @@
                 }
                 return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
             };
+    
             // Verificar e formatar as datas se necessário
             var formattedCheckin = isFormattedDate(dataCheckin) ? dataCheckin : formatDate(dataCheckin);
             var formattedCheckout = isFormattedDate(dataCheckout) ? dataCheckout : formatDate(dataCheckout);
+    
             console.log('Adicionando quarto ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout, precosDiarios, total);
     
+            // Atualizar o localStorage do carrinho
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
             cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, dataCheckin, dataCheckout, precosDiarios, total });
             localStorage.setItem('cart', JSON.stringify(cart));
     
+            // Atualizar o total geral
+            atualizarValorTotalDoCart();
+            console.log(precosDiarios)
+            // Adicionar o item ao carrinho visualmente
             const cartItems = document.getElementById('cart-items');
             const cartItem = document.createElement('div');
             cartItem.classList.add('cart-item');
@@ -366,7 +412,7 @@
                             <option value="Solteiro" ${tipoAcomodacao === 'Solteiro' || tipoAcomodacao === '' ? 'selected' : ''}>
                                 Solteiro
                             </option>   
-                                <option value="Casal" ${tipoAcomodacao === 'Casal' ? 'selected' : ''}>Casal</option>
+                            <option value="Casal" ${tipoAcomodacao === 'Casal' ? 'selected' : ''}>Casal</option>
                         </select>
                     </div>
                     <div class="info">
@@ -389,98 +435,85 @@
                         <span style="float:right;">${formattedCheckout}</span>
                         <input type="hidden" name="quartos[${quartoId}][data_checkout]" value="${formattedCheckout}">
                     </div>
-
+    
                     <div class="info">
                         <i class="icon fas fa-calendar-alt"></i>
                         <strong>Preços Diários:</strong>
-                        ${Object.entries(precosDiarios).map(([data, preco]) => `<div class='subtotal-forday'><span>${formatDate(data)}:</span> <span>R$ ${preco.replace('.', ',')}</span></div>`).join('')}
+                        ${Object.entries(precosDiarios).map(([data, preco]) => `<div class='subtotal-forday'><span>${formatDate(data)}:</span> <span>R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}</span></div>`).join('')}
                     </div>
                     <div class="info">
                         <i class="icon fas fa-dollar-sign"></i>
                         <strong>Valor Total:</strong> 
-                        <span style="float:right;">R$ ${total.replace('.', ',')}</span>
-                        <input type="hidden" name="quartos[${quartoId}][total]" value="${total}">
+                        <span style="float:right;">R$ ${total.toFixed(2).replace('.', ',')}</span>
+                        <input type="hidden" name="quartos[${quartoId}][total]" value="${total.toFixed(2)}">
                     </div>
                     <a class="btn btn-danger remove-quarto" data-quarto-id="${quartoId}">Remover</a>
                 </div>
             `;
     
             cartItems.appendChild(cartItem);
+    
             $('.cart-items-cpf').mask('000.000.000-00', {reverse: true});
+    
             // Desabilitar o botão "Selecionar Quarto"
             const selectButton = document.querySelector(`.select-quarto[data-quarto-id="${quartoId}"]`);
             if (selectButton) {
                 selectButton.classList.add('disabled');
                 selectButton.setAttribute('disabled', 'disabled');
             }
+    
             // Adicionar event listener para remover o quarto do carrinho
             cartItem.querySelector('.remove-quarto').addEventListener('click', function() {
                 const cartItem = this.closest('.cart-item');
                 const quartoId = this.getAttribute('data-quarto-id');
-                console.log('quartoId', quartoId);
-                
-                
                 cartItem.remove();
                 removerQuartoDoCart(quartoId);
-
+                
                 responsaveis = responsaveis.filter(responsavel => responsavel.quartoId !== quartoId);
-
+    
                 // Reabilitar o botão "Selecionar Quarto"
                 const selectButton = document.querySelector(`.select-quarto[data-quarto-id="${quartoId}"]`);
                 if (selectButton) {
                     selectButton.classList.remove('disabled');
                     selectButton.removeAttribute('disabled');
                 }
+    
+                // Atualizar o total geral após a remoção
+                atualizarValorTotalDoCart();
             });
+    
+            // Exibir o Cart Preview com animação
+            const cartColumn = document.getElementById('cart-col');
+            cartColumn.style.display = 'block'; // Torna o elemento visível
+            cartColumn.classList.add('fade-in-right'); // Adiciona a animação de entrada
+        }
+    
+        // Função para remover o quarto do carrinho
+        function removerQuartoDoCart(quartoId) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart = cart.filter(item => item.quartoId !== quartoId);
+            localStorage.setItem('cart', JSON.stringify(cart));
+    
+            // Atualizar o total geral após a remoção
+            atualizarValorTotalDoCart();
+        }
+    
+        // Função para atualizar o valor total do carrinho
+        function atualizarValorTotalDoCart() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let totalGeral = cart.reduce((acc, item) => acc + parseFloat(item.total), 0);
+    
+            // Verifica se o elemento total-cart-value existe
+            const totalField = document.getElementById('total-cart-value');
+            if (totalField) {
+                // Atualiza o campo do total no carrinho se ele existir
+                totalField.innerHTML = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
+            } else {
+                console.warn('Elemento com ID total-cart-value não encontrado no DOM');
+            }
+        }
 
-        // Exibir o Cart Preview com animação
-        const cartColumn = document.getElementById('cart-col');
-        cartColumn.style.display = 'block'; // Torna o elemento visível
-        cartColumn.classList.add('fade-in-right'); // Adiciona a animação de entrada
-    }
 
-    // Função para remover o quarto do carrinho
-    function removerQuartoDoCart(quartoId) {
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        cart = cart.filter(item => item.quartoId !== quartoId);
-        localStorage.setItem('cart', JSON.stringify(cart));
-
-    }
-
-    // {{-- Script do cart quando for tela de edição --}}
-    if (window.location.href.indexOf('edit') > -1) {
-        const quartoId = "{{ $reserva->quarto_id ?? '' }}";
-        const dataCheckin = "{{ $reserva->data_checkin ?? '' }}";
-        const dataCheckout = "{{ $reserva->data_checkout ?? '' }}";
-
-        obterPlanosPrecos(quartoId, dataCheckin, dataCheckout).then(precosData => {
-            const precosDiarios = Object.entries(precosData.precosDiarios).map(([data, preco]) => ({
-                data: new Date(data).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                }),
-                preco: parseFloat(preco).toFixed(2)
-            }));
-            const total = parseFloat(precosData.total).toFixed(2);
-
-            adicionarQuartoAoCart(
-                quartoId,
-                "{{ $reserva->quarto->numero ?? '' }}",
-                "{{ $reserva->quarto->andar ?? '' }}",
-                "{{ $reserva->quarto->classificacao ?? '' }}",
-                "{{ $reserva->tipo_acomodacao ?? '' }}",
-                "{{ $reserva->clienteResponsavel->nome ?? '' }}",
-                "{{ $reserva->clienteResponsavel->cpf ?? '' }}",
-                dataCheckin,
-                dataCheckout,
-                precosDiarios,
-                total
-            );
-        }).catch(error => {
-            console.error('Erro ao obter planos de preços:', error);
-        });
-    }
 
     function abrirModal(quartoId, quartoNumero, quartoAndar, quartoClassificacao, precosDiarios, total) {
         document.getElementById('responsavelModal').setAttribute('data-quarto-id', quartoId);
@@ -574,15 +607,19 @@
                 }
             }
 
+            console.log(precosDiarios);
+
             for (const [data, preco] of Object.entries(precosDiarios)) {
                 if (index < count - 1) {
                     total += parseFloat(preco);
-                    let formattedDate = new Date(data).toLocaleDateString('pt-BR', {
+                    let dateParts = data.split('-');
+                    let formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]).toLocaleDateString('pt-BR', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric'
                     });
-                    precosHTML += `<div>${formattedDate}: R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}</div>`;
+                    console.log(formattedDate);
+                    precosHTML += `<div class="d-flex justify-content-between"><span>${formattedDate}:</span> <span>R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}</span></div>`;
                     precosDiariosArray.push({ data: formattedDate, preco: parseFloat(preco).toFixed(2) });
                 }
                 index++;

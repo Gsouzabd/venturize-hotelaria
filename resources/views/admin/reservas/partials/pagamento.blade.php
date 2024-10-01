@@ -1,50 +1,33 @@
 <div class="tab-pane fade" id="pagamento" role="tabpanel" aria-labelledby="pagamento-tab">
     <h3>Detalhes do Pagamento</h3>
     <p>Selecione o método de pagamento e preencha os detalhes abaixo.</p>
-
     <x-admin.field-group>
         <!-- Método de Pagamento -->
-        <x-admin.field cols="6">
-            <x-admin.label label="Método de Pagamento"/>
-            <x-admin.select name="metodo_pagamento" id="metodo_pagamento" class="form-control"
-                :items="['PIX' => 'Pix', 'DINHEIRO' => 'Dinheiro', 'CARTAO_CREDITO' => 'Cartão de Crédito', 'TRANSFERENCIA' => 'Transferência Bancária']"
-                selectedItem="{{ old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '') }}"/>
+        <x-admin.field cols="12">
+            <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
+            <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
+                @php
+                    $metodosPagamento = [
+                        'PIX' => ['label' => 'Pix', 'icon' => 'fas fa-qrcode'],
+                        'DINHEIRO' => ['label' => 'Dinheiro', 'icon' => 'fas fa-money-bill-wave'],
+                        'CARTAO_CREDITO' => ['label' => 'Cartão de Crédito', 'icon' => 'fas fa-credit-card'],
+                        'TRANSFERENCIA' => ['label' => 'Transferência Bancária', 'icon' => 'fas fa-university']
+                    ];
+                    $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
+                @endphp
+    
+                @foreach($metodosPagamento as $key => $metodo)
+                    <div class="form-check metodo-pagamento">
+                        <input class="form-check-input" type="radio" name="metodo_pagamento" id="metodo_pagamento_{{ $key }}" value="{{ $key }}"
+                            {{ $key == $selectedMetodo ? 'checked' : '' }}>
+                        <label class="form-check-label" for="metodo_pagamento_{{ $key }}">
+                            <i class="{{ $metodo['icon'] }}"></i> {{ $metodo['label'] }}
+                        </label>
+                    </div>
+                @endforeach
+            </div>
         </x-admin.field>
     </x-admin.field-group>
-
-    <x-admin.field-group>
-        <!-- Valor Total -->
-        <x-admin.field cols="6">
-            <x-admin.label label="Valor Total"/>
-            <x-admin.text id="valor_total" name="valor_total" class="form-control"
-                value="{{ old('valor_total', $reserva->pagamento->valor_total ?? 0) }}" placeholder="Valor total da reserva"/>
-        </x-admin.field>
-
-        <!-- Valor Sinal -->
-        <x-admin.field cols="6">
-            <x-admin.label label="Valor Sinal"/>
-            <x-admin.text id="valor_sinal" name="valor_sinal" class="form-control"
-                value="{{ old('valor_sinal', $reserva->pagamento->valor_sinal ?? 0) }}" placeholder="Valor sinal (se houver pagamento parcial)"/>
-        </x-admin.field>
-    </x-admin.field-group>
-
-    <x-admin.field-group>
-        <!-- Valor Pago -->
-        <x-admin.field cols="6">
-            <x-admin.label label="Valor Pago"/>
-            <x-admin.text id="valor_pago" name="valor_pago" class="form-control"
-                value="{{ old('valor_pago', $reserva->pagamento->valor_pago ?? 0) }}" placeholder="Valor já pago"/>
-        </x-admin.field>
-
-        <!-- Status do Pagamento -->
-        <x-admin.field cols="6">
-            <x-admin.label label="Status do Pagamento"/>
-            <x-admin.select name="status_pagamento" id="status_pagamento" class="form-control"
-                :items="['PAGO' => 'Pago', 'PARCIAL' => 'Parcialmente Pago', 'PENDENTE' => 'Pendente']"
-                selectedItem="{{ old('status_pagamento', $reserva->pagamento->status_pagamento ?? 'PENDENTE') }}"/>
-        </x-admin.field>
-    </x-admin.field-group>
-
     <x-admin.field-group>
         <!-- Campos específicos de acordo com o método de pagamento -->
         <div id="pixDetails" class="d-none">
@@ -69,19 +52,209 @@
             </x-admin.field>
         </div>
     </x-admin.field-group>
+
+
+    <div id="valor-recebido-div" class="d-none">
+        <h5><i class="fas fa-receipt"></i> Recebimentos</h5>
+
+        <x-admin.field-group class="d-flex justify-content-center">
+            <div class="row">
+                <!-- Valor Sinal -->
+                <x-admin.field cols="4">
+                    <x-admin.label label="Incluir Valor Recebido"/>
+                    <div class="input-group mb-3">
+                        <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
+                            value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
+                        </div>
+                    </div>
+                </x-admin.field>
+
+                <!-- Lista de Valores Recebidos -->
+                <x-admin.field cols="8">
+                    <x-admin.label label="Valores Recebidos"/>
+                    <table id="valores-recebidos-table" class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Valor</th>
+                                <th>Método de Pagamento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(old('valores_recebidos', $reserva->pagamento->valores_recebidos ?? []))
+                                @foreach(old('valores_recebidos', $reserva->pagamento->valores_recebidos ?? []) as $index => $valor)
+                                    <tr>
+                                        <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
+                                        <td>{{ old('metodos_pagamento.' . $index, $reserva->pagamento->metodos_pagamento[$index] ?? '') }}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
+                                            <input type="hidden" name="valores_recebidos[]" value="{{ $valor }}">
+                                            <input type="hidden" name="metodos_pagamento[]" value="{{ old('metodos_pagamento.' . $index, $reserva->pagamento->metodos_pagamento[$index] ?? '') }}">
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
+                        </tbody>
+                    </table>
+                </x-admin.field>
+            </div>
+        
+        </x-admin.field-group>
+
+    </div>
+
+    <x-admin.field-group id="legenda-pagamento">
+        <!-- Valor Total -->
+        <x-admin.field cols="3" id="valor-reserva">
+            <x-admin.label label='<i class="fas fa-cube"></i> Valor Total' />
+            <div class="input-group">
+                <x-admin.text id="valor_total" name="valor_total" class="form-control"
+                    value="{{ old('valor_total', $reserva->pagamento->valor_total ?? 0) }}" placeholder="Valor total da reserva" readonly/>
+            </div>
+        </x-admin.field>
+    
+        <!-- Valor Pago -->
+        <x-admin.field cols="3" id="total-pago">
+            <x-admin.label label=' <i class="fas fa-handshake"></i> Valor Pago' />
+            <x-admin.text id="valor_pago" name="valor_pago" class="form-control"
+                value="{{ old('valor_pago', $reserva->pagamento->valor_pago ?? 0) }}" placeholder="Valor já pago" readonly/>
+        </x-admin.field>
+    
+        <!-- Valor Pendente -->
+        <x-admin.field cols="3" id="valor-pendente">
+            <x-admin.label label='<i class="fas fa-exclamation-circle"></i> Valor Pendente' />
+            <x-admin.text id="valor_pendente" name="valor_pendente" class="form-control"
+                value="{{ old('valor_pendente', $reserva->pagamento ? ($reserva->pagamento->valor_total - $reserva->pagamento->valor_pago) : 0) }}" placeholder="Valor pendente" readonly/>        </x-admin.field>
+    
+        <!-- Status do Pagamento -->
+        <x-admin.field cols="3">
+            <x-admin.label label="Status do Pagamento"/>
+            <x-admin.select name="status_pagamento" id="status_pagamento" class="form-control"
+                :items="['PAGO' => 'Pago', 'PARCIAL' => 'Parcialmente Pago', 'PENDENTE' => 'Pendente']"
+                selectedItem="{{ old('status_pagamento', $reserva->pagamento->status_pagamento ?? 'PENDENTE') }}" />
+        </x-admin.field>
+    </x-admin.field-group>
+
 </div>
 
-<!-- Adicione scripts para mostrar campos com base no método de pagamento -->
 <script>
-    document.querySelector('select[name="metodo_pagamento"]').addEventListener('change', function () {
-        var metodo = this.value;
-        document.getElementById('pixDetails').classList.add('d-none');
-        document.getElementById('cartaoCreditoDetails').classList.add('d-none');
+    document.addEventListener('DOMContentLoaded', function () {
+        const addValorRecebidoButton = document.getElementById('add-valor-recebido');
+        const valorRecebidoInput = document.getElementById('valor_recebido');
+        const valoresRecebidosTable = document.getElementById('valores-recebidos-table').querySelector('tbody');
+        const valorPagoInput = document.getElementById('valor_pago');
+        const valorTotalInput = document.getElementById('valor_total');
+        const valorPendenteInput = document.getElementById('valor_pendente');
+        const statusPagamentoSelect = document.querySelector('select[name="status_pagamento"]');
 
-        if (metodo === 'PIX') {
-            document.getElementById('pixDetails').classList.remove('d-none');
-        } else if (metodo === 'CARTAO_CREDITO') {
-            document.getElementById('cartaoCreditoDetails').classList.remove('d-none');
+        function atualizarValores() {
+            let totalPago = 0;
+            document.querySelectorAll('input[name="valores_recebidos[]"]').forEach(function (input) {
+                totalPago += parseFloat(input.value);
+            });
+            valorPagoInput.value = totalPago.toFixed(2).replace('.', ',');
+
+            const valorTotal = parseFloat(valorTotalInput.value.replace(',', '.')) || 0;
+            const valorPendente = valorTotal - totalPago;
+            valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
+
+            // Atualizar status de pagamento
+            if (totalPago >= valorTotal) {
+                statusPagamentoSelect.value = 'PAGO';
+            } else if (totalPago > 0) {
+                statusPagamentoSelect.value = 'PARCIAL';
+            } else {
+                statusPagamentoSelect.value = 'PENDENTE';
+            }
         }
+
+        addValorRecebidoButton.addEventListener('click', function () {
+            const valor = parseFloat(valorRecebidoInput.value);
+            const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value;
+            if (!isNaN(valor) && valor > 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
+                    <td>${metodoPagamento}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
+                        <input type="hidden" name="valores_recebidos[]" value="${valor}">
+                        <input type="hidden" name="metodos_pagamento[]" value="${metodoPagamento}">
+                    </td>
+                `;
+                valoresRecebidosTable.appendChild(row);
+                valorRecebidoInput.value = '';
+
+                atualizarValores();
+
+                row.querySelector('.remove-valor-recebido').addEventListener('click', function () {
+                    row.remove();
+                    atualizarValores();
+                });
+            }
+        });
+
+        document.querySelectorAll('.remove-valor-recebido').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const row = this.closest('tr');
+                row.remove();
+                atualizarValores();
+            });
+        });
+
+        atualizarValores();
     });
+    document.querySelectorAll('input[name="metodo_pagamento"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var metodo = this.value;
+            // document.getElementById('pixDetails').classList.add('d-none');
+            // document.getElementById('cartaoCreditoDetails').classList.add('d-none');
+            document.getElementById('valor-recebido-div').classList.remove('d-none');
+
+            // if (metodo === 'PIX') {
+            //     document.getElementById('pixDetails').classList.remove('d-none');
+            // } else if (metodo === 'CARTAO_CREDITO') {
+            //     document.getElementById('cartaoCreditoDetails').classList.remove('d-none');
+            // }
+        });
+    });
+
+    // Função para observar mudanças na classe do elemento
+    function observeClassChanges(element, className, callback) {
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.attributeName === 'class') {
+                    const hasClass = mutation.target.classList.contains(className);
+                    if (hasClass) {
+                        callback();
+                    }
+                }
+            });
+        });
+
+        observer.observe(element, { attributes: true });
+    }
+
+    // Observar mudanças na classe do elemento a#pagamento-tab
+    const pagamentoTab = document.querySelector('a#pagamento-tab');
+    if (pagamentoTab) {
+        observeClassChanges(pagamentoTab, 'active', atualizarTotal);
+    }
+
+    function atualizarTotal() {
+        // Extrair o valor numérico do texto dentro do span
+        var valorTotalText = document.getElementById('total-cart-value').innerText;
+        var valorTotal = parseFloat(valorTotalText.replace('R$', '').replace('.', '').replace(',', '.'));
+
+        // Atualizar o campo de valor total
+        document.getElementById('valor_total').value = valorTotal.toFixed(2);
+
+         // Remover o atributo disabled do botão de envio
+         if(document.querySelector('form.edit-form button[type="submit"]:disabled')){
+            document.querySelector('form.edit-form button[type="submit"]:disabled').removeAttribute('disabled');
+
+         }
+    }
 </script>

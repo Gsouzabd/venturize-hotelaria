@@ -46,8 +46,8 @@ class ReservaRequest extends FormRequest
             'quartos.*.data_checkin' => 'required',
             'quartos.*.data_checkout' => 'required|after_or_equal:quartos.*.data_checkin',
             
-            'quartos.*.responsavel_nome' => 'required|string|max:255',
-            'quartos.*.responsavel_cpf' => ['required', 'string', 'max:14', new Cpf],
+            'quartos.*.responsavel_nome' => 'nullable|string|max:255',
+            'quartos.*.responsavel_cpf' => ['nullable','string', 'max:14', new Cpf],
         ];
     }
 

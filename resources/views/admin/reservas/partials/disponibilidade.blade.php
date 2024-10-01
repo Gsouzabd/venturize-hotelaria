@@ -94,6 +94,7 @@
         
         // Remove a classe ativa da aba atual e ativa a aba pagamento
         disponibilidadeTab.classList.remove('active');
+        pagamentoTab.classList.remove('disabled');
         pagamentoTab.classList.add('active');
         
         // Ativa o conteúdo da aba de pagamento

@@ -102,7 +102,8 @@
                                             
                                             "
                                             style="flex: 1;">
-                                                {{ $diaAtual == $dataCheckin ? $reservaNoDia->clienteResponsavel->nome : '' }}
+                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? $reservaNoDia->clienteResponsavel->nome : "Grupo de ".$reservaNoDia->clienteSolicitante->nome) : '' }}
+
                                         </a>
                                     @endforeach
                                 </td>
