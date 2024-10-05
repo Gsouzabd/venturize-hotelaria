@@ -26,8 +26,10 @@ class Reserva extends Model
         'empresa_solicitante_id',
         'observacoes',
         'observacoes_internas',
+        'adultos', // Novo campo
+        'criancas_ate_7', // Novo campo
+        'criancas_mais_7', // Novo campo
     ];
-
 
     const TIPOSRESERVA = [
         'INDIVIDUAL' => 'Individual',
@@ -53,19 +55,16 @@ class Reserva extends Model
     public function clienteSolicitante()
     {
         return $this->belongsTo(Cliente::class, 'cliente_solicitante_id');
-    
     }
 
     public function clienteResponsavel()
     {
         return $this->belongsTo(Cliente::class, 'cliente_responsavel_id');
-    
     }
 
     public function quarto()
     {
         return $this->belongsTo(Quarto::class, 'quarto_id');
-    
     }
 
     public function operador()
@@ -82,7 +81,6 @@ class Reserva extends Model
     {
         return $this->belongsTo(Empresa::class, 'empresa_solicitante_id');
     }
-
 
     public function pagamentos()
     {

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use Carbon\Carbon;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ReservaService
 {
-    public function criarOuAtualizarReserva(array $data)
+    public function criarOuAtualizarReserva(array $data): Reserva
     {
         // Verificar e processar CNPJ do solicitante
         if (!empty($data['cnpj_solicitante'])) {
@@ -38,8 +39,7 @@ class ReservaService
                     'nome_fantasia' => $data['nome_fantasia_faturamento'] ?? '',
                     'razao_social' => $data['razao_social'] ?? '',
                     'cnpj' => $data['cnpj_faturamento'],
-                    'cep' => $data['CEP_faturamento'] ?? '',
-                    
+                    'cep' => $data['cep_faturamento'] ?? '',
                     'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
                     'email' => $data['email_empresa_faturamento'] ?? '',
                     'telefone' => $data['telefone_faturamento'] ?? '',
@@ -52,7 +52,7 @@ class ReservaService
         if (!empty($data['data_nascimento'])) {
             $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
         }
-        
+
         // Buscar ou criar o cliente solicitante
         $clienteSolicitante = Cliente::updateOrCreate(
             ['cpf' => $data['cpf']],
@@ -71,23 +71,21 @@ class ReservaService
         foreach ($data['quartos'] as $quartoId => $quartoData) {
             // Buscar ou criar o cliente responsável pelo quarto
             $clienteResponsavel = null;
-            
+
             if (!empty($quartoData['responsavel_cpf']) && !empty($quartoData['responsavel_nome'])) {
                 $clienteResponsavel = Cliente::firstOrCreate(
                     ['cpf' => $quartoData['responsavel_cpf']],
                     ['nome' => $quartoData['responsavel_nome']]
                 );
             }
-     
-            
+
             $dataCheckin = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkin'])
                 ->setTime(14, 0)
-                ->format('Y-m-d H:i:s');          
+                ->format('Y-m-d H:i:s');
             $dataCheckout = Carbon::createFromFormat('d-m-Y', $quartoData['data_checkout'])
                 ->setTime(12, 0)
-                ->format('Y-m-d H:i:s');         
-        
-                      
+                ->format('Y-m-d H:i:s');
+
             // Preparar os dados da reserva
             $reservaData = [
                 'tipo_reserva' => $data['tipo_reserva'] ?? null,
@@ -95,10 +93,13 @@ class ReservaService
                 'situacao_reserva' => $data['situacao_reserva'] ?? 'PRÉ RESERVA', // ou outro valor padrão
                 'data_checkin' => $dataCheckin,
                 'data_checkout' => $dataCheckout,
-                'estrangeiro' => 'Não', 
+                'estrangeiro' => 'Não',
                 'cliente_solicitante_id' => $clienteSolicitante->id,
                 'cliente_responsavel_id' => $clienteResponsavel ? $clienteResponsavel->id : null,
                 'quarto_id' => $quartoId,
+                'adultos' => $quartoData['adultos'],
+                'criancas_ate_7' => $quartoData['criancas_ate_7'],
+                'criancas_mais_7' => $quartoData['criancas_mais_7'],
                 'tipo_acomodacao' => $quartoData['tipo_acomodacao'],
                 'usuario_operador_id' => Auth::id(), // ou outro valor apropriado
                 'email_solicitante' => $data['email'],
@@ -110,14 +111,15 @@ class ReservaService
                 'observacoes_internas' => $data['observacoes_internas'],
             ];
 
-            
-
             // Criar ou atualizar a reserva
             if (isset($data['reserva_id'])) {
-                Reserva::findOrFail($data['reserva_id'])->update($reservaData);
+                $reserva = Reserva::findOrFail($data['reserva_id']);
+                $reserva->update($reservaData);
             } else {
-                Reserva::create($reservaData);
+                $reserva = Reserva::create($reservaData);
             }
+
+            return $reserva;
         }
     }
 }

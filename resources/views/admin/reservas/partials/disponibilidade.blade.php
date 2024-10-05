@@ -45,7 +45,7 @@
 
     <x-admin.field-group>
         <!-- Apartamentos -->
-        <x-admin.field cols="4">
+        <x-admin.field cols="3">
             <x-admin.label label="Apartamentos"/>
             <div class="input-group">
                 <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('apartamentos')">-</button>
@@ -55,7 +55,7 @@
         </x-admin.field>
 
         <!-- Adultos -->
-        <x-admin.field cols="4">
+        <x-admin.field cols="3">
             <x-admin.label label="Adultos"/>
             <div class="input-group">
                 <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('adultos')">-</button>
@@ -64,13 +64,23 @@
             </div>
         </x-admin.field>
 
-        <!-- Crianças -->
-        <x-admin.field cols="4">
-            <x-admin.label label="Crianças"/>
+        <!-- Crianças (Até 7 anos) -->
+        <x-admin.field cols="3">
+            <x-admin.label label="Crianças (Até 7 anos)"/>
             <div class="input-group">
-                <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('criancas')">-</button>
-                <input type="text" id="criancas" name="criancas" class="form-control text-center" :value="old('criancas', $reserva->criancas ?? 0)">
-                <button type="button" class="btn btn-outline-primary" onclick="incrementValue('criancas')">+</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('criancas_ate_7')">-</button>
+                <input type="text" id="criancas_ate_7" name="criancas_ate_7" class="form-control text-center" :value="old('criancas_ate_7', $reserva->criancas ?? 0)">
+                <button type="button" class="btn btn-outline-primary" onclick="incrementValue('criancas_ate_7')">+</button>
+            </div>
+        </x-admin.field>
+
+        <!-- Crianças (8 à 12 anos) -->
+        <x-admin.field cols="3">
+            <x-admin.label label="Crianças (8 à 12 anos)"/>
+            <div class="input-group">
+                <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('criancas_mais_7')">-</button>
+                <input type="text" id="criancas_mais_7" name="criancas_mais_7" class="form-control text-center" :value="old('criancas_mais_7', $reserva->criancas ?? 0)">
+                <button type="button" class="btn btn-outline-primary" onclick="incrementValue('criancas_mais_7')">+</button>
             </div>
         </x-admin.field>
     </x-admin.field-group>

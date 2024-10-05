@@ -5,27 +5,63 @@
         <!-- Método de Pagamento -->
         <x-admin.field cols="12">
             <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
-            <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
+                        <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
                 @php
-                    $metodosPagamento = [
-                        'PIX' => ['label' => 'Pix', 'icon' => 'fas fa-qrcode'],
-                        'DINHEIRO' => ['label' => 'Dinheiro', 'icon' => 'fas fa-money-bill-wave'],
-                        'CARTAO_CREDITO' => ['label' => 'Cartão de Crédito', 'icon' => 'fas fa-credit-card'],
-                        'TRANSFERENCIA' => ['label' => 'Transferência Bancária', 'icon' => 'fas fa-university']
-                    ];
                     $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
                 @endphp
-    
+            
                 @foreach($metodosPagamento as $key => $metodo)
                     <div class="form-check metodo-pagamento">
-                        <input class="form-check-input" type="radio" name="metodo_pagamento" id="metodo_pagamento_{{ $key }}" value="{{ $key }}"
+                        <input class="form-check-input metodo-principal" type="radio" name="metodo_pagamento" id="metodo_pagamento_{{ $key }}" value="{{ $key }}"
                             {{ $key == $selectedMetodo ? 'checked' : '' }}>
                         <label class="form-check-label" for="metodo_pagamento_{{ $key }}">
-                            <i class="{{ $metodo['icon'] }}"></i> {{ $metodo['label'] }}
+                            <i class="{{ $metodo['icon'] ?? '' }}"></i> {{ $metodo['label'] }}
                         </label>
                     </div>
                 @endforeach
             </div>
+            
+            @foreach($metodosPagamento as $key => $metodo)
+                @if (!empty($metodo['submetodos']))
+                    <div class="submetodos-container" id="submetodos_container_{{ $key }}" style="display: none;">
+                        <div class="submetodos" id="submetodos_{{ $key }}">
+                            <h5><i class="fa-solid fa-2"></i> Modalidade</h5>
+                            <select class="form-control" name="metodo_pagamento_{{ $key }}" id="metodo_pagamento_{{ $key }}">
+                                @foreach($metodo['submetodos'] as $subkey => $submetodo)
+                                    <option value="{{ $subkey }}" {{ $subkey == $selectedMetodo ? 'selected' : '' }}>
+                                        {{ $submetodo }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
+            
+            @push('scripts')
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const metodoPrincipalInputs = document.querySelectorAll('.metodo-principal');
+                        metodoPrincipalInputs.forEach(input => {
+                            input.addEventListener('change', function() {
+                                const selectedMetodo = this.value;
+                                document.querySelectorAll('.submetodos-container').forEach(submetodosContainer => {
+                                    submetodosContainer.style.display = 'none';
+                                });
+                                const selectedSubmetodosContainer = document.getElementById('submetodos_container_' + selectedMetodo);
+                                if (selectedSubmetodosContainer) {
+                                    selectedSubmetodosContainer.style.display = 'block';
+                                }
+                            });
+            
+                            // Trigger change event on page load if the input is checked
+                            if (input.checked) {
+                                input.dispatchEvent(new Event('change'));
+                            }
+                        });
+                    });
+                </script>
+            @endpush
         </x-admin.field>
     </x-admin.field-group>
     <x-admin.field-group>
@@ -53,7 +89,6 @@
         </div>
     </x-admin.field-group>
 
-
     <div id="valor-recebido-div" class="d-none">
         <h5><i class="fas fa-receipt"></i> Recebimentos</h5>
 
@@ -62,11 +97,11 @@
                 <!-- Valor Sinal -->
                 <x-admin.field cols="4">
                     <x-admin.label label="Incluir Valor Recebido"/>
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-3 mt-2">
                         <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
                             value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
-                        <div class="input-group-append">
-                            <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
+                        <div class="input-group-append w-100">
+                            <button class="btn btn-primary "  type="button" id="add-valor-recebido">Incluir</button>
                         </div>
                     </div>
                 </x-admin.field>
@@ -74,7 +109,7 @@
                 <!-- Lista de Valores Recebidos -->
                 <x-admin.field cols="8">
                     <x-admin.label label="Valores Recebidos"/>
-                    <table id="valores-recebidos-table" class="table table-striped">
+                    <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
                         <thead>
                             <tr>
                                 <th>Valor</th>
@@ -173,22 +208,27 @@
         addValorRecebidoButton.addEventListener('click', function () {
             const valor = parseFloat(valorRecebidoInput.value);
             const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value;
+            const submetodoPagamentoSelect = document.querySelector(`#submetodos_container_${metodoPagamento} select`);
+            const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
+            const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
+        
             if (!isNaN(valor) && valor > 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
-                    <td>${metodoPagamento}</td>
+                    <td>${metodoPagamento} ${submetodoPagamento ? ' - ' + submetodoPagamentoLabel : ''}</td>
                     <td>
                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
                         <input type="hidden" name="valores_recebidos[]" value="${valor}">
                         <input type="hidden" name="metodos_pagamento[]" value="${metodoPagamento}">
+                        <input type="hidden" name="submetodos_pagamento[]" value="${submetodoPagamento}">
                     </td>
                 `;
                 valoresRecebidosTable.appendChild(row);
                 valorRecebidoInput.value = '';
-
+        
                 atualizarValores();
-
+        
                 row.querySelector('.remove-valor-recebido').addEventListener('click', function () {
                     row.remove();
                     atualizarValores();
@@ -257,4 +297,34 @@
 
          }
     }
+</script>
+
+
+<script>
+    function formatarValoresRecebidos() {
+        const valoresRecebidos = document.getElementsByName('valores_recebidos[]');
+        const metodosPagamento = document.getElementsByName('metodos_pagamento[]');
+        const submetodosPagamento = document.getElementsByName('submetodos_pagamento[]');
+
+        const valoresFormatados = {};
+
+        for (let i = 0; i < valoresRecebidos.length; i++) {
+            const chave = `${metodosPagamento[i].value}-${submetodosPagamento[i].value}`;
+            const valor = parseFloat(valoresRecebidos[i].value);
+
+            if (!isNaN(valor)) {
+                valoresFormatados[chave] = valor;
+            }
+        }
+
+        const valoresRecebidosInput = document.createElement('input');
+        valoresRecebidosInput.type = 'hidden';
+        valoresRecebidosInput.name = 'valores_recebidos_formatados';
+        valoresRecebidosInput.value = JSON.stringify(valoresFormatados);
+
+        document.forms[0].appendChild(valoresRecebidosInput);
+    }
+
+    // Chame a função antes de enviar o formulário
+    document.forms[0].addEventListener('submit', formatarValoresRecebidos);
 </script>

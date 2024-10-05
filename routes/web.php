@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
+use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
@@ -28,6 +29,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'clientes' => ClienteController::class,
             'quartos' => QuartoController::class,
             'reservas' => ReservaController::class,
+            'quartos-opcoes-extras' => QuartoOpcaoExtraController::class,
         ];
 
         foreach ($prefixes as $prefix => $controller) {
@@ -60,5 +62,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         Route::post('/verificar-disponibilidade', [DisponibilidadeController::class, 'verificar'])->name('verificar.disponibilidade');
         Route::get('/quartos/{quartoId}/planos-preco', [DisponibilidadeController::class, 'obterPlanosPrecos'])->name('obter-planos-preco');    
+
+
+        
     });
 });

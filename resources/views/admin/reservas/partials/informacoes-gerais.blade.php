@@ -2,8 +2,8 @@
     <div id="informacoesGeraisForm">
         <h5><i class="fa-solid fa-1"></i>Sobre </h5>
         <x-admin.field-group>
-            {{-- <!-- Campo de Tipo -->
-            <x-admin.field cols="3">
+            <!-- Campo de Tipo -->
+            {{-- <x-admin.field cols="3">
                 <x-admin.label label="Tipo de Reserva" required/>
                 <x-admin.select name="tipo_reserva" id="tipo" class="form-control" required
                                 :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo']"

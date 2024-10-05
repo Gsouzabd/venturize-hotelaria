@@ -6,9 +6,11 @@ use App\Models\Quarto;
 use App\Models\Cliente;
 use App\Models\Reserva;
 use App\Models\Usuario;
+use App\Models\Pagamento;
 use Termwind\Components\Dd;
 use Illuminate\Http\Request;
 use App\Services\ReservaService;
+use App\Services\PagamentoService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReservaRequest;
 
@@ -16,11 +18,13 @@ class ReservaController extends Controller
 {
     protected $reservaService;
     protected $model;
+    protected $pagamentoService;
 
-    public function __construct(ReservaService $reservaService, Reserva $model)
+    public function __construct(ReservaService $reservaService, Reserva $model, PagamentoService $pagamentoService)
     {
-        $this->reservaService = $reservaService;
         $this->model = $model;
+        $this->reservaService = $reservaService;
+        $this->pagamentoService = $pagamentoService;
     }
 
     public function index(Request $request)
@@ -107,9 +111,9 @@ class ReservaController extends Controller
     public function mapa(Request $request)
     {
         // Validação e filtragem dos parâmetros
-        $dataInicial = $request->input('data_inicial') 
+        $dataInicial = $request->input('data_inicial')
         ? Carbon::parse($request->input('data_inicial'))->startOfWeek() 
-        : Carbon::today()->startOfWeek();
+        : Carbon::today();
         $intervaloDias = $request->input('intervalo', 30); // Intervalo padrão de 30 dias
         $intervaloDias = in_array($intervaloDias, [7, 15, 30, 60]) ? $intervaloDias : 30; // Verificação de intervalo
     
@@ -149,13 +153,27 @@ class ReservaController extends Controller
         $quartos = Quarto::pluck('numero', 'id')->toArray();
         $operadores = Usuario::pluck('nome', 'id')->toArray();
 
-        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores'));
+        $metodosPagamento = Pagamento::METODOS_PAGAMENTO;
+
+        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores', 'metodosPagamento'));
     }
 
     public function save(ReservaRequest $request)
-    {   
+    {
+        // dd($request->all());
         $data = $request->all();
-        $this->reservaService->criarOuAtualizarReserva($data);
+        
+        // Cria ou atualiza a reserva
+        $reserva = $this->reservaService->criarOuAtualizarReserva($data);
+
+        // Processa e salva os pagamentos
+        if (isset($data['valores_recebidos_formatados'])) {
+            $valor_pago = $request->get('valor_pago');
+            $valor_total = $request->get('valor_total');
+            $valoresRecebidos = json_decode($data['valores_recebidos_formatados'], true);
+            $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos , $valor_pago, $valor_total);
+        }
+
 
         return redirect()
             ->route('admin.reservas.index')

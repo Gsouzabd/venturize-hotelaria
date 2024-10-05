@@ -28,6 +28,14 @@
                 <i class="sidenav-icon fas fa-bed"></i>
                 <div>Quartos</div>
             </a>
+            <ul class="sidenav-submenu">
+                <li class="sidenav-item{{ is_active_path('admin/quartos/opcoes-extras') ? ' active' : '' }}">
+                    <a href="{{ route('admin.quartos-opcoes-extras.index') }}" class="sidenav-link">
+                        <i class="sidenav-icon fas fa-plus"></i>
+                        <div>Opções Extras</div>
+                    </a>
+                </li>
+            </ul>
         </li>
         <li class="sidenav-item{{ is_active_path('admin/clientes') ? ' active' : '' }}">
             <a href="{{ route('admin.clientes.index') }}" class="sidenav-link">

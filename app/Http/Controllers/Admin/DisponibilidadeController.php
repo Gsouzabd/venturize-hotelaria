@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\Quarto;
+use App\Models\QuartoOpcaoExtra;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DisponibilidadeRequest;
@@ -18,6 +19,8 @@ class DisponibilidadeController extends Controller
         $dataSaida = Carbon::createFromFormat('d/m/Y', $validated['data_saida'])->format('Y-m-d');
         $tipoQuarto = $request['tipo_quarto'] ?? null;
         $apartamentosNecessarios = $validated['apartamentos'];
+        $criancasAte7 = $validated['criancas_ate_7'];
+        $criancasMais7 = $validated['criancas_mais_7'];
 
         // Busca os quartos disponíveis com base no tipo de quarto, se fornecido
         $quartosQuery = Quarto::where('inativo', 0); // Apenas quartos que não estão inativos
@@ -25,8 +28,8 @@ class DisponibilidadeController extends Controller
             $quartosQuery->where('classificacao', $tipoQuarto);
         }
 
-        $quartosDisponiveis = $quartosQuery->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida, $tipoQuarto) {
-            $query->where(function ($query) use ($dataEntrada, $dataSaida, $tipoQuarto) {
+        $quartosDisponiveis = $quartosQuery->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida) {
+            $query->where(function ($query) use ($dataEntrada, $dataSaida) {
                 // Verifica se a reserva está dentro do intervalo
                 $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida])
                       ->orWhereBetween('data_checkout', [$dataEntrada, $dataSaida])
@@ -50,56 +53,12 @@ class DisponibilidadeController extends Controller
 
         // Filtrar os planos de preços para cada quarto
         $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida) {
-            $planoPreco = $quarto->planosPrecos->filter(function ($plano) use ($dataEntrada, $dataSaida) {
-                return $plano->data_inicio <= $dataEntrada && $plano->data_fim >= $dataSaida && $plano->is_default == 0;
-            })->first();
-
-            if (!$planoPreco) {
-                $planoPreco = $quarto->planosPrecos->where('is_default', 1)->first();
-            }
-
-            $quarto->planoPreco = $planoPreco;
+            $quarto->planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida);
         });
 
-        // Adicionar preços diários com base no dia da semana
-        $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida) {
-            $dataAtual = Carbon::parse($dataEntrada);
-            $dataFim = Carbon::parse($dataSaida);
-            $precosDiarios = [];
-
-            while ($dataAtual->lte($dataFim)) {
-                $diaSemana = $dataAtual->format('l'); // Obtém o dia da semana em inglês
-                $precoDia = null;
-
-                switch ($diaSemana) {
-                    case 'Sunday':
-                        $precoDia = $quarto->planoPreco->preco_domingo;
-                        break;
-                    case 'Monday':
-                        $precoDia = $quarto->planoPreco->preco_segunda;
-                        break;
-                    case 'Tuesday':
-                        $precoDia = $quarto->planoPreco->preco_terca;
-                        break;
-                    case 'Wednesday':
-                        $precoDia = $quarto->planoPreco->preco_quarta;
-                        break;
-                    case 'Thursday':
-                        $precoDia = $quarto->planoPreco->preco_quinta;
-                        break;
-                    case 'Friday':
-                        $precoDia = $quarto->planoPreco->preco_sexta;
-                        break;
-                    case 'Saturday':
-                        $precoDia = $quarto->planoPreco->preco_sabado;
-                        break;
-                }
-
-                $precosDiarios[$dataAtual->toDateString()] = $precoDia;
-                $dataAtual->addDay();
-            }
-
-            $quarto->precosDiarios = $precosDiarios;
+        // Adicionar preços diários com base no dia da semana e opções extras de crianças
+        $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida, $criancasAte7, $criancasMais7) {
+            $quarto->precosDiarios = $this->calcularPrecosDiarios($quarto->planoPreco, $dataEntrada, $dataSaida, $criancasAte7, $criancasMais7);
         });
 
         // Verifica se há quartos suficientes disponíveis
@@ -119,47 +78,54 @@ class DisponibilidadeController extends Controller
 
     public function obterPlanosPrecos(Request $request, $quartoId)
     {
-        // Remover a linha de debug
-        // dd($request->all());
-    
-        // Ajustar para lidar com o formato de data e hora
-        function parseDate($dateString) {
-            $formats = ['Y-m-d H:i:s', 'd/m/Y', 'd-m-Y'];
-            foreach ($formats as $format) {
-                try {
-                    return Carbon::createFromFormat($format, $dateString)->format('Y-m-d');
-                } catch (\Exception $e) {
-                    // Continua tentando o próximo formato
-                }
-            }
-            throw new \Exception("Formato de data inválido: $dateString");
-        }
-    
         // Ajustar para lidar com diferentes formatos de data
         try {
-            $dataEntrada = parseDate($request->input('data_entrada'));
-            $dataSaida = parseDate($request->input('data_saida'));
+            $dataEntrada = $this->parseDate($request->input('data_entrada'));
+            $dataSaida = $this->parseDate($request->input('data_saida'));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
+
         $quarto = Quarto::with('planosPrecos')->findOrFail($quartoId);
-    
+        $planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida);
+        $precosDiarios = $this->calcularPrecosDiarios($planoPreco, $dataEntrada, $dataSaida, $request->input('criancas_ate_7'), $request->input('criancas_mais_7'));
+
+        return response()->json([
+            'success' => true,
+            'precosDiarios' => $precosDiarios,
+            'total' => number_format(array_sum($precosDiarios), 2, '.', '')
+        ]);
+    }
+
+    private function obterPlanoPreco($quarto, $dataEntrada, $dataSaida, $criancasAte7 = 0, $criancasMais7 = 0)
+    {
         $planoPreco = $quarto->planosPrecos->filter(function ($plano) use ($dataEntrada, $dataSaida) {
             return $plano->data_inicio <= $dataEntrada && $plano->data_fim >= $dataSaida && $plano->is_default == 0;
         })->first();
-    
+
         if (!$planoPreco) {
             $planoPreco = $quarto->planosPrecos->where('is_default', 1)->first();
         }
-    
+
+        return $planoPreco;
+    }
+
+    private function calcularPrecosDiarios($planoPreco, $dataEntrada, $dataSaida, $criancasAte7, $criancasMais7)
+    {
         $dataAtual = Carbon::parse($dataEntrada);
         $dataFim = Carbon::parse($dataSaida);
         $precosDiarios = [];
-    
-        while ($dataAtual->lt($dataFim)) { // Usar 'lt' para estritamente menor
+
+        // Obtém os preços das opções extras de crianças
+        $precoCriancaAte7 = QuartoOpcaoExtra::where('nome', 'Criança (Até 7 anos)')->value('preco');
+        $precoCriancaMais7 = QuartoOpcaoExtra::where('nome', 'Criança (07 à 12 anos)')->value('preco');
+
+        $dataFim = $dataFim->subDay(); // Subtrai um dia para não incluir o dia de check-out
+
+        while ($dataAtual->lte($dataFim)) {
             $diaSemana = $dataAtual->format('l'); // Obtém o dia da semana em inglês
             $precoDia = null;
-        
+
             switch ($diaSemana) {
                 case 'Sunday':
                     $precoDia = $planoPreco->preco_domingo;
@@ -183,15 +149,42 @@ class DisponibilidadeController extends Controller
                     $precoDia = $planoPreco->preco_sabado;
                     break;
             }
-        
+
+            // Adiciona os preços das opções extras de crianças
+            $precoDia += $this->calcularPrecoCriancas($criancasAte7, $precoCriancaAte7) + ($precoCriancaMais7 * $criancasMais7);
+
             $precosDiarios[$dataAtual->toDateString()] = $precoDia;
             $dataAtual->addDay();
         }
-    
-        return response()->json([
-            'success' => true,
-            'precosDiarios' => $precosDiarios,
-            'total' => number_format(array_sum($precosDiarios), 2, '.', '')        
-        ]);
+
+        return $precosDiarios;
+    }
+
+    private function calcularPrecoCriancas($criancasAte7, $precoCriancaAte7)
+    {
+        $precoTotal = 0;
+
+        if ($criancasAte7 > 0) {
+            $precoTotal += 0; // Preço da primeira criança é 0
+        }
+
+        if ($criancasAte7 > 1) {
+            $precoTotal += $precoCriancaAte7; // Preço da segunda criança
+        }
+
+        return $precoTotal;
+    }
+
+    private function parseDate($dateString)
+    {
+        $formats = ['Y-m-d H:i:s', 'd/m/Y', 'd-m-Y'];
+        foreach ($formats as $format) {
+            try {
+                return Carbon::createFromFormat($format, $dateString)->format('Y-m-d');
+            } catch (\Exception $e) {
+                // Continua tentando o próximo formato
+            }
+        }
+        throw new \Exception("Formato de data inválido: $dateString");
     }
 }

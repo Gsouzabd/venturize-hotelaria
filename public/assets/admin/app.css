@@ -376,11 +376,20 @@ html:not(.material-style) .material-style-only {
 }
 
 #cart-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
     border-top: 0.70px solid #ebebeb;
 }
 
+
+
 .cart-item {
     border-bottom: 1px solid #0000001a;
+}
+
+.cart-item .card {
+    padding: 20px;
 }
 
 .card:hover {
@@ -428,12 +437,6 @@ html:not(.material-style) .material-style-only {
     border-radius: 5px;
 }
 
-
-.container.has-sidebar {
-    padding-right: 0px;
-    /* width: 100%; */
-    margin-right: 0px;
-}
 
 
 .reservarForm h5 {
@@ -515,7 +518,8 @@ div#planos-precos-block h6 {
 }
 
 .reservations-calendar td {
-    min-width: 130px;
+    min-width: 100px;
+    max-width: 100px;
     height: auto; /* Define a altura fixa */
     padding: 2px !important;
 }
@@ -549,7 +553,6 @@ div#planos-precos-block h6 {
     right: -10px;           /* Ajuste a posição à direita */
     border-right: 0px;      /* Sem borda à direita */
     border-radius: 5px 0px 0px 5px;
-    overflow: visible;      /* Permite que o texto ultrapasse o width */
     display: inline-block;  /* Mantém o elemento como bloco em linha */
     vertical-align: middle;
     float: right;
@@ -577,22 +580,22 @@ a.reserva-dia.intermediario {
 .subtotal-forday {
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #dddddd;
-    border-radius: 5px;
-    padding: 5px;
+    padding: 10px 20px 0px;
+    align-items: baseline;
+    border-left: 1px solid #dddddd;
+    border-right: 1px solid #dddddd;
 }
-
 
 .total-cart {
     font-weight: 600 !important;
     margin-top: 20px;
     display: flex;
-    justify-content: space-between;
-    font-size: 15px;
+    justify-content: end;
+    font-size: 18px;
+    gap: 15px;
     border-bottom: 1px solid #dedede;
     padding-bottom: 5px;
 }
-
 
 #legenda-pagamento {
     justify-content: center;
@@ -614,4 +617,31 @@ a.reserva-dia.intermediario {
     color: #00a65a;
     text-transform: uppercase;
     font-weight: 700;
+}
+
+input.preco-diario {
+    display: block;
+    width: 40%;
+    height: calc(1em + 1rem + 0px);
+    padding: 5px;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+#valor-recebido-div .form-label {
+    text-align: center;
+    font-size: 14px;
+    margin: 20px;
+}
+
+#add-valor-recebido {
+    width: 100% !important;
+    border-radius: 0px 0px 10px 10px;
 }

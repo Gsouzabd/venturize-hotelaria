@@ -19,7 +19,9 @@ class DisponibilidadeRequest extends FormRequest
             'data_saida' => 'required|date_format:d/m/Y|after:data_entrada',
             'apartamentos' => 'required|integer|min:1',
             'adultos' => 'required|integer|min:1',
-            'criancas' => 'nullable|integer|min:0',
+            'criancas_ate_7' => 'nullable|integer|min:0',
+            'criancas_mais_7' => 'nullable|integer|min:0',
+
         ];
     }
 

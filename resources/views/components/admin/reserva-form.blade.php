@@ -17,21 +17,25 @@
     @if($method === 'post')
         @csrf
     @endif
+    <input type="hidden" name="cart_serialized" id="cart-input">
 
     <div class="container has-sidebar">
-        <div class="row">
+        <div class="row mb-5">
 
             {{ $slot }}
-            <div class="col-md-3" id="cart-col" style="display: none">
-                @include('admin.reservas.partials.cart-preview')
-                <div class="text-right mt-3 d-flex justify-center">
-                    <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled=true/>
-                    @if($backRoute)
-                        <x-admin.cancel-btn :back-route="$backRoute" />
-                    @endif
-                </div>
+           
+        </div>
+
+        <div class="col-md-12" id="cart-col" style="display: none">
+            @include('admin.reservas.partials.cart-preview')
+            <div class="text-right mt-3 d-flex justify-content-end">
+                <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled=true/>
+                @if($backRoute)
+                    <x-admin.cancel-btn :back-route="$backRoute" />
+                @endif
             </div>
         </div>
+
     </div>
 
 </form>
@@ -45,3 +49,15 @@
         </script>
     @endpush
 @endif
+
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.edit-form').addEventListener('submit', function(event) {
+                const cart = JSON.parse(localStorage.getItem('cart')) || [];
+                document.getElementById('cart-input').value = JSON.stringify(cart);
+            });
+        });
+    </script>
+@endpush
