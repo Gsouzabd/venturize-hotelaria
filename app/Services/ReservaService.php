@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Reserva;
+use App\Models\Acompanhante;
 use Illuminate\Support\Facades\Auth;
 
 class ReservaService
@@ -100,7 +101,7 @@ class ReservaService
                 'adultos' => $quartoData['adultos'],
                 'criancas_ate_7' => $quartoData['criancas_ate_7'],
                 'criancas_mais_7' => $quartoData['criancas_mais_7'],
-                'tipo_acomodacao' => $quartoData['tipo_acomodacao'],
+                'tipo_acomodacao' => $quartoData['tipo_acomodacao'] ?? null,
                 'usuario_operador_id' => Auth::id(), // ou outro valor apropriado
                 'email_solicitante' => $data['email'],
                 'celular' => $data['celular'],
@@ -109,6 +110,7 @@ class ReservaService
                 'empresa_solicitante_id' => $data['empresa_solicitante_id'] ?? null,
                 'observacoes' => $data['observacoes'],
                 'observacoes_internas' => $data['observacoes_internas'],
+                'cart_serialized' => $data['cart_serialized'] ?? null,
             ];
 
             // Criar ou atualizar a reserva
@@ -117,6 +119,32 @@ class ReservaService
                 $reserva->update($reservaData);
             } else {
                 $reserva = Reserva::create($reservaData);
+            }
+
+            // Extrair dados dos acompanhantes e associá-los à reserva
+            if (isset($quartoData['acompanhantes'])) {
+                foreach ($quartoData['acompanhantes'] as $tipo => $listaAcompanhantes) {
+                    foreach ($listaAcompanhantes as $acompanhanteData) {
+
+                        if (strtolower($tipo) === 'adulto') {
+                            $cliente = Cliente::firstOrCreate([
+                                'nome' => $acompanhanteData['nome'] ?? null,
+                                'cpf' => $acompanhanteData['cpf'] ?? null,
+                                'data_nascimento' => $acompanhanteData['data_nascimento'] ?? null,
+                            ]);
+                        }
+                        Acompanhante::create([
+                            'cliente_id' => $cliente->id ?? null,
+                            'reserva_id' => $reserva->id,
+                            'nome' => $acompanhanteData['nome'] ?? null,
+                            'cpf' => $acompanhanteData['cpf'] ?? null,
+                            'data_nascimento' => $acompanhanteData['data_nascimento'] ?? null,
+                            'tipo' => $tipo,
+                        ]);
+            
+
+                    }
+                }
             }
 
             return $reserva;

@@ -1,3 +1,8 @@
+.container.has-sidebar {
+    max-width: 99%;
+    padding: 0;
+}
+
 form.edit-form button[type="submit"] {
     border: 1px solid white;
     background: green;
@@ -376,8 +381,7 @@ html:not(.material-style) .material-style-only {
 }
 
 #cart-items {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: block;
     gap: 10px;
     border-top: 0.70px solid #ebebeb;
 }
@@ -385,6 +389,8 @@ html:not(.material-style) .material-style-only {
 
 
 .cart-item {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     border-bottom: 1px solid #0000001a;
 }
 
@@ -400,7 +406,7 @@ html:not(.material-style) .material-style-only {
     color: #007bff;
     margin-right: 10px;
     min-width: 20px;
-    font-size: 15px;
+    font-size: 13px;
     text-align: center;
 }
 
@@ -580,7 +586,7 @@ a.reserva-dia.intermediario {
 .subtotal-forday {
     display: flex;
     justify-content: space-between;
-    padding: 10px 20px 0px;
+    padding: 0px;
     align-items: baseline;
     border-left: 1px solid #dddddd;
     border-right: 1px solid #dddddd;
@@ -621,10 +627,11 @@ a.reserva-dia.intermediario {
 
 input.preco-diario {
     display: block;
-    width: 40%;
-    height: calc(1em + 1rem + 0px);
-    padding: 5px;
-    font-size: 1rem;
+    width: 45%;
+    margin-left: 3px;
+    height: calc(1.5em + 0.3rem + 0px);
+    padding: 2px;
+    font-size: 14px;
     font-weight: 400;
     line-height: 1.5;
     color: #495057;
@@ -635,6 +642,11 @@ input.preco-diario {
     transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
 
+.card .info .form-control {
+    height: calc(1.5em + 0.3rem + 0px);
+    font-size: 12px;
+    padding: 12px;
+}
 #valor-recebido-div .form-label {
     text-align: center;
     font-size: 14px;
@@ -644,4 +656,8 @@ input.preco-diario {
 #add-valor-recebido {
     width: 100% !important;
     border-radius: 0px 0px 10px 10px;
+}
+
+.card .info span, .card .info strong {
+    font-size: 14px;
 }

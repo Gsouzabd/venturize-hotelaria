@@ -147,8 +147,7 @@ class ReservaController extends Controller
     public function edit($id = null)
     {
         $edit = boolval($id);
-        $reserva = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
-
+        $reserva = $edit ? $this->model->with(['pagamentos', 'acompanhantes'])->findOrFail($id) : $this->model->newInstance();
         $clientes = Cliente::pluck('nome', 'id')->toArray();
         $quartos = Quarto::pluck('numero', 'id')->toArray();
         $operadores = Usuario::pluck('nome', 'id')->toArray();
@@ -167,12 +166,11 @@ class ReservaController extends Controller
         $reserva = $this->reservaService->criarOuAtualizarReserva($data);
 
         // Processa e salva os pagamentos
-        if (isset($data['valores_recebidos_formatados'])) {
-            $valor_pago = $request->get('valor_pago');
-            $valor_total = $request->get('valor_total');
-            $valoresRecebidos = json_decode($data['valores_recebidos_formatados'], true);
-            $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos , $valor_pago, $valor_total);
-        }
+        $valor_pago = $request->get('valor_pago');
+        $valor_total = $request->get('valor_total');
+        $valoresRecebidos =  json_decode($data['valores_recebidos_formatados'], true);
+        $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos , $valor_pago, $valor_total);
+    
 
 
         return redirect()

@@ -65,6 +65,7 @@ use App\Models\Reserva;
                 <th>Situação</th>
                 <th>Check-in</th> <!-- Novo campo -->
                 <th>Check-out</th> <!-- Novo campo -->
+                <th>Valor Total</th>
                 <th>Criado em</th>
                 <th>Operador</th>
 
@@ -85,12 +86,13 @@ use App\Models\Reserva;
                     </td>
                     <td width="100">{{ Carbon::parse($reserva->data_checkin)->format('d-m-Y') }}</td> <!-- Novo campo -->
                     <td width="100">{{ Carbon::parse($reserva->data_checkout)->format('d-m-Y') }}</td> <!-- Novo campo -->
-                    <td>{{ timestamp_br($reserva->created_at) }}</td>
+                    <td width="100">R$ {{ isset($reserva->pagamentos[0]) ? $reserva->pagamentos[0]->valor_total : '' }}</R$>
+                    <td width="100">{{ timestamp_br($reserva->created_at) }}</td>
                     <td>{{ $reserva->operador->nome }}</td>
 
                     <td class="cell-nowrap">
-                        <x-admin.edit-btn route="admin.reservas.edit" :route-params="['id' => $reserva->id]"/>
-                        <x-admin.delete-btn route="admin.reservas.destroy" :route-params="['id' => $reserva->id]"/>
+                        <x-admin.edit-btn route="admin.reservas.edit" :route-params="['id' => $reserva->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>
+                        <x-admin.delete-btn route="admin.reservas.destroy" :route-params="['id' => $reserva->id]" :label="html_entity_decode('<i class=\'fas fa-trash-alt\'></i>')"/>
                     </td>
                 </tr>
             @empty

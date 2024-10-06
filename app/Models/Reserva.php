@@ -2,6 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use App\Models\Quarto;
+use App\Models\Cliente;
+use App\Models\Empresa;
+use App\Models\Usuario;
+use App\Models\Pagamento;
 use Illuminate\Database\Eloquent\Model;
 
 class Reserva extends Model
@@ -12,8 +18,8 @@ class Reserva extends Model
         'situacao_reserva',
         'previsao_chegada',
         'previsao_saida',
-        'data_checkin', // Novo campo
-        'data_checkout', // Novo campo
+        'data_checkin',
+        'data_checkout',
         'cliente_solicitante_id',
         'cliente_responsavel_id',
         'quarto_id',
@@ -26,9 +32,10 @@ class Reserva extends Model
         'empresa_solicitante_id',
         'observacoes',
         'observacoes_internas',
-        'adultos', // Novo campo
-        'criancas_ate_7', // Novo campo
-        'criancas_mais_7', // Novo campo
+        'adultos',
+        'criancas_ate_7',
+        'criancas_mais_7',
+        'cart_serialized', // Novo campo
     ];
 
     const TIPOSRESERVA = [
@@ -82,9 +89,33 @@ class Reserva extends Model
         return $this->belongsTo(Empresa::class, 'empresa_solicitante_id');
     }
 
+    public function acompanhantes()
+    {
+        return $this->hasMany(Acompanhante::class);
+    }
+
     public function pagamentos()
     {
         return $this->hasMany(Pagamento::class);
+    }
+
+    // Novo método para transformar cart_serialized em array
+    public function getCartSerializedAttribute()
+    {
+        $value = $this->attributes['cart_serialized'] ?? '[]';
+        return json_decode($value, true);
+    }
+    
+    // Método para obter a relação data/preço
+    public function getPrecosDiarios()
+    {
+
+        $precos = $this->getCartSerializedAttribute()[0]['precosDiarios'] ?? [];
+        //precisamos verificar se o array[0] vem no formato ["2024-10-08":"789.00"]
+
+
+
+        return $precos;
     }
 
 }
