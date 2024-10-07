@@ -380,17 +380,21 @@ html:not(.material-style) .material-style-only {
     transition: background-color 0.3s ease;
 }
 
+
+
+
 #cart-items {
-    display: block;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     border-top: 0.70px solid #ebebeb;
 }
 
-
+#cart-items .card {
+    border: 1px solid #008001 !important;
+}
 
 .cart-item {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
     border-bottom: 1px solid #0000001a;
 }
 

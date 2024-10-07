@@ -46,7 +46,9 @@ class DisponibilidadeController extends Controller
                       ->orWhere(function ($query) use ($dataSaida) {
                           $query->where('data_checkin', $dataSaida);
                       });
-            });
+            })
+            ->where('situacao_reserva', '!=', 'CANCELADA');
+
         })
         ->with('planosPrecos')
         ->get();

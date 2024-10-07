@@ -3,7 +3,9 @@ async function adicionarQuartoAoCart(
     quartoId, quartoNumero, quartoAndar, 
     quartoClassificacao, tipoAcomodacao,
     nome, cpf, dataCheckin, dataCheckout, precosDiariosSelect, totalSelect,
-    criancas_ate_7 = null, criancas_mais_7 = null, adultos = null, acompanhantes) {
+    criancas_ate_7 = null, criancas_mais_7 = null, adultos = null, acompanhantes = null) {
+
+    console.log('acompanhantes', acompanhantes);
 
     criancas_ate_7 = criancas_ate_7 || document.getElementById('criancas_ate_7').value;
     criancas_mais_7 = criancas_mais_7 || document.getElementById('criancas_mais_7').value;
@@ -14,14 +16,14 @@ async function adicionarQuartoAoCart(
     adultos = adultos !== '' ? parseInt(adultos) : 0;
 
     console.log('adicionarQuartoAoCart', quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout, precosDiariosSelect, totalSelect);
-    console.log(precosDiariosSelect);
-    console.log(totalSelect);
+ 
 
     const precosData = await obterPlanosPrecos(quartoId, dataCheckin, dataCheckout, criancas_ate_7, criancas_mais_7);
-    var precosDiarios = precosDiariosSelect || precosData.precosDiarios;
+    var precosDiarios = precosDiariosSelect ?? precosData.precosDiarios;
     const totalf = totalSelect || precosData.total;
     const total = parseFloat(totalf); // Garantir que total seja um número
-
+    console.log(precosDiariosSelect);
+    console.log(totalSelect);
     console.log(precosDiarios);
 
     const isFormattedDate = (dateStr) => {
@@ -30,30 +32,44 @@ async function adicionarQuartoAoCart(
     };
 
     // Função para formatar a data de yyyy-mm-dd hh:mm:ss para dd-mm-yyyy
-const formatDate = (dateStr) => {
-    console.log('formatDate', dateStr);
-    if (typeof dateStr !== 'string') {
-        dateStr = String(dateStr);
-    }
-    if (dateStr.includes('-')) {
-        const [year, month, day] = dateStr.split('-');
-        return `${day}-${month}-${year}`;
-    } else if (dateStr.includes('/')) {
-        const [day, month, year] = dateStr.split('/');
-        return `${day}-${month}-${year}`;
-    }
-    return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
-};
+    const formatDate = (dateStr) => {
+        console.log('formatDate', dateStr);
+        if (typeof dateStr !== 'string') {
+            dateStr = String(dateStr);
+        }
+        if (dateStr.includes('-')) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}-${month}-${year}`;
+        } else if (dateStr.includes('/')) {
+            const [day, month, year] = dateStr.split('/');
+            return `${day}-${month}-${year}`;
+        }
+        return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
+    };
 
     // Verificar e formatar as datas se necessário
     var formattedCheckin = isFormattedDate(dataCheckin) ? dataCheckin : formatDate(dataCheckin);
     var formattedCheckout = isFormattedDate(dataCheckout) ? dataCheckout : formatDate(dataCheckout);
 
-
     // Atualizar o localStorage do carrinho
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let reservaIdInput = '';
+    const isEdit = document.querySelector('input[name="is_edit"]').value;
+    var reservaId = document.querySelector('input[name="reserva_id"]').value;
+
+    console.log('isEdit',isEdit);
+    console.log('cart.length', cart.length);
+
+    if(isEdit == '1' && cart.length == 0){
+        reservaIdInput = `<input type="hidden" name="quartos[${quartoId}][reserva_id]" value="${reservaId}">`;
+    }else{
+        reservaId = ''
+    }
+    console.log('reservaIdInput', reservaIdInput);
+
+
     console.log('adicionando ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total);
-    cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total });
+    cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId });
     localStorage.setItem('cart', JSON.stringify(cart));
 
     // Atualizar o total geral
@@ -84,48 +100,69 @@ const formatDate = (dateStr) => {
         }
         return html;
     };
-    const renderAcompanhantes = (tipo, quantidade, quartoId) => {
+
+    const renderAcompanhantes = (acompanhantes, quartoId, edit = null) => {
         let acompanhantesHtml = '';
-        let j = tipo === 'Adulto' ? 1 : 0;
-        for (let i = j; i < quantidade; i++) {
+        acompanhantes.forEach((acompanhante, index) => {
+            console.log(acompanhante)
+            const { tipo, nome, cpf, data_nascimento } = acompanhante;
+
+            // Ignorar o primeiro índice se o tipo for "Adulto"
+            if (tipo === 'Adulto' && index === 0 && !edit) {
+                return;
+            }
             acompanhantesHtml += `
             <div class="acompanhante">
-                <h5>(${i + 1}) ${tipo} </h5>
+                <h5>(${index + 1}) ${tipo} </h5>
                 <div class="row">
                     <div class="col-md-4">
                         <div class="info">
                             <i class="icon fas fa-user"></i>
                             <span>Nome:</span>
-                            <input type="text" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${i}][nome]">
+                            <input type="text" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][nome]" value="${nome ?? ''}">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="info">
                             <i class="icon fas fa-id-card"></i>
                             <span>CPF:</span>
-                            <input type="text" class="form-control cpf-mask" name="quartos[${quartoId}][acompanhantes][${tipo}][${i}][cpf]">
+                            <input type="text" class="form-control cpf-mask" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][cpf]" value="${cpf}">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="info">
                             <i class="icon fas fa-calendar"></i>
                             <span>Data Nascimento:</span>
-                            <input type="date" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${i}][data_nascimento]">
+                            <input type="date" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][data_nascimento]" value="${data_nascimento}">
                         </div>
                     </div>
                 </div>
             </div>
             `;
-        }
+        });
         return acompanhantesHtml;
     };
+
+    let acompanhantesHtml = '';
+    if (acompanhantes && acompanhantes.length > 0) {
+        acompanhantesHtml = renderAcompanhantes(acompanhantes, quartoId, true);
+    } else {
+        // Renderizar acompanhantes calculados dinamicamente
+        acompanhantesHtml += renderAcompanhantes(Array(adultos).fill({ tipo: 'Adulto' }), quartoId);
+        acompanhantesHtml += renderAcompanhantes(Array(criancas_mais_7).fill({ tipo: 'Criança mais de 7 anos' }), quartoId);
+        acompanhantesHtml += renderAcompanhantes(Array(criancas_ate_7).fill({ tipo: 'Criança até 7 anos' }), quartoId);
+    }
+
+
+
 
     // Adicionar o item ao carrinho visualmente
     const cartItems = document.getElementById('cart-items');
     const cartItem = document.createElement('div');
     cartItem.classList.add('cart-item');
-cartItem.innerHTML = `
+    cartItem.innerHTML = `
     <div class="card">
+        ${reservaIdInput}
         <!-- UH Section -->
         <div class="row border-bottom mb-3">
             <div class="col-md-12">
@@ -192,7 +229,7 @@ cartItem.innerHTML = `
                 <div class="info">
                     <i class="icon fas fa-user"></i>
                     <strong>Nome:</strong> 
-                    <input type="text" class="form-control" name="quartos[${quartoId}][responsavel_nome]" value="${nome}">
+                    <input type="text" class="form-control" name="quartos[${quartoId}][responsavel_nome]" value=${nome}>
                 </div>
             </div>
             <div class="col-md-6">
@@ -209,10 +246,8 @@ cartItem.innerHTML = `
                 <div class="info">
                     <i class="icon fas fa-users"></i>
                     <strong>Acompanhantes:</strong>
-                    <div class="acompanhantes">
-                        ${renderAcompanhantes('Adulto', adultos, quartoId)}
-                        ${renderAcompanhantes('Criança até 7 anos', criancas_ate_7, quartoId)}
-                        ${renderAcompanhantes('Criança mais de 7 anos', criancas_mais_7, quartoId)}
+                    <div class="acompanhantes" id="acompanhantes-container">
+                        ${acompanhantesHtml}
                     </div>
                 </div>
             </div>
@@ -517,6 +552,7 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
             nome = '';
             cpf = '';
         }
+
         responsaveis.push({ quartoId, nome, cpf });
         adicionarQuartoAoCart(
             quartoId, 
@@ -528,8 +564,7 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
             cpf, 
             formatDate(urlParams.get('data_checkin')), 
             formatDate(urlParams.get('data_checkout')),
-        );
-        
+        );     
     });
 }
 

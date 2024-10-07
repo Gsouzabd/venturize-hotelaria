@@ -86,7 +86,7 @@ use App\Models\Reserva;
                     </td>
                     <td width="100">{{ Carbon::parse($reserva->data_checkin)->format('d-m-Y') }}</td> <!-- Novo campo -->
                     <td width="100">{{ Carbon::parse($reserva->data_checkout)->format('d-m-Y') }}</td> <!-- Novo campo -->
-                    <td width="100">R$ {{ isset($reserva->pagamentos[0]) ? $reserva->pagamentos[0]->valor_total : '' }}</R$>
+                    <td width="100">R$ {{$reserva->total  ?? '' }}</R$>
                     <td width="100">{{ timestamp_br($reserva->created_at) }}</td>
                     <td>{{ $reserva->operador->nome }}</td>
 

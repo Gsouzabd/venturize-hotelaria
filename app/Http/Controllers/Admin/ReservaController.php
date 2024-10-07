@@ -133,8 +133,6 @@ class ReservaController extends Controller
             })
             ->get();
 
-
-            // dd($reservas);
     
         // Buscar todos os quartos
         $quartos = Quarto::all();
@@ -162,17 +160,22 @@ class ReservaController extends Controller
         // dd($request->all());
         $data = $request->all();
         
-        // Cria ou atualiza a reserva
-        $reserva = $this->reservaService->criarOuAtualizarReserva($data);
+        // Cria ou atualiza a(s) reserva(s)
+        $reservas = $this->reservaService->criarOuAtualizarReserva($data);
 
         // Processa e salva os pagamentos
         $valor_pago = $request->get('valor_pago');
         $valor_total = $request->get('valor_total');
         $valoresRecebidos =  json_decode($data['valores_recebidos_formatados'], true);
-        $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos , $valor_pago, $valor_total);
-    
 
-
+        try {
+            foreach ($reservas as $reserva) {
+                $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos, $valor_pago, $valor_total);
+            }
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
+        
         return redirect()
             ->route('admin.reservas.index')
             ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));

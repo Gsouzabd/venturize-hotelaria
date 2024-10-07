@@ -36,6 +36,7 @@ class Reserva extends Model
         'criancas_ate_7',
         'criancas_mais_7',
         'cart_serialized', // Novo campo
+        'total', // Novo campo
     ];
 
     const TIPOSRESERVA = [
@@ -110,7 +111,7 @@ class Reserva extends Model
     public function getPrecosDiarios()
     {
 
-        $precos = $this->getCartSerializedAttribute()[0]['precosDiarios'] ?? [];
+        $precos = $this->getCartSerializedAttribute()['precosDiarios'] ?? [];
         //precisamos verificar se o array[0] vem no formato ["2024-10-08":"789.00"]
 
 

@@ -1,3 +1,5 @@
+{{-- @php dd($reserva->pagamentos) @endphp --}}
+
 <div class="tab-pane fade" id="pagamento" role="tabpanel" aria-labelledby="pagamento-tab">
     <h3>Detalhes do Pagamento</h3>
     <p>Selecione o método de pagamento e preencha os detalhes abaixo.</p>
@@ -5,7 +7,7 @@
         <!-- Método de Pagamento -->
         <x-admin.field cols="12">
             <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
-                        <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
+            <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
                 @php
                     $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
                 @endphp
@@ -89,7 +91,7 @@
         </div>
     </x-admin.field-group>
 
-    <div id="valor-recebido-div" class="d-none">
+    <div id="valor-recebido-div" class="{{$edit ? '' : 'd-none'}}">
         <h5><i class="fas fa-receipt"></i> Recebimentos</h5>
 
         <x-admin.field-group class="d-flex justify-content-center">
@@ -107,33 +109,75 @@
                 </x-admin.field>
 
                 <!-- Lista de Valores Recebidos -->
-                <x-admin.field cols="8">
-                    <x-admin.label label="Valores Recebidos"/>
-                    <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
-                        <thead>
-                            <tr>
-                                <th>Valor</th>
-                                <th>Método de Pagamento</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if(old('valores_recebidos', $reserva->pagamento->valores_recebidos ?? []))
-                                @foreach(old('valores_recebidos', $reserva->pagamento->valores_recebidos ?? []) as $index => $valor)
-                                    <tr>
-                                        <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
-                                        <td>{{ old('metodos_pagamento.' . $index, $reserva->pagamento->metodos_pagamento[$index] ?? '') }}</td>
-                                        <td>
-                                            <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                                            <input type="hidden" name="valores_recebidos[]" value="{{ $valor }}">
-                                            <input type="hidden" name="metodos_pagamento[]" value="{{ old('metodos_pagamento.' . $index, $reserva->pagamento->metodos_pagamento[$index] ?? '') }}">
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            @endif
-                        </tbody>
-                    </table>
-                </x-admin.field>
+              <!-- Lista de Valores Recebidos -->
+<x-admin.field cols="8">
+    <x-admin.label label="Valores Recebidos"/>
+    
+    @php
+        // Acessa o primeiro pagamento da coleção
+        $pagamento = $reserva->pagamentos->first();
+
+        // Recupera os valores antigos, se existirem
+        $valoresRecebidosOld = old('valores_recebidos');
+        $metodosPagamentoOld = old('metodos_pagamento');
+        $submetodosPagamentoOld = old('submetodos_pagamento');
+
+        if ($valoresRecebidosOld && $metodosPagamentoOld && $submetodosPagamentoOld) {
+            // Reconstroi os valores recebidos a partir dos dados antigos
+            $valoresRecebidos = [];
+            foreach ($valoresRecebidosOld as $index => $valor) {
+                $metodo = $metodosPagamentoOld[$index];
+                $submetodo = $submetodosPagamentoOld[$index] ?? '';
+                $key = $submetodo ? "{$metodo}-{$submetodo}" : $metodo;
+                if (isset($valoresRecebidos[$key])) {
+                    $valoresRecebidos[$key] += $valor;
+                } else {
+                    $valoresRecebidos[$key] = $valor;
+                }
+            }
+        } else {
+            // Utiliza os valores do banco de dados
+            $valoresRecebidos = json_decode($pagamento->valores_recebidos ?? '{}', true);
+        }
+
+        // Determina o método de pagamento selecionado
+        $selectedMetodo = old('metodo_pagamento', $pagamento->metodo_pagamento ?? '');
+    @endphp
+
+    <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
+        <thead>
+            <tr>
+                <th>Valor</th>
+                <th>Método de Pagamento</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($valoresRecebidos as $metodo => $valor)
+                @php
+                    // Verifica se o método possui um submétodo
+                    if (strpos($metodo, '-') !== false) {
+                        list($metodoPrincipal, $submetodo) = explode('-', $metodo, 2);
+                    } else {
+                        $metodoPrincipal = $metodo;
+                        $submetodo = '';
+                    }
+                @endphp
+                <tr>
+                    <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
+                    <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
+                        <input type="hidden" name="valores_recebidos[]" value="{{ $valor }}">
+                        <input type="hidden" name="metodos_pagamento[]" value="{{ $metodoPrincipal }}">
+                        <input type="hidden" name="submetodos_pagamento[]" value="{{ $submetodo }}">
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</x-admin.field>
+
             </div>
         
         </x-admin.field-group>
@@ -207,7 +251,10 @@
 
         addValorRecebidoButton.addEventListener('click', function () {
             const valor = parseFloat(valorRecebidoInput.value);
-            const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value;
+            if(!document.querySelector('input[name="metodo_pagamento"]:checked')){
+                alert('Selecione um método de pagamento');
+            }
+            const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value ;
             const submetodoPagamentoSelect = document.querySelector(`#submetodos_container_${metodoPagamento} select`);
             const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
             const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';

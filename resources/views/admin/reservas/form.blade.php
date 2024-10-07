@@ -9,6 +9,9 @@
 
 @section('content')
     <x-admin.reserva-form save-route="admin.reservas.save" back-route="admin.reservas.index" submit-title="Finalizar" class="reservarForm">
+        <input type="hidden" name="reserva_id" value="{{$edit ? $reserva->id : ''}}">
+        <input type="hidden" name="is_edit" value="{{$edit ?? ''}}">
+
         <div class="col-md-12">
             <ul class="nav nav-tabs mb-4" id="reservaTabs" role="tablist">
                 <li class="nav-item">
@@ -32,9 +35,6 @@
             <!-- Conteúdo das tabs -->
             <div class="tab-content " id="reservaTabContent">
                 <!-- Tab 1: Informações Gerais -->
-                @if($edit)
-                    <input type="hidden" name="reserva_id" value="{{ $reserva->id }}">
-                @endif
                 @include('admin.reservas.partials.informacoes-gerais')
 
                 <!-- Tab 2: Disponibilidade -->
@@ -125,29 +125,29 @@
             // Script do cart quando for tela de edição
             if (window.location.href.indexOf('edit') > -1) {
                 @php
-                    $cartItems = $reserva->getCartSerializedAttribute();
+                    $item = $reserva->getCartSerializedAttribute();
                     $precosDiarios = $reserva->getPrecosDiarios();
-                    // dd($precosDiarios);
+                    $acompanhantes = $reserva->acompanhantes;
+                    // dd($reserva);
                 @endphp
                 
-                @foreach ($cartItems as $item)
                     adicionarQuartoAoCart(
                         "{{ $item['quartoId'] ?? '' }}",
                         "{{ $item['quartoNumero'] ?? '' }}",
                         "{{ $item['quartoAndar'] ?? '' }}",
                         "{{ $item['quartoClassificacao'] ?? '' }}",
                         "{{ $item['tipo_acomodacao'] ?? '' }}",
-                        "{{ $item['nome'] ?? '' }}",
-                        "{{ $item['cpf'] ?? '' }}",
+                        "{{ $reserva->clienteResponsavel->nome ?? '' }}",
+                        "{{ $reserva->clienteResponsavel->cpf ?? '' }}",
                         "{{ $item['dataCheckin'] ?? '' }}",
                         "{{ $item['dataCheckout'] ?? '' }}",
                         {!! json_encode($precosDiarios ?? '') !!},
                         "{{ $item['total'] ?? '' }}",
-                        "{{ $item['criancas_ate_7'] ?? '' }}",
-                        "{{ $item['criancas_mais_7'] ?? '' }}",
-                        "{{ $item['adultos'] ?? '' }}"
+                        "{{ $reserva->criancas_ate_7 ?? '' }}",
+                        "{{ $reserva->criancas_mais_7 ?? '' }}",
+                        "{{ $reserva->adultos ?? '' }}",
+                        {!! json_encode($acompanhantes ?? '') !!},
                     );
-                @endforeach
             }
         });
     </script>
