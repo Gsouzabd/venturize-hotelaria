@@ -203,8 +203,8 @@ class ReservaController extends Controller
         }
         
         return redirect()
-            ->route('admin.reservas.index')
-            ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
+                    ->back()
+                    ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
     }
 
     public function destroy($id)
@@ -242,6 +242,11 @@ class ReservaController extends Controller
         }
     }
 
-
+    public function gerarFichaNacional($id)
+    {
+        $this->reservaService->gerarFichaNacional($id);
+    }
 
 }
+
+

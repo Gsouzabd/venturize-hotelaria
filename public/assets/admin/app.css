@@ -547,8 +547,8 @@ div#planos-precos-block h6 {
 }
 
 .reservations-calendar td {
-    min-width: 150px;
-    max-width: 150px;
+    min-width: 70px;
+    max-width: 100px;
     height: auto; /* Define a altura fixa */
     padding: 2px !important;
 }
@@ -682,7 +682,9 @@ input.preco-diario {
 .card .info span, .card .info strong {
     font-size: 14px;
 }
-
+.card .info span {
+    font-weight: 500;
+}
 
 input.form-control.missing-to-checkin {
     background-color: #f358586b;

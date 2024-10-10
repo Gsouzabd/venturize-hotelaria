@@ -64,6 +64,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/quartos/{quartoId}/planos-preco', [DisponibilidadeController::class, 'obterPlanosPrecos'])->name('obter-planos-preco');    
 
 
-        
+        Route::get('/reservas/{id}/gerar-ficha-nacional', [ReservaController::class, 'gerarFichaNacional'])->name('reserva.gerarFichaNacional');
     });
 });

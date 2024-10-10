@@ -10,9 +10,29 @@ use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\Acompanhante;
 use Illuminate\Support\Facades\Auth;
+use Dompdf\Dompdf;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\View\Factory as ViewFactory;
 
 class ReservaService
 {
+    protected $dompdf;
+    protected $config;
+    protected $files;
+    protected $view;
+    protected $showWarnings;
+
+    public function __construct(Dompdf $dompdf, ConfigRepository $config, Filesystem $files, ViewFactory $view)
+    {
+        $this->dompdf = $dompdf;
+        $this->config = $config;
+        $this->files = $files;
+        $this->view = $view;
+
+        $this->showWarnings = $this->config->get('dompdf.show_warnings', false);
+    }
+    
     public function criarOuAtualizarReserva(array $data): Array
     {
         $reservas = [];
@@ -153,6 +173,8 @@ class ReservaService
                                         [
                                             'nome' => $acompanhanteData['nome'],
                                             'data_nascimento' => $acompanhanteData['data_nascimento'],
+                                            'telefone' => $acompanhanteData['telefone'] ?? null,
+                                            'email' => $acompanhanteData['email'] ?? null,
                                         ]
                                     );
                                 }
@@ -168,6 +190,8 @@ class ReservaService
                                     'cliente_id' => $cliente->id ?? null,
                                     'nome' => $acompanhanteData['nome'],
                                     'data_nascimento' => $acompanhanteData['data_nascimento'] ?? null,
+                                    'telefone' => $acompanhanteData['telefone'] ?? null,
+                                    'email' => $acompanhanteData['email'] ?? null,
                                 ]
                             );
         
@@ -219,4 +243,30 @@ class ReservaService
         $formats = ['d-m-Y', 'd/m/Y'];
         return $this->formatDate($date, $formats, [12, 0]);
     }
+
+    public function gerarFichaNacional($id)
+    {
+        // Buscar os dados da reserva com base no ID
+        $reserva = Reserva::findOrFail($id);
+        $data = [
+            'reserva' => $reserva,
+            // Adicione outros dados necessários aqui
+        ];
+
+        $html = $this->view->make('pdf.ficha-nacional', $data)->render();
+
+        $this->dompdf->loadHtml($html);
+        $this->dompdf->setPaper('A4', 'portrait');
+        $this->dompdf->render();
+
+        if ($this->showWarnings) {
+            $warnings = $this->dompdf->getWarnings();
+            foreach ($warnings as $warning) {
+                \Log::warning($warning);
+            }
+        }
+
+        return $this->dompdf->stream('ficha_nacional.pdf');
+    }
+    
 }

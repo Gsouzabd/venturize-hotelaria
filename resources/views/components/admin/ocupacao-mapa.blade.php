@@ -1,5 +1,6 @@
 @php
 use App\Models\Reserva;
+use Illuminate\Support\Str;
 
 @endphp
 
@@ -89,8 +90,7 @@ use App\Models\Reserva;
                                             
                                             "
                                             style="flex: 1; background: {{ $cor }}; color: white; ">
-                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? ucwords(strtolower($reservaNoDia->clienteResponsavel->nome)) : "GR: " . ucwords(strtolower($reservaNoDia->clienteSolicitante->nome))) : '' }}
-                                        </a>
+                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? Str::limit(ucwords(strtolower($reservaNoDia->clienteResponsavel->nome)), 15) : "GR: " . Str::limit(ucwords(strtolower($reservaNoDia->clienteSolicitante->nome)), 20)) : '' }}                                        </a>
                                     @endforeach
                                 </td>
                             @else

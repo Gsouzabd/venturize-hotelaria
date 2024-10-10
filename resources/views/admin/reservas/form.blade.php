@@ -44,7 +44,14 @@
                         </li>
                     @endif
                 @endif
+
             </ul>
+
+            @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+                <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}">
+                    <i class="fas fa-file-alt"></i> Gerar Ficha de Check-in
+                </a>
+            @endif
 
             <!-- Conteúdo das tabs -->
             <div class="tab-content " id="reservaTabContent">

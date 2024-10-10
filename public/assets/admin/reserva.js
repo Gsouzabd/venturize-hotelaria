@@ -105,8 +105,8 @@ async function adicionarQuartoAoCart(
         let acompanhantesHtml = '';
         acompanhantes.forEach((acompanhante, index) => {
             console.log(acompanhante)
-            const { tipo, nome, cpf, data_nascimento } = acompanhante;
-
+            const { tipo, nome, cpf, data_nascimento, email, telefone } = acompanhante;
+    
             // Ignorar o primeiro índice se o tipo for "Adulto"
             if (tipo === 'Adulto' && index === 0 && !edit) {
                 return;
@@ -136,6 +136,22 @@ async function adicionarQuartoAoCart(
                             <input type="date" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][data_nascimento]" value="${data_nascimento}">
                         </div>
                     </div>
+                    ${tipo === 'Adulto' ? `
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-envelope"></i>
+                            <span>Email:</span>
+                            <input type="email" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][email]" value="${email ?? ''}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-phone"></i>
+                            <span>Telefone:</span>
+                            <input type="text" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][telefone]" value="${telefone ?? ''}">
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             `;
@@ -290,7 +306,7 @@ async function adicionarQuartoAoCart(
                 <div class="info">
                     <i class="icon fas fa-dollar-sign"></i>
                     <strong>Valor Total:</strong> 
-                    <span id="valor-total-${quartoId}" style="float:right;">R$ ${total.toFixed(2).replace('.', ',')}</span>
+                    <span id="valor-total-${quartoId}" style="float:right; padding-top: 4px;">R$ ${total.toFixed(2).replace('.', ',')}</span>
                     <input type="hidden" name="quartos[${quartoId}][total]" id="input-valor-total-${quartoId}" value="${total.toFixed(2)}">
                 </div>
             </div>

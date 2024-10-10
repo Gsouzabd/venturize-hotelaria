@@ -15,6 +15,8 @@ class Acompanhante extends Model
         'cpf',
         'data_nascimento',
         'tipo',
+        'email',         // Added email
+        'telefone',      // Added telefone
     ];
 
     public function reserva()
