@@ -1,4 +1,5 @@
 @extends('layouts.admin.master')
+
 @section('title', ($edit ? 'Editando' : 'Inserindo') . ' Quarto')
 @section('content-header')
     <x-admin.page-header :title="view()->getSection('title')"/>
@@ -106,100 +107,102 @@
 
         <!-- Bloco para exibir planos de preços -->
         <hr>
-        <x-admin.field-group id="planos-precos-block">
-            <x-admin.field cols="12">
-                <h4 style="text-align: center">
-                     Planos de Preços
-                </h4>                @if($quarto->planosPrecos == null || $quarto->planosPrecos->isEmpty())
-                    <div class="alert alert-info">
-                        Não há planos de preços cadastrados para este quarto.
-                    </div>
-                    <x-admin.edit-btn route="admin.quartos.planos-preco.edit" :route-params="['quartoId' => $quarto->id, 'id' => null]" label="Criar Plano de Preço"/>
-                @else
-                    <!-- Plano de Preço Padrão -->
-                    <h6>
-                        <i class="fas fa-star"></i> Plano de Preço Padrão
-                    </h6>
-                
-                    <table class="table table-bordered" class="planos-precos-periodo">
-                        <thead>
-                            <tr>
-                                {{-- <th>ID</th> --}}
-                                <th>Segunda</th>
-                                <th>Terça</th>
-                                <th>Quarta</th>
-                                <th>Quinta</th>
-                                <th>Sexta</th>
-                                <th>Sábado</th>
-                                <th>Domingo</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($quarto->planosPrecos->where('is_default', 1) as $planoPreco)
+        @if($edit)
+            <x-admin.field-group id="planos-precos-block">
+                <x-admin.field cols="12">
+                    <h4 style="text-align: center">
+                        Planos de Preços
+                    </h4>                @if($quarto->planosPrecos == null || $quarto->planosPrecos->isEmpty())
+                        <div class="alert alert-info">
+                            Não há planos de preços cadastrados para este quarto.
+                        </div>
+                        <x-admin.edit-btn route="admin.quartos.planos-preco.edit" :route-params="['quartoId' => $quarto->id, 'id' => null]" label="Criar Plano de Preço"/>
+                    @else
+                        <!-- Plano de Preço Padrão -->
+                        <h6>
+                            <i class="fas fa-star"></i> Plano de Preço Padrão
+                        </h6>
+                    
+                        <table class="table table-bordered" class="planos-precos-periodo">
+                            <thead>
                                 <tr>
-                                    {{-- <td>{{ $planoPreco->id }}</td> --}}
-                                    <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_quarta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_quinta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_sexta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_sabado }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_domingo }}</td>
-                                    <td>
-                                        <a href="{{ route('admin.quartos.planos-preco.edit', ['quartoId' => $quarto->id, 'id' => $planoPreco->id]) }}" class="btn btn-sm btn-primary">Editar</a>
-                                    </td>
+                                    {{-- <th>ID</th> --}}
+                                    <th>Segunda</th>
+                                    <th>Terça</th>
+                                    <th>Quarta</th>
+                                    <th>Quinta</th>
+                                    <th>Sexta</th>
+                                    <th>Sábado</th>
+                                    <th>Domingo</th>
+                                    <th>Ações</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-        
-                    <!-- Planos de Preço por Período -->
-                    <h6>
-                        <i class="fas fa-calendar-alt"></i> Por Período
-                    </h6>  
-                    <table class="table table-bordered" class="planos-precos-periodo">
-                        <thead>
-                            <tr>
-                                {{-- <th>ID</th> --}}
-                                <th>Data Início</th>
-                                <th>Data Fim</th>
-                                <th>Segunda</th>
-                                <th>Terça</th>
-                                <th>Quarta</th>
-                                <th>Quinta</th>
-                                <th>Sexta</th>
-                                <th>Sábado</th>
-                                <th>Domingo</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($quarto->planosPrecos->where('is_default', 0) as $planoPreco)
+                            </thead>
+                            <tbody>
+                                @foreach($quarto->planosPrecos->where('is_default', 1) as $planoPreco)
+                                    <tr>
+                                        {{-- <td>{{ $planoPreco->id }}</td> --}}
+                                        <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_quarta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_quinta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_sexta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_sabado }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_domingo }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.quartos.planos-preco.edit', ['quartoId' => $quarto->id, 'id' => $planoPreco->id]) }}" class="btn btn-sm btn-primary">Editar</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+            
+                        <!-- Planos de Preço por Período -->
+                        <h6>
+                            <i class="fas fa-calendar-alt"></i> Por Período
+                        </h6>  
+                        <table class="table table-bordered" class="planos-precos-periodo">
+                            <thead>
                                 <tr>
-                                    {{-- <td>{{ $planoPreco->id }}</td> --}}
-                                    <td>{{ $planoPreco->data_inicio ? \Carbon\Carbon::parse($planoPreco->data_inicio)->format('d/m/Y') : '' }}</td>
-                                    <td>{{ $planoPreco->data_fim ? \Carbon\Carbon::parse($planoPreco->data_fim)->format('d/m/Y') : '' }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_quarta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_quinta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_sexta }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_sabado }}</td>
-                                    <td>{{ 'R$ ' . $planoPreco->preco_domingo }}</td>
-                                    <td>
-                                        <a href="{{ route('admin.quartos.planos-preco.edit', ['quartoId' => $quarto->id, 'id' => $planoPreco->id]) }}" class="btn btn-sm btn-primary">Editar</a>
+                                    {{-- <th>ID</th> --}}
+                                    <th>Data Início</th>
+                                    <th>Data Fim</th>
+                                    <th>Segunda</th>
+                                    <th>Terça</th>
+                                    <th>Quarta</th>
+                                    <th>Quinta</th>
+                                    <th>Sexta</th>
+                                    <th>Sábado</th>
+                                    <th>Domingo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($quarto->planosPrecos->where('is_default', 0) as $planoPreco)
+                                    <tr>
+                                        {{-- <td>{{ $planoPreco->id }}</td> --}}
+                                        <td>{{ $planoPreco->data_inicio ? \Carbon\Carbon::parse($planoPreco->data_inicio)->format('d/m/Y') : '' }}</td>
+                                        <td>{{ $planoPreco->data_fim ? \Carbon\Carbon::parse($planoPreco->data_fim)->format('d/m/Y') : '' }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_quarta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_quinta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_sexta }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_sabado }}</td>
+                                        <td>{{ 'R$ ' . $planoPreco->preco_domingo }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.quartos.planos-preco.edit', ['quartoId' => $quarto->id, 'id' => $planoPreco->id]) }}" class="btn btn-sm btn-primary">Editar</a>
 
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-        
-                    <x-admin.edit-btn route="admin.quartos.planos-preco.edit" :route-params="['quartoId' => $quarto->id, 'id' => null]" label="Adicionar Plano de Preço"/>
-                @endif
-            </x-admin.field>
-        </x-admin.field-group>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+            
+                        <x-admin.edit-btn route="admin.quartos.planos-preco.edit" :route-params="['quartoId' => $quarto->id, 'id' => null]" label="Adicionar Plano de Preço"/>
+                    @endif
+                </x-admin.field>
+            </x-admin.field-group>
+        @endif
 
     </x-admin.form>
 </div>

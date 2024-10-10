@@ -60,19 +60,21 @@ class ReservaService
         }
 
         // Buscar ou criar o cliente solicitante
-        $clienteSolicitante = Cliente::updateOrCreate(
-            ['cpf' => $data['cpf']],
-            [
-                'nome' => $data['nome'],
-                'email' => $data['email'],
-                'telefone' => $data['telefone'],
-                'celular' => $data['celular'],
-                'data_nascimento' => $data['data_nascimento'],
-                'rg' => $data['rg'],
-                'estrangeiro' => 'Não' // ou outro valor apropriado
-            ]
-        );
-
+        if (!empty($data['cpf']) && !empty($data['nome'])) {
+            $clienteSolicitante = Cliente::updateOrCreate(
+                ['cpf' => $data['cpf']],
+                [
+                    'nome' => $data['nome'],
+                    'email' => $data['email'],
+                    'telefone' => $data['telefone'],
+                    'celular' => $data['celular'],
+                    'data_nascimento' => $data['data_nascimento'],
+                    'rg' => $data['rg'],
+                    'estrangeiro' => 'Não' // ou outro valor apropriado
+                ]
+            );
+        }
+ 
 
         try {
             foreach ($data['quartos'] as $quartoId => $quartoData) {
@@ -131,6 +133,7 @@ class ReservaService
                 } else {
                     $reserva = Reserva::create($reservaData);
                 }
+
         
                 // Extrair dados dos acompanhantes e associá-los à reserva
                 if (isset($quartoData['acompanhantes'])) {
@@ -144,13 +147,15 @@ class ReservaService
                         foreach ($listaAcompanhantes as $index => $acompanhanteData) {
                             $cliente = null;
                             if (strtolower($tipo) === 'adulto') {
-                                $cliente = Cliente::updateOrCreate(
-                                    ['cpf' => $acompanhanteData['cpf']],
-                                    [
-                                        'nome' => $acompanhanteData['nome'],
-                                        'data_nascimento' => $acompanhanteData['data_nascimento'],
-                                    ]
-                                );
+                                if (!empty($acompanhanteData['cpf']) && !empty($acompanhanteData['nome'])) {
+                                    $cliente = Cliente::updateOrCreate(
+                                        ['cpf' => $acompanhanteData['cpf']],
+                                        [
+                                            'nome' => $acompanhanteData['nome'],
+                                            'data_nascimento' => $acompanhanteData['data_nascimento'],
+                                        ]
+                                    );
+                                }
                             }
         
                             $acompanhante = Acompanhante::updateOrCreate(

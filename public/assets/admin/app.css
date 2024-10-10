@@ -1,3 +1,19 @@
+@keyframes zoomIn {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.zoom-in {
+    animation: zoomIn 0.5s ease-in-out;
+}
+
 .container.has-sidebar {
     max-width: 99%;
     padding: 0;
@@ -472,9 +488,12 @@ html:not(.material-style) .material-style-only {
 
 
 .status-reserva {
-    padding: 5px; color: white; border-radius: 10px;
+    padding: 5px;
+    font-size: 10px;
+    font-weight: 500;
+    color: white;
+    border-radius: 10px;
 }
-
 
 a.btn.btn-primary.select-quarto.disabled {
     background: gray !important;
@@ -528,8 +547,8 @@ div#planos-precos-block h6 {
 }
 
 .reservations-calendar td {
-    min-width: 100px;
-    max-width: 100px;
+    min-width: 150px;
+    max-width: 150px;
     height: auto; /* Define a altura fixa */
     padding: 2px !important;
 }
@@ -547,15 +566,13 @@ div#planos-precos-block h6 {
     height: 35px;
     max-width: 300px;
     text-transform: capitalize;
-    overflow: hidden;
     white-space: nowrap;
     font-size: 14px;
     text-overflow: clip;
     border: 1px solid #ffffff;
     border-radius: 5px;
     align-items: center;
-    padding: 10px;
-    word-wrap: break-word;
+    padding: 10px;;
 }
 
 .reserva-dia.checkin {
@@ -664,4 +681,86 @@ input.preco-diario {
 
 .card .info span, .card .info strong {
     font-size: 14px;
+}
+
+
+input.form-control.missing-to-checkin {
+    background-color: #f358586b;
+}
+
+#pagamento .form-row {
+    border-bottom: 2px solid #f2f2f2;
+}
+
+
+.checkin-done {
+    background: #4caf50;
+    color: white !important;
+}
+
+ul.list-inline .badge {
+    width: 50px;
+}
+
+
+p.card-text.quarto {
+    font-size: 16px;
+}
+
+.circle-indicator {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.2rem;
+    line-height: 40px;
+}
+
+.room-card {
+    border: none;
+    padding: 10px;
+    text-align: center;
+}
+
+.room-name {
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 0p;
+}
+
+#dados-quarto-ocupado {
+    font-size: 9px;
+}
+
+#indicadores p {
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+span.andar {
+    background: gray;
+    color: white;
+    border-radius: 20px;
+    padding: 5px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+.quartos {
+    margin: 0;
+    padding: 2px;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    max-height: 170px;
+}
+
+.quartos .card{
+    padding: 5px !important;
+}
+
+.andar-block {
+    border-bottom: 1px solid #2323232b;
+    padding-bottom: 20px;
 }

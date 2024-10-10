@@ -46,7 +46,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
 
         Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
-
+        // Route::get('/reservas/{id}/status/{status}', [ReservaController::class, 'updateSituacaoReserva'])->name('reservas.updateSituacaoReserva');
 
         Route::get('/clientes/{id}', [ClienteController::class, 'findById'])->name('admin.clientes.findById');
         Route::get('/clientes/cpf/{cpf}', [ClienteController::class, 'findByCpf'])->name('admin.clientes.findByCpf');

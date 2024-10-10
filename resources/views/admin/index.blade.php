@@ -1,52 +1,134 @@
 @extends('layouts.admin.master')
+@php 
+use Carbon\Carbon; 
+use App\Models\Reserva;
 
+$contadores = collect($statusQuartoNoDia)->countBy('status');
+
+// Criar uma cópia de SITUACOESRESERVA e alterar os backgrounds de HOSPEDADO e RESERVADO
+$situacoesReserva = Reserva::SITUACOESRESERVA;
+$situacoesReserva['HOSPEDADO']['background'] = '#b70000';
+$situacoesReserva['RESERVADO']['background'] = '#033287';
+@endphp
 @section('title', 'Dashboard')
 
 @section('content-header')
-    <x-admin.page-header :title="view()->getSection('title')">
-        <div>Resumo Geral</div>
-    </x-admin.page-header>
+    <x-admin.page-header :title="view()->getSection('title')"/>
 @endsection
 
 @section('content')
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card card-bg-info shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">Total de Usuários</h5>
-                <p class="card-text">{{ $totalUsuarios }}</p>
+
+<div class="container my-4">
+    <!-- Indicadores de status dos quartos -->
+    <div class="row text-center mb-4" id="indicadores">
+        @foreach (array_keys($situacoesReserva) as $key)
+            @php
+                $situacao = $situacoesReserva[$key];
+            @endphp
+            <div class="col-md-2 col-6">
+                <div class="circle-indicator mx-auto" style="background-color: {{ $situacao['background'] }};">
+                    {{ $contadores[$key] ?? 0 }}
+                </div>
+                <div>
+                    <p>
+                        <i class="fas fa-circle" style="color: {{ $situacao['background'] }}"></i> {{ $situacao['label'] }}
+                    </p>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card card-bg-success shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">Total de Clientes</h5>
-                <p class="card-text">{{ $totalClientes }}</p>
+        @endforeach
+        <div class="col-md-2 col-6">
+            <div class="circle-indicator mx-auto" style="background-color: #00A65B;">
+                {{ $totalDisponiveis }}
             </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card card-bg-warning shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">Total de Quartos</h5>
-                <p class="card-text">{{ $totalQuartos }}</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Segunda Linha de Cartões -->
-    <div class="col-md-4 mb-4">
-        <div class="card card-bg-primary shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">Reservas Ativas</h5>
-                <p class="card-text">{{ $reservasAtivas }}</p>
+            <div>
+                <p>
+                    <i class="fas fa-circle" style="color: #00A65B;"></i> Livre
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+    
+    <!-- Seção de quartos por andar -->
+    @php
+        $quartosPorAndar = collect($statusQuartoNoDia)->groupBy(function($status) {
+            return $status['quarto']->andar;
+        });
+    @endphp
+    
+    @foreach($quartosPorAndar as $andar => $quartos)
+        <div class="row mb-4 andar-block">
+            <div class="col-12">
+                <span class="andar">Andar: {{ $andar }}</span>
+            </div>
+                        @php
+                // Criar uma cópia de SITUACOESRESERVA e alterar os backgrounds de HOSPEDADO e RESERVADO
+                $situacoesReserva = \App\Models\Reserva::SITUACOESRESERVA;
+                $situacoesReserva['HOSPEDADO']['background'] = '#b70000';
+                $situacoesReserva['RESERVADO']['background'] = '#033287';
+            @endphp
+            
+            @foreach($quartos as $status)
+                @php
+                    $situacao = $status['status'];
+                    $corDeFundo = $situacoesReserva[$situacao]['background'] ?? '#00a65a';
+                    $label = $situacoesReserva[$situacao]['label'] ?? 'Livre';
+                @endphp
+                <div class="col-lg-2 col-md-2 col-sm-4 col-6 mb-4 quartos">
+                    <div class="card room-card shadow-sm h-100">
+                        <div class="card-body text-center p-2" style="color: white; background-color: {{ $corDeFundo }};"
+                            @if($status['status'] != 'Livre' && $status['reserva'])
+                                data-toggle="tooltip" data-html="true" title="
+                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                        <strong>Cliente:</strong> <span>{{ ucwords(strtolower($status['reserva']->clienteResponsavel->nome ?? 'N/A')) }}</span>
+                                    </div>
+                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                        <strong>Check-in:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkin)->format('d-m-Y H:i') }}</span>
+                                    </div>
+                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                        <strong>Check-out:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkout)->format('d-m-Y H:i') }}</span>
+                                    </div>
+                                "
+                            @endif
+                        >
+                            <!-- Número do Quarto -->
+                            <h5 class="card-title mb-2">{{ $status['quarto']->numero }}</h5>
+                            
+                            <!-- Nome do Quarto (Classificação) -->
+                            <p class="room-name">{{ $status['quarto']->classificacao }}</p>
+                            
+                            <!-- Ícone baseado no status -->
+                            @if($status['status'] == 'HOSPEDADO')
+                                <i class="fas fa-lock fa-2x text-danger"></i> <!-- Ícone de cadeado -->
+                            @elseif($status['status'] == 'Livre')
+                                <i class="fas fa-thumbs-up fa-2x" style="color: #0d6c0d;"></i> <!-- Ícone de joinha -->
+                            @elseif($status['status'] == 'RESERVADO')
+                                <i class="fas fa-dollar-sign fa-2x" style="color: #062381;"></i> <!-- Ícone de pagamento -->
+                            @else
+                                <i class="fas fa-question-circle fa-2x text-warning"></i> <!-- Ícone de status desconhecido -->
+                            @endif
+                            
+                            <p class="card-text quarto">{{ $label }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endforeach
+    
+    <script>
+        $(document).ready(function(){
+            $('[data-toggle="tooltip"]').tooltip(); 
+        });
+    </script>
+
+
+
+
+
+
+
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card shadow-sm">
@@ -87,7 +169,7 @@
                             <td>{{ $reserva->quarto->numero }}</td>
                             <td>{{ $reserva->operador->nome }}</td>
                             <td>
-                                <span class="badge badge-{{ $reserva->situacao_reserva == 'CONFIRMADA' ? 'success' : 'warning' }}">
+                                <span class="badge" style="background: {{Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}}; color: white;">
                                     {{ $reserva->situacao_reserva }}
                                 </span>
                             </td>

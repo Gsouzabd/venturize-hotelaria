@@ -1,3 +1,8 @@
+@php
+use App\Models\Reserva;
+
+@endphp
+
 <div class="filters">
     <form method="GET" action="{{ $action }}">
         <div class="row">
@@ -25,18 +30,11 @@
 <div class="mt-4">
     <h5>Legenda de Situações</h5>
     <ul class="list-inline">
-        <li class="list-inline-item">
-            <span class="badge badge-info">&nbsp;&nbsp;</span> Em Curso
-        </li>
-        <li class="list-inline-item">
-            <span class="badge badge-success">&nbsp;&nbsp;</span> Confirmada
-        </li>
-        <li class="list-inline-item">
-            <span class="badge badge-warning">&nbsp;&nbsp;</span> Pré-Reserva
-        </li>
-        <li class="list-inline-item">
-            <span class="badge badge-danger">&nbsp;&nbsp;</span> Cancelada
-        </li>
+        @foreach (Reserva::SITUACOESRESERVA as $situacao)
+            <li class="list-inline-item">
+                <span class="badge" style="background-color: {{ $situacao['background'] }};">&nbsp;&nbsp;</span> {{ $situacao['label'] }}
+            </li>
+        @endforeach
     </ul>
 </div>
 
@@ -74,36 +72,24 @@
                             @if(count($reservasNoDia) > 0)
                                 <td style="padding: 0px; height: 30px;">
                                     @foreach($reservasNoDia->sortBy('data_checkin') as $reservaNoDia)
+                                    
                                         @php
                                             $cor = '';
-                                            switch ($reservaNoDia->situacao_reserva ?? '') {
-                                                case 'CONFIRMADA':
-                                                    $cor = 'bg-success text-white';
-                                                    break;
-                                                case 'PRÉ RESERVA':
-                                                    $cor = 'bg-warning text-white';
-                                                    break;
-                                                case 'CANCELADA':
-                                                    $cor = 'bg-danger text-white';
-                                                    break;
-                                                default:
-                                                    $cor = 'bg-info text-white'; // Em Curso ou situação não especificada
-                                            }
+                                            $cor = Reserva::SITUACOESRESERVA[$reservaNoDia->situacao_reserva]['background'] ?? '';
+                   
                                             $dataCheckin = \Carbon\Carbon::parse($reservaNoDia->data_checkin)->toDateString();
                                             $dataCheckout = \Carbon\Carbon::parse($reservaNoDia->data_checkout)->toDateString();
                                         @endphp
                                         <a href="{{ route('admin.reservas.edit', ['id' => $reservaNoDia->id] )}}" 
                                             class="
                                                 reserva-dia 
-                                                {{ $cor }} 
                                                 {{$diaAtual == $dataCheckin ? 'checkin' : ''}} 
                                                 {{$diaAtual == $dataCheckout ? 'checkout' : ''}}
                                                 {{$diaAtual != $dataCheckin && $diaAtual != $dataCheckout ? 'intermediario' : ''}}
                                             
                                             "
-                                            style="flex: 1;">
-                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? $reservaNoDia->clienteResponsavel->nome : "Grupo de ".$reservaNoDia->clienteSolicitante->nome) : '' }}
-
+                                            style="flex: 1; background: {{ $cor }}; color: white; ">
+                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? ucwords(strtolower($reservaNoDia->clienteResponsavel->nome)) : "GR: " . ucwords(strtolower($reservaNoDia->clienteSolicitante->nome))) : '' }}
                                         </a>
                                     @endforeach
                                 </td>

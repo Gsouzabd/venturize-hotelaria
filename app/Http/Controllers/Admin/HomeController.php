@@ -18,7 +18,7 @@ class HomeController extends Controller
         $totalClientes = Cliente::count();
         $totalQuartos = Quarto::count();
         $quartosDisponiveis = Quarto::whereDoesntHave('reservas')->count();
-        $reservasAtivas = Reserva::where('situacao_reserva', 'CONFIRMADA')->count();
+        $reservasAtivas = Reserva::where('situacao_reserva', 'RESERVADO')->count();
         // Validação e filtragem dos parâmetros
         $dataInicial = $request->input('data_inicial') ? Carbon::parse($request->input('data_inicial')) : Carbon::today();
         $intervaloDias = $request->input('intervalo', 30); // Intervalo padrão de 30 dias
@@ -45,7 +45,7 @@ class HomeController extends Controller
             $totalClientes = Cliente::count();
             $totalQuartos = Quarto::count();
             // $quartosDisponiveis = Quarto::where('disponivel', true)->count();
-            $reservasAtivas = Reserva::where('situacao_reserva', 'CONFIRMADA')->count();
+            $reservasAtivas = Reserva::where('situacao_reserva', 'RESERVADO')->count();
     
             // Mês atual
             $currentMonth = Carbon::now()->month;
@@ -66,12 +66,57 @@ class HomeController extends Controller
                 ->take(5)
                 ->get();
 
-            
+
+
+            //Quartos / Reservas do DIA 
+            $statusQuartoNoDia = $this->statusQuartoNoDia();
+            $totalOcupados = collect($statusQuartoNoDia)->where('status', 'Ocupado')->count();
+            $totalDisponiveis = collect($statusQuartoNoDia)->where('status', 'Livre')->count();
+            $totalLimpos = collect($statusQuartoNoDia)->where('status', 'Limpo')->count(); // Exemplo para 'Limpo'
+        
+            // dd($statusQuartoNoDia);
 
         return view('admin.index', compact(
             'totalUsuarios', 'totalClientes', 'totalQuartos', 'reservasAtivas', 'reservasPorMes', 'ultimasReservas',
-            'reservas', 'dataInicial', 'intervaloDias'
+            'reservas', 'dataInicial', 'intervaloDias', 'statusQuartoNoDia', 'totalOcupados', 'totalDisponiveis', 'totalLimpos'
         
         ));
     }
+
+
+    function statusQuartoNoDia()
+    {
+        $quartos = Quarto::all();
+        $reservas = Reserva::whereDate('data_checkin', Carbon::now('America/Sao_Paulo')->toDateString())->get();
+    
+        // dd($reservas);
+        $status = [];
+    
+        foreach ($quartos as $quarto) {
+            $status[$quarto->id] = [
+                'quarto' => $quarto,
+                'status' => 'Livre',
+                'reserva' => null
+            ];
+        }
+    
+        foreach ($reservas as $reserva) {
+            $status[$reserva->quarto->id] = [
+                'quarto' => $reserva->quarto,
+                'status' => $reserva->situacao_reserva,
+                'reserva' => $reserva
+            ];
+        }
+
+        // dd($status);
+    
+        // Ordenar pelo número do quarto
+        usort($status, function ($a, $b) {
+            return $a['quarto']->numero <=> $b['quarto']->numero;
+        });
+    
+        return $status;
+    }
+
+
 }

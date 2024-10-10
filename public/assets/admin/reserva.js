@@ -930,3 +930,101 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
     }
 });
 
+
+
+
+
+
+
+// ---> CHECKIN  <--- //
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkinTab = document.querySelector('a#checkin-tab');
+        if (!checkinTab) {
+            console.error('Elemento com ID checkin-tab não encontrado no DOM');
+            return;
+        }
+        function validateCartItems() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartItems = cartItemsContainer.querySelectorAll('.cart-item');
+            const messages = [];
+            let firstInvalidField = null;
+    
+            cartItems.forEach((cartItem, index) => {
+                const quartoId = cartItem.querySelector('input[name^="quartos["]').name.match(/\d+/)[0];
+                const responsavelNome = cartItem.querySelector(`input[name="quartos[${quartoId}][responsavel_nome]"]`);
+                const responsavelCpf = cartItem.querySelector(`input[name="quartos[${quartoId}][responsavel_cpf]"]`);
+    
+                // Validação do responsável
+                if (!responsavelNome.value.trim() || !responsavelCpf.value.trim()) {
+                    messages.push(`Quarto ${quartoId}: Preencha o nome e CPF do responsável.`);
+                    if (!firstInvalidField) {
+                        firstInvalidField = !responsavelNome.value.trim() ? responsavelNome : responsavelCpf;
+                    }
+                    if (!responsavelNome.value.trim()) {
+                        responsavelNome.classList.add('missing-to-checkin', 'zoom-in');
+                        responsavelNome.addEventListener('input', removeMissingClass);
+                    }
+                    if (!responsavelCpf.value.trim()) {
+                        responsavelCpf.classList.add('missing-to-checkin', 'zoom-in');
+                        responsavelCpf.addEventListener('input', removeMissingClass);
+                    }
+                }
+    
+                // Validação dos acompanhantes
+                const acompanhantes = cartItem.querySelectorAll('.acompanhante');
+                acompanhantes.forEach((acompanhante, acompIndex) => {
+                    const nome = acompanhante.querySelector('input[name*="[nome]"]');
+                    const cpf = acompanhante.querySelector('input[name*="[cpf]"]');
+                    const dataNascimento = acompanhante.querySelector('input[name*="[data_nascimento]"]');
+    
+                    if (!nome.value.trim() || !cpf.value.trim() || !dataNascimento.value.trim()) {
+                        messages.push(`Quarto ${quartoId}, Acompanhante ${acompIndex + 1}: Preencha todos os campos (nome, CPF, data de nascimento).`);
+                        if (!firstInvalidField) {
+                            firstInvalidField = !nome.value.trim() ? nome : (!cpf.value.trim() ? cpf : dataNascimento);
+                        }
+                        if (!nome.value.trim()) {
+                            nome.classList.add('missing-to-checkin', 'zoom-in');
+                            nome.addEventListener('input', removeMissingClass);
+                        }
+                        if (!cpf.value.trim()) {
+                            cpf.classList.add('missing-to-checkin', 'zoom-in');
+                            cpf.addEventListener('input', removeMissingClass);
+                        }
+                        if (!dataNascimento.value.trim()) {
+                            dataNascimento.classList.add('missing-to-checkin', 'zoom-in');
+                            dataNascimento.addEventListener('input', removeMissingClass);
+                        }
+                    }
+                });
+            });
+    
+            if (messages.length > 0) {
+                alert(messages.join('\n'));
+                if (firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalidField.focus();
+                }
+    
+                // Remove the zoom-in class after the animation completes
+                document.querySelectorAll('.zoom-in').forEach(field => {
+                    field.addEventListener('animationend', function () {
+                        field.classList.remove('zoom-in');
+                    }, { once: true });
+                });
+    
+                return false;
+            }
+            return true;
+        }
+    
+        function removeMissingClass(event) {
+            event.target.classList.remove('missing-to-checkin');
+        }
+    
+        checkinTab.addEventListener('click', function (e) {
+            if (!validateCartItems()) {
+                e.preventDefault(); // Previne a navegação
+                e.stopPropagation(); // Previne que a biblioteca ou outro manipulador processe o evento
+            }
+        });
+    });

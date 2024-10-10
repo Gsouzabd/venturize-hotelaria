@@ -15,7 +15,7 @@
             <x-admin.field cols="3">
                 <x-admin.label label="Situação da Reserva" required/>
                 <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
-                                :items="['CONFIRMADA' => 'Confirmada', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
+                                :items="['RESERVADO' => 'Reservado', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
                                 
                                 selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? '') }}">
                 </x-admin.select>

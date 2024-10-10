@@ -47,16 +47,24 @@ class Reserva extends Model
     const SITUACOESRESERVA = [
         'PRÉ RESERVA' => [
             'label' => 'Pré Reserva',
-            'background' => '#b2b2b2',
+            'background' => '#417A86',
         ],
-        'CONFIRMADA' => [
-            'label' => 'Confirmada',
+        'RESERVADO' => [
+            'label' => 'Reservado',
             'background' => 'green',
         ],
         'CANCELADA' => [
             'label' => 'Cancelada',
             'background' => 'red',
-        ]
+        ],
+        'HOSPEDADO' => [
+            'label' => 'Hospedado',
+            'background' => '#326dd7',
+        ], 
+        'NO SHOW' => [
+            'label' => 'No Show',
+            'background' => 'orange',
+        ],
     ];
 
     // Relacionamentos
@@ -110,13 +118,17 @@ class Reserva extends Model
     // Método para obter a relação data/preço
     public function getPrecosDiarios()
     {
-
         $precos = $this->getCartSerializedAttribute()['precosDiarios'] ?? [];
         //precisamos verificar se o array[0] vem no formato ["2024-10-08":"789.00"]
-
-
 
         return $precos;
     }
 
+
+    public function checkIn()
+    {
+        return $this->hasOne(CheckIn::class);
+    }
+
+    
 }

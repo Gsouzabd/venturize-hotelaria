@@ -97,14 +97,23 @@
         <x-admin.field-group class="d-flex justify-content-center">
             <div class="row">
                 <!-- Valor Sinal -->
-                <x-admin.field cols="4">
-                    <x-admin.label label="Incluir Valor Recebido"/>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Valor Recebido"/>
                     <div class="input-group mb-3 mt-2">
                         <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
                             value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
                         <div class="input-group-append w-100">
-                            <button class="btn btn-primary "  type="button" id="add-valor-recebido">Incluir</button>
+                            <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
                         </div>
+                    </div>
+                </x-admin.field>
+                
+                <x-admin.field cols="3">
+                    <x-admin.label label="Selecionar Quarto"/>
+                    <div class="input-group mb-3 mt-2">
+                        <select id="quarto-select" class="form-control">
+                            <option value="">Selecione um quarto</option>
+                        </select>
                     </div>
                 </x-admin.field>
 
@@ -149,6 +158,7 @@
             <tr>
                 <th>Valor</th>
                 <th>Método de Pagamento</th>
+                <th>Quarto</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -166,11 +176,12 @@
                 <tr>
                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
+                    <td>Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}
                     <td>
                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                        <input type="hidden" name="valores_recebidos[]" value="{{ $valor }}">
-                        <input type="hidden" name="metodos_pagamento[]" value="{{ $metodoPrincipal }}">
-                        <input type="hidden" name="submetodos_pagamento[]" value="{{ $submetodo }}">
+                        <input type="hidden" class="valores_recebidos" name="quartos[{{$reserva->quarto_id}}][valores_recebidos][]" value="{{ $valor }}">
+                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
+                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][submetodos_pagamento][]" value="{{ $submetodo }}">
                     </td>
                 </tr>
             @endforeach
@@ -198,14 +209,14 @@
         <x-admin.field cols="3" id="total-pago">
             <x-admin.label label=' <i class="fas fa-handshake"></i> Valor Pago' />
             <x-admin.text id="valor_pago" name="valor_pago" class="form-control"
-                value="{{ old('valor_pago', $reserva->pagamento->valor_pago ?? 0) }}" placeholder="Valor já pago" readonly/>
+                 readonly/>
         </x-admin.field>
     
         <!-- Valor Pendente -->
         <x-admin.field cols="3" id="valor-pendente">
             <x-admin.label label='<i class="fas fa-exclamation-circle"></i> Valor Pendente' />
             <x-admin.text id="valor_pendente" name="valor_pendente" class="form-control"
-                value="{{ old('valor_pendente', $reserva->pagamento ? ($reserva->pagamento->valor_total - $reserva->pagamento->valor_pago) : 0) }}" placeholder="Valor pendente" readonly/>        </x-admin.field>
+                readonly/>        </x-admin.field>
     
         <!-- Status do Pagamento -->
         <x-admin.field cols="3">
@@ -219,7 +230,6 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
         const addValorRecebidoButton = document.getElementById('add-valor-recebido');
         const valorRecebidoInput = document.getElementById('valor_recebido');
         const valoresRecebidosTable = document.getElementById('valores-recebidos-table').querySelector('tbody');
@@ -227,18 +237,19 @@
         const valorTotalInput = document.getElementById('valor_total');
         const valorPendenteInput = document.getElementById('valor_pendente');
         const statusPagamentoSelect = document.querySelector('select[name="status_pagamento"]');
-
         function atualizarValores() {
             let totalPago = 0;
-            document.querySelectorAll('input[name="valores_recebidos[]"]').forEach(function (input) {
+            document.querySelectorAll('input.valores_recebidos').forEach(function (input) {
                 totalPago += parseFloat(input.value);
             });
             valorPagoInput.value = totalPago.toFixed(2).replace('.', ',');
 
             const valorTotal = parseFloat(valorTotalInput.value.replace(',', '.')) || 0;
             const valorPendente = valorTotal - totalPago;
+            console.log(valorPendente, valorTotal, totalPago);
             valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
 
+            
             // Atualizar status de pagamento
             if (totalPago >= valorTotal) {
                 statusPagamentoSelect.value = 'PAGO';
@@ -251,24 +262,35 @@
 
         addValorRecebidoButton.addEventListener('click', function () {
             const valor = parseFloat(valorRecebidoInput.value);
-            if(!document.querySelector('input[name="metodo_pagamento"]:checked')){
+            if (!document.querySelector('input[name="metodo_pagamento"]:checked')) {
                 alert('Selecione um método de pagamento');
+                return;
             }
-            const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value ;
+            const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value;
             const submetodoPagamentoSelect = document.querySelector(`#submetodos_container_${metodoPagamento} select`);
             const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
             const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
+        
+            const quartoSelect = document.getElementById('quarto-select');
+            const quartoId = quartoSelect.value;
+            const quartoLabel = quartoSelect.options[quartoSelect.selectedIndex].text;
+        
+            if (!quartoId) {
+                alert('Selecione um quarto');
+                return;
+            }
         
             if (!isNaN(valor) && valor > 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
                     <td>${metodoPagamento} ${submetodoPagamento ? ' - ' + submetodoPagamentoLabel : ''}</td>
+                    <td>${quartoLabel}</td>
                     <td>
                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                        <input type="hidden" name="valores_recebidos[]" value="${valor}">
-                        <input type="hidden" name="metodos_pagamento[]" value="${metodoPagamento}">
-                        <input type="hidden" name="submetodos_pagamento[]" value="${submetodoPagamento}">
+                        <input type="hidden" class="valores_recebidos" name="quartos[${quartoId}][valores_recebidos][]" value="${valor}">
+                        <input type="hidden" name="quartos[${quartoId}][metodos_pagamento][]" value="${metodoPagamento}">
+                        <input type="hidden" name="quartos[${quartoId}][submetodos_pagamento][]" value="${submetodoPagamento}">
                     </td>
                 `;
                 valoresRecebidosTable.appendChild(row);
@@ -292,7 +314,6 @@
         });
 
         atualizarValores();
-    });
     document.querySelectorAll('input[name="metodo_pagamento"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
             var metodo = this.value;
@@ -328,8 +349,32 @@
     const pagamentoTab = document.querySelector('a#pagamento-tab');
     if (pagamentoTab) {
         observeClassChanges(pagamentoTab, 'active', atualizarTotal);
+        observeClassChanges(pagamentoTab, 'active', gerarQuartosSelect);
+        observeClassChanges(pagamentoTab, 'active', atualizarValores);
     }
-
+    function gerarQuartosSelect() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const selectElement = document.getElementById('quarto-select');
+    
+        // Remove all existing options
+        while (selectElement.firstChild) {
+            selectElement.removeChild(selectElement.firstChild);
+        }
+    
+        // Add a default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.text = 'Selecione um quarto';
+        selectElement.appendChild(defaultOption);
+    
+        // Add new options from the cart
+        cart.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.quartoId;
+            option.text = `Quarto ${item.quartoNumero} - ${item.quartoClassificacao}`;
+            selectElement.appendChild(option);
+        });
+    }
     function atualizarTotal() {
         // Extrair o valor numérico do texto dentro do span
         var valorTotalText = document.getElementById('total-cart-value').innerText;

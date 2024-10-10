@@ -53,6 +53,11 @@ class DisponibilidadeController extends Controller
         ->with('planosPrecos')
         ->get();
 
+
+        // Remover quartos que não possuem planoPreco
+        $quartosDisponiveis = $quartosDisponiveis->filter(function ($quarto) {
+            return ($quarto->planosPrecos !== null && $quarto->planosPrecos->count() > 0);
+        });
         // Filtrar os planos de preços para cada quarto
         $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida) {
             $quarto->planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida);
@@ -127,34 +132,36 @@ class DisponibilidadeController extends Controller
         while ($dataAtual->lte($dataFim)) {
             $diaSemana = $dataAtual->format('l'); // Obtém o dia da semana em inglês
             $precoDia = null;
-
-            switch ($diaSemana) {
-                case 'Sunday':
-                    $precoDia = $planoPreco->preco_domingo;
-                    break;
-                case 'Monday':
-                    $precoDia = $planoPreco->preco_segunda;
-                    break;
-                case 'Tuesday':
-                    $precoDia = $planoPreco->preco_terca;
-                    break;
-                case 'Wednesday':
-                    $precoDia = $planoPreco->preco_quarta;
-                    break;
-                case 'Thursday':
-                    $precoDia = $planoPreco->preco_quinta;
-                    break;
-                case 'Friday':
-                    $precoDia = $planoPreco->preco_sexta;
-                    break;
-                case 'Saturday':
-                    $precoDia = $planoPreco->preco_sabado;
-                    break;
-            }
-
-            // Adiciona os preços das opções extras de crianças
-            $precoDia += $this->calcularPrecoCriancas($criancasAte7, $precoCriancaAte7) + ($precoCriancaMais7 * $criancasMais7);
-
+        
+            if ($planoPreco) {
+                switch ($diaSemana) {
+                    case 'Sunday':
+                        $precoDia = $planoPreco->preco_domingo;
+                        break;
+                    case 'Monday':
+                        $precoDia = $planoPreco->preco_segunda;
+                        break;
+                    case 'Tuesday':
+                        $precoDia = $planoPreco->preco_terca;
+                        break;
+                    case 'Wednesday':
+                        $precoDia = $planoPreco->preco_quarta;
+                        break;
+                    case 'Thursday':
+                        $precoDia = $planoPreco->preco_quinta;
+                        break;
+                    case 'Friday':
+                        $precoDia = $planoPreco->preco_sexta;
+                        break;
+                    case 'Saturday':
+                        $precoDia = $planoPreco->preco_sabado;
+                        break;
+                }
+        
+                // Adiciona os preços das opções extras de crianças
+                $precoDia += $this->calcularPrecoCriancas($criancasAte7, $precoCriancaAte7) + ($precoCriancaMais7 * $criancasMais7);
+            } 
+        
             $precosDiarios[$dataAtual->toDateString()] = $precoDia;
             $dataAtual->addDay();
         }

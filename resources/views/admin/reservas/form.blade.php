@@ -24,12 +24,26 @@
                         <i class="fas fa-calendar-alt"></i> Disponibilidade
                     </a>
                 </li>
-                <li class="nav-item ">
+                <li class="nav-item">
                     <a class="nav-link {{$edit ? '' : 'disabled'}}" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
                         <i class="fas fa-credit-card"></i> Pagamento
                     </a>
                 </li>
-                
+                @if ($edit && $reserva->situacao_reserva != 'CANCELADA')
+                    @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'CANCELADO']))
+                        <li class="nav-item">
+                            <a class="nav-link {{$edit ? '' : 'disabled'}} checkin-done" id="checkin-tab" data-toggle="tab" href="#checkin" role="tab" aria-controls="checkin" aria-selected="false">
+                                </i> Check-in <i class="fas fa-check-circle"></i>
+                            </a>
+                        </li>
+                    @else
+                        <li class="nav-item">
+                            <a class="nav-link {{$edit ? '' : 'disabled'}}" id="checkin-tab" data-toggle="tab" href="#checkin" role="tab" aria-controls="checkin" aria-selected="false">
+                                <i class="fas fa-sign-in-alt"></i> Check-in
+                            </a>
+                        </li>
+                    @endif
+                @endif
             </ul>
 
             <!-- Conteúdo das tabs -->
@@ -42,6 +56,9 @@
 
                 <!-- Tab 3: Pagamento -->
                 @include('admin.reservas.partials.pagamento')
+
+                <!-- Tab 4: Check-in -->
+                @include('admin.reservas.partials.checkin')
 
             </div>
         </div>

@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\Quarto;
+use App\Models\CheckIn;
 use App\Models\Cliente;
 use App\Models\Reserva;
 use App\Models\Usuario;
@@ -162,16 +163,41 @@ class ReservaController extends Controller
         
         // Cria ou atualiza a(s) reserva(s)
         $reservas = $this->reservaService->criarOuAtualizarReserva($data);
-
-        // Processa e salva os pagamentos
-        $valor_pago = $request->get('valor_pago');
-        $valor_total = $request->get('valor_total');
-        $valoresRecebidos =  json_decode($data['valores_recebidos_formatados'], true);
-
+        
+        // Salva os pagamentos de cada reserva
         try {
             foreach ($reservas as $reserva) {
-                $this->pagamentoService->salvarPagamentos($reserva->id, $valoresRecebidos, $valor_pago, $valor_total);
+                $quartoId = $reserva->quarto_id;
+                if (isset($data['quartos'][$quartoId])) {
+                    $quartoData = $data['quartos'][$quartoId];
+        
+                    $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
+                    $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
+                    $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
+        
+                    $pagamentos = [];
+                    $valorPago = 0;
+        
+                    foreach ($valoresRecebidos as $index => $valor) {
+                        $metodoPagamento = $metodosPagamento[$index] ?? null;
+                        $submetodoPagamento = $submetodosPagamento[$index] ?? null;
+                        $key = "{$metodoPagamento}-{$submetodoPagamento}";
+        
+                        if (!isset($pagamentos[$key])) {
+                            $pagamentos[$key] = 0;
+                        }
+        
+                        $pagamentos[$key] += $valor;
+                        $valorPago += $valor;
+                    }
+        
+                    $pagamentosJson = json_encode($pagamentos);
+        
+                    $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                }
             }
+
+            $this->updateSituacaoReserva($reserva->id, $data['situacao_reserva']);
         } catch (\Exception $e) {
             dd($e->getMessage());
         }
@@ -191,4 +217,31 @@ class ReservaController extends Controller
             ->with('notice', config('app.messages.delete'));
     }
     
+    
+    function updateSituacaoReserva($id, $situacao_reserva)
+    {
+        try {
+            $reserva = $this->model->findOrFail($id);
+            $reserva->situacao_reserva = $situacao_reserva;
+            $reserva->save();
+    
+            if ($situacao_reserva) {
+                CheckIn::updateOrCreate(
+                    ['reserva_id' => $reserva->id],
+                    ['checkin_at' => Carbon::now('America/Sao_Paulo')]
+                );
+            }
+    
+            return redirect()
+                ->route('admin.reservas.index')
+                ->with('notice', 'Situação da reserva atualizada com sucesso.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.reservas.index')
+                ->with('error', 'Erro ao atualizar a situação da reserva: ' . $e->getMessage());
+        }
+    }
+
+
+
 }
