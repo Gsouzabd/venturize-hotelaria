@@ -6,7 +6,11 @@ use App\Models\User;
 use App\Models\Usuario;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\QuartoSeeder;
 use Database\Seeders\ClienteSeeder;
+use Database\Seeders\LocaisEstoque;
+use Database\Seeders\ProdutoSeeder;
+use Database\Seeders\ReservaSeeder;
 use Illuminate\Support\Facades\Hash;
 use Database\Seeders\GrupoUsuarioSeeder;
 
@@ -18,25 +22,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        Usuario::create([
-            'nome' => 'Gerente',
-            'email' => 'test@example.com',
-            'senha' => bcrypt('teste@123'),
-            'tipo' => 'gerente',
-            'fl_ativo' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+
+
+        $this->call([
+            ProdutoSeeder::class,
+            LocaisEstoqueTableSeeder::class,
+            EstoqueTableSeeder::class,
         ]);
-
-
-        $this->call(GrupoUsuarioSeeder::class);
-
-        $this->call(ClienteSeeder::class);
-
-        $this->call(QuartoSeeder::class);
-
-        $this->call(ReservaSeeder::class);
-
 
     }
 }

@@ -37,6 +37,32 @@
                 </li>
             </ul>
         </li>
+        <li class="sidenav-item{{ is_active_path('admin/produtos') ? ' active' : '' }}">
+            <a href="{{ route('admin.produtos.index') }}" class="sidenav-link">
+                <i class="sidenav-icon fas fa-box"></i>
+                <div>Produtos</div>
+            </a>
+            <ul class="sidenav-submenu">
+                <!-- Existing menu items -->
+            
+                <!-- Local Estoque Menu Item -->
+                {{-- <li class="sidenav-item">
+                    <a href="{{ route('admin.local_estoque.index') }}" class="sidenav-link">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Local Estoque</span>
+                    </a>
+                </li>
+             --}}
+                <!-- Estoque Menu Item -->
+                <li class="sidenav-item">
+                    <a href="{{ route('admin.estoque.index') }}" class="sidenav-link">
+                        <i class="sidenav-icon  fas fa-boxes"></i>
+                        <span>Estoque</span>
+                    </a>
+                </li>
+            </ul>
+
+        </li>
         <li class="sidenav-item{{ is_active_path('admin/clientes') ? ' active' : '' }}">
             <a href="{{ route('admin.clientes.index') }}" class="sidenav-link">
                 <i class="sidenav-icon fas fa-user-tie"></i>

@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\QuartoController;
 use App\Http\Controllers\Admin\ClienteController;
 use App\Http\Controllers\Admin\EmpresaController;
+use App\Http\Controllers\Admin\EstoqueController;
+use App\Http\Controllers\Admin\ProdutoController;
 use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\DisponibilidadeController;
@@ -23,6 +25,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('logout', [LoginController::class, 'logout'])->name('logout');
         Route::get('/', [HomeController::class, 'index'])->name('home');
 
+        Route::get('/produtos/search', [ProdutoController::class, 'search'])->name('admin.produtos.search');
 
         $prefixes = [
             'usuarios' => UsuarioController::class,
@@ -30,17 +33,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'quartos' => QuartoController::class,
             'reservas' => ReservaController::class,
             'quartos-opcoes-extras' => QuartoOpcaoExtraController::class,
+            'produtos' => ProdutoController::class,
+            'estoque' => EstoqueController::class,
         ];
 
         foreach ($prefixes as $prefix => $controller) {
-            Route::prefix($prefix)->name($prefix . '.')->controller($controller)->group(function () {
+            Route::prefix($prefix)->name($prefix . '.')->controller($controller)->group(function ($prefix) {
                 Route::get('/', 'index')->name('index');
                 Route::get('/create', 'edit')->name('create');
                 Route::match(['post', 'put'], '/', 'save')->name('save');
-                Route::get('/{id}/edit', 'edit')->name('edit');
+                if ( $prefix != 'estoque' ) {
+                    Route::get('/{id}', 'edit')->name('edit');
+                }
                 Route::delete('/{id}', 'destroy')->name('destroy');
             });
         }
+
         Route::get('/importar-usuarios', [ImportarUsuarioController::class, 'index'])->name('importar-usuarios.index');
         Route::post('/importar-usuarios', [ImportarUsuarioController::class, 'store'])->name('importar-usuarios.store');
         Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
@@ -65,5 +73,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 
         Route::get('/reservas/{id}/gerar-ficha-nacional', [ReservaController::class, 'gerarFichaNacional'])->name('reserva.gerarFichaNacional');
+    
+
+        Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
     });
 });
