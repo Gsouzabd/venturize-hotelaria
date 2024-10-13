@@ -49,7 +49,7 @@
 
             @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
                 <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}">
-                    <i class="fas fa-file-alt"></i> Gerar Ficha de Check-in
+                    <i class="fas fa-file-alt"></i> Gerar Ficha Nacional
                 </a>
             @endif
 
@@ -147,12 +147,12 @@
             localStorage.removeItem('cart');
     
             // Script do cart quando for tela de edição
-            if (window.location.href.indexOf('edit') > -1) {
+            @if ($edit)
                 @php
                     $item = $reserva->getCartSerializedAttribute();
                     $precosDiarios = $reserva->getPrecosDiarios();
                     $acompanhantes = $reserva->acompanhantes;
-                    // dd($reserva);
+
                 @endphp
                 
                     adicionarQuartoAoCart(
@@ -169,10 +169,10 @@
                         "{{ $item['total'] ?? '' }}",
                         "{{ $reserva->criancas_ate_7 ?? '' }}",
                         "{{ $reserva->criancas_mais_7 ?? '' }}",
-                        "{{ $reserva->adultos ?? '' }}",
+                        "{{ $reserva->adultos ?? 1 }}",
                         {!! json_encode($acompanhantes ?? '') !!},
                     );
-            }
+            @endif
         });
     </script>
 

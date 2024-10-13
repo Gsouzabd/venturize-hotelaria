@@ -405,7 +405,7 @@ async function adicionarQuartoAoCart(
             const dataCheckin = input.getAttribute('data-checkin');
             const dataCheckout = input.getAttribute('data-checkout');
             const dataIndex = input.getAttribute('data-index');
-            const data = input.getAttribute('data-date');
+            const data = input.getAttribute('data-checkout');
 
             if (!dataCheckin || !dataCheckout || !data) {
                 console.error('Data inválida encontrada:', { dataCheckin, dataCheckout, data });
@@ -424,9 +424,21 @@ async function adicionarQuartoAoCart(
                     cartItem.precosDiarios = [];
                 }
 
+                if (!Array.isArray(cartItem.precosDiarios)) {
+                    // Converte o objeto em um array de valores
+                    cartItem.precosDiarios = Object.entries(cartItem.precosDiarios).map(([key, value]) => {
+                        if (typeof value === 'object' && value !== null && 'preco' in value) {
+                            return value;
+                        } else {
+                            return { data: key, preco: value };
+                        }
+                    });
+                }
+                
                 // Atualiza o valor diário no objeto precosDiarios
                 const precoDiario = { data: formatDate(data), preco: valorDiario.toFixed(2) };
                 cartItem.precosDiarios[dataIndex] = precoDiario;
+                console.log('cartItem', cartItem);
 
                 // Recalcula o total do item
                 cartItem.total = cartItem.precosDiarios.reduce((acc, val) => acc + parseFloat(val.preco), 0).toFixed(2);

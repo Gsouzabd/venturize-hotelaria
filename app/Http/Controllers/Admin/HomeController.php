@@ -83,15 +83,16 @@ class HomeController extends Controller
         ));
     }
 
-
     function statusQuartoNoDia()
     {
         $quartos = Quarto::all();
-        $reservas = Reserva::whereDate('data_checkin', Carbon::now('America/Sao_Paulo')->toDateString())->get();
-    
-        // dd($reservas);
+        $hoje = Carbon::now('America/Sao_Paulo')->toDateString();
+        $reservas = Reserva::whereDate('data_checkin', '<=', $hoje)
+                            ->whereDate('data_checkout', '>=', $hoje)
+                            ->get();
+
         $status = [];
-    
+
         foreach ($quartos as $quarto) {
             $status[$quarto->id] = [
                 'quarto' => $quarto,
@@ -99,7 +100,7 @@ class HomeController extends Controller
                 'reserva' => null
             ];
         }
-    
+
         foreach ($reservas as $reserva) {
             $status[$reserva->quarto->id] = [
                 'quarto' => $reserva->quarto,
@@ -108,15 +109,12 @@ class HomeController extends Controller
             ];
         }
 
-        // dd($status);
-    
         // Ordenar pelo número do quarto
         usort($status, function ($a, $b) {
             return $a['quarto']->numero <=> $b['quarto']->numero;
         });
-    
+
         return $status;
     }
-
 
 }

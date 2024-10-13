@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
 use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
+use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -26,6 +27,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [HomeController::class, 'index'])->name('home');
 
         Route::get('/produtos/search', [ProdutoController::class, 'search'])->name('admin.produtos.search');
+        Route::match(['post', 'put'], '/estoque/movimentacoes/', [MovimentacaoEstoqueController::class, 'save'])->name('movimentacoes-estoque.save');
+
+        Route::get('/estoque/movimentacoes/transf', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.transf');
+        Route::get('/estoque/movimentacoes', [MovimentacaoEstoqueController::class, 'index'])->name('movimentacoes-estoque.index');
+        Route::get('/estoque/movimentacoes/{id}', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.edit');
+        Route::get('/estoque/movimentacoes/create', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.create');
+        Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
+
+
 
         $prefixes = [
             'usuarios' => UsuarioController::class,
@@ -36,6 +46,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'produtos' => ProdutoController::class,
             'estoque' => EstoqueController::class,
         ];
+
+        
 
         foreach ($prefixes as $prefix => $controller) {
             Route::prefix($prefix)->name($prefix . '.')->controller($controller)->group(function ($prefix) {
@@ -53,7 +65,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/importar-usuarios', [ImportarUsuarioController::class, 'store'])->name('importar-usuarios.store');
         Route::get('/usuarios/{id}/resend-password', [UsuarioController::class, 'resendPassword'])->name('usuarios.resend-password');
 
-        Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
         // Route::get('/reservas/{id}/status/{status}', [ReservaController::class, 'updateSituacaoReserva'])->name('reservas.updateSituacaoReserva');
 
         Route::get('/clientes/{id}', [ClienteController::class, 'findById'])->name('admin.clientes.findById');
@@ -76,5 +87,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     
 
         Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
+
+
     });
 });

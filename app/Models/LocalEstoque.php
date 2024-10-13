@@ -18,4 +18,22 @@ class LocalEstoque extends Model
     {
         return $this->hasMany(Estoque::class, 'local_estoque_id');
     }
+
+    public function movimentacoesOrigem()
+    {
+        return $this->hasMany(MovimentacaoEstoque::class, 'local_estoque_origem_id');
+    }
+
+    // Movimentações onde este local é o destino
+    public function movimentacoesDestino()
+    {
+        return $this->hasMany(MovimentacaoEstoque::class, 'local_estoque_destino_id');
+    }
+
+    // Combinar ambas as movimentações (origem e destino)
+    public function movimentacoes()
+    {
+        return $this->movimentacoesOrigem->merge($this->movimentacoesDestino);
+    }
+
 }

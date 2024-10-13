@@ -60,6 +60,13 @@
                         <span>Estoque</span>
                     </a>
                 </li>
+                <li class="sidenav-item">
+                    <a href="{{ route('admin.movimentacoes-estoque.index') }}" class="sidenav-link">
+                        <i class="sidenav-icon  fas fa-boxes"></i>
+                        <span>Movimentações</span>
+                    </a>
+                </li>
+            
             </ul>
 
         </li>

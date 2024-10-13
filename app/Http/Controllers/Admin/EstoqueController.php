@@ -8,6 +8,7 @@ use App\Models\Produto;
 use App\Models\LocalEstoque;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Services\MovimentacaoEstoqueService;
 
 class EstoqueController extends Controller
 {
@@ -55,6 +56,7 @@ class EstoqueController extends Controller
 
     public function edit($id = null, $local_estoque_id = null)
     {
+
         $edit = boolval($id);
         $estoque = $edit ? $this->model->findOrFail($id) : new Estoque();
         $locaisEstoque = LocalEstoque::all();
@@ -88,4 +90,5 @@ class EstoqueController extends Controller
             ->route('admin.estoque.index')
             ->with('notice', config('app.messages.delete'));
     }
+ 
 }
