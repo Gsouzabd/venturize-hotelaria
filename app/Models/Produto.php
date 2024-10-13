@@ -23,8 +23,11 @@ class Produto extends Model
         'criado_por',
         'complemento',
         'produto_servico',
+        'preco_custo',
+        'preco_venda',
+        'estoque_minimo',
+        'estoque_maximo',
     ];
-
 
     const UNIDADES = [
         'UN' => 'Unidade',
@@ -61,5 +64,9 @@ class Produto extends Model
     public function estoques()
     {
         return $this->hasMany(Estoque::class, 'produto_id');
+    }
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'categoria_produto');
     }
 }

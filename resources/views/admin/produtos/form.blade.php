@@ -32,9 +32,37 @@
             </x-admin.field>
 
             <!-- Valor Unitário -->
-            <x-admin.field cols="6">
+            {{-- <x-admin.field cols="6">
                 <x-admin.label label="Valor Unitário" required/>
                 <x-admin.number name="valor_unitario" id="valor_unitario" :value="old('valor_unitario', $produto->valor_unitario ?? '')" required/>
+            </x-admin.field> --}}
+        </x-admin.field-group>
+
+        <x-admin.field-group>
+            <!-- Preço de Custo -->
+            <x-admin.field cols="6">
+                <x-admin.label label="Preço de Custo" required/>
+                <x-admin.number name="preco_custo" id="preco_custo" :value="old('preco_custo', $produto->preco_custo ?? '0.00')" step="0.01" min="0" required/>
+            </x-admin.field>
+        
+            <!-- Preço de Venda -->
+            <x-admin.field cols="6">
+                <x-admin.label label="Preço de Venda" required/>
+                <x-admin.number name="preco_venda" id="preco_venda" :value="old('preco_venda', $produto->preco_venda ?? '0.00')" step="0.01" min="0" required/>
+            </x-admin.field>
+        </x-admin.field-group>
+
+        <x-admin.field-group>
+            <!-- Estoque Mínimo -->
+            <x-admin.field cols="6">
+                <x-admin.label label="Estoque Mínimo" required/>
+                <x-admin.number name="estoque_minimo" id="estoque_minimo" :value="old('estoque_minimo', $produto->estoque_minimo ?? '')" required/>
+            </x-admin.field>
+
+            <!-- Estoque Máximo -->
+            <x-admin.field cols="6">
+                <x-admin.label label="Estoque Máximo" required/>
+                <x-admin.number name="estoque_maximo" id="estoque_maximo" :value="old('estoque_maximo', $produto->estoque_maximo ?? '')" required/>
             </x-admin.field>
         </x-admin.field-group>
 
@@ -42,7 +70,7 @@
             <!-- Categoria Produto -->
             <x-admin.field cols="6">
                 <x-admin.label label="Categoria Produto" required/>
-                <x-admin.select name="categoria_produto" id="categoria_produto" :items="$categorias" :selected-item="old('categoria_produto', $produto->categoria_produto ?? '')" required/>
+                <x-admin.select name="categoria_produto" id="categoria_produto" :items="\App\Models\Produto::CATEGORIAS" :selected-item="old('categoria_produto', $produto->categoria_produto ?? '')" required/>
             </x-admin.field>
 
             <!-- Código de Barras -->
@@ -62,7 +90,7 @@
             <!-- Impressora -->
             <x-admin.field cols="6">
                 <x-admin.label label="Impressora" />
-                <x-admin.text name="impressora" id="impressora" :value="old('impressora', $produto->impressora ?? '')" />
+                <x-admin.select name="impressora" id="impressora" :items="\App\Models\Produto::IMPRESSORA" :selected-item="old('impressora', $produto->impressora ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
 

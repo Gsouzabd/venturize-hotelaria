@@ -31,7 +31,7 @@ class MovimentacaoEstoqueController extends Controller
     public function edit($id = null)
     {
         $transferencia = false;
-;
+
         if (strpos(url()->current(), 'transf') !== false) {
             $transferencia = true;
         }

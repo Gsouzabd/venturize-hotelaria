@@ -51,7 +51,7 @@ use App\Models\Produto;
                 <th>ID</th>
                 <th>Nome</th>
                 <th>Categoria</th>
-                <th>Preço</th>
+                <th>Preço de Venda</th>
                 <th>Criado em</th>
                 <th>Ações</th>
             </tr>
@@ -62,7 +62,7 @@ use App\Models\Produto;
                     <td>{{ $produto->id }}</td>
                     <td>{{ $produto->descricao }}</td>
                     <td>{{ $produto->categoria_produto }}</td>
-                    <td>R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}</td>
+                    <td>R$ {{ number_format($produto->preco_venda, 2, ',', '.') }}</td>
                     <td>{{ Carbon::parse($produto->created_at)->format('d-m-Y') }}</td>
                     <td class="cell-nowrap">
                         <x-admin.edit-btn route="admin.produtos.edit" :route-params="['id' => $produto->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>

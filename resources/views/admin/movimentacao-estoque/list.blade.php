@@ -41,8 +41,11 @@
                                     <td>{{ $movimentacao->id }}</td>
                                     <td>{{ $movimentacao->produto->descricao }}</td>
                                     <td>{{ $movimentacao->quantidade }}</td>
-                                    <td>{{ ucfirst($movimentacao->tipo) }}</td>
-                                    <td>{{ $movimentacao->usuario->name }}</td>
+                                    <td>
+                                        {{ ucfirst($movimentacao->tipo) }} 
+                                        @if( $movimentacao->tipo == 'transferencia')( {{$local->id == $movimentacao->local_estoque_destino_id ? 'Entrada' : 'Saída'}} ) @endif
+                                    </td>
+                                    <td>{{ $movimentacao->usuario->nome }}</td>
                                     <td>{{ Carbon\Carbon::parse($movimentacao->data_movimentacao)->format('d-m-Y H:i') }}</td>
                                     <td>
                                         <!-- Add action buttons here -->

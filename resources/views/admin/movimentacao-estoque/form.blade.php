@@ -89,7 +89,7 @@
                                     <th>Estoque Destino</th>
                                 @endif
                                 <th>Quantidade</th>
-                                <th>Tipo Movimentação</th>
+                                <th>Movimentação</th>
                                 @if (!$transferencia)
                                     <th>Valor Unitário</th>
                                 @endif
@@ -111,7 +111,7 @@
                                 </td>
                                 @if (!$transferencia)
                                     <td>
-                                        <select name="local_estoque_id" id="local_estoque_id" class="form-control" required>
+                                        <select name="local_estoque_id" id="local_estoque_id" class="form-control" >
                                             @foreach($locaisEstoque as $local)
                                                 <option value="{{ $local->id }}" {{ old('local_estoque_id', $estoque->local_estoque_id ?? '') == $local->id ? 'selected' : '' }}>
                                                     {{ $local->nome }}
@@ -122,7 +122,7 @@
                                 @endif
                                 @if ($transferencia)
                                     <td>
-                                        <select name="estoque_origem_id" id="estoque_origem_id" class="form-control" required>
+                                        <select name="estoque_origem_id" id="estoque_origem_id" class="form-control" >
                                             @foreach($locaisEstoque as $local)
                                                 <option value="{{ $local->id }}" {{ old('estoque_origem_id', $estoque->estoque_origem_id ?? '') == $local->id ? 'selected' : '' }}>
                                                     {{ $local->nome }}
@@ -131,7 +131,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="estoque_destino_id" id="estoque_destino_id" class="form-control" required>
+                                        <select name="estoque_destino_id" id="estoque_destino_id" class="form-control" >
                                             @foreach($locaisEstoque as $local)
                                                 <option value="{{ $local->id }}" {{ old('estoque_destino_id', $estoque->estoque_destino_id ?? '') == $local->id ? 'selected' : '' }}>
                                                     {{ $local->nome }}

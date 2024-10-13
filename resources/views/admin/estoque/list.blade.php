@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 @section('content-header')
     <x-admin.page-header :title="view()->getSection('title')">
-        <x-admin.create-btn route="admin.estoque.create"/>
+        {{-- <x-admin.create-btn route="admin.estoque.create"/> --}}
     </x-admin.page-header>
 @endsection
 

@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Models\Estoque;
-use App\Models\MovimentacaoEstoque;
+use App\Models\Produto;
 use Illuminate\Http\Request;
+use App\Models\MovimentacaoEstoque;
 use Illuminate\Support\Facades\Auth;
 
 class MovimentacaoEstoqueService
@@ -42,16 +43,29 @@ class MovimentacaoEstoqueService
         $estoque->save();
 
         // Registrar a movimentação
-        MovimentacaoEstoque::create([
+        $movimentacaoCreated = MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
             'local_estoque_destino_id' => $movimentacao['local_estoque_id'],
             'quantidade' => $movimentacao['quantidade'],
             'tipo' => 'entrada',
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'valor_unitario_custo' => $movimentacao['valor_unitario'],
+            'preco_custo' => $movimentacao['valor_unitario'],
             'justificativa' => $movimentacao['justificativa'],
         ]);
+
+        // Atualiando o preço de custo do produto caso o valor unitário seja diferente
+        if ($movimentacaoCreated) {
+            $produto = Produto::find($movimentacao['produto_id']);  
+        
+            // Converter valor_unitario para o formato correto
+            $valorUnitario = str_replace(',', '.', $movimentacao['valor_unitario']);
+        
+            if ($produto->preco_custo != $valorUnitario || !$produto->preco_custo) {
+                $produto->preco_custo = $valorUnitario;
+                $produto->save();
+            }
+        }
     }
 
     public function registrarSaida(array $movimentacao)
@@ -79,9 +93,10 @@ class MovimentacaoEstoqueService
             'tipo' => 'saida',
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'valor_unitario_venda' => $movimentacao['valor_unitario'],
+            'preco_venda' => $movimentacao['valor_unitario'],
             'justificativa' => $movimentacao['justificativa'],
         ]);
+
     }
 
 
