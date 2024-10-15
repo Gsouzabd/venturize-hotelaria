@@ -69,10 +69,15 @@
         <x-admin.field-group>
             <!-- Categoria Produto -->
             <x-admin.field cols="6">
-                <x-admin.label label="Categoria Produto" required/>
-                <x-admin.select name="categoria_produto" id="categoria_produto" :items="\App\Models\Produto::CATEGORIAS" :selected-item="old('categoria_produto', $produto->categoria_produto ?? '')" required/>
+                <x-admin.label label="Categoria" required/>
+                <select name="categoria_produto" id="categoria_produto" class="form-control" required>
+                    @foreach(\App\Models\Categoria::all() as $categoria)
+                        <option value="{{ $categoria->id }}" {{ old('categoria_produto', $produto->categoria_produto ?? '') == $categoria->id ? 'selected' : '' }}>
+                            {{ $categoria->nome }}
+                        </option>
+                    @endforeach
+                </select>
             </x-admin.field>
-
             <!-- Código de Barras -->
             <x-admin.field cols="6">
                 <x-admin.label label="Código de Barras" />

@@ -22,6 +22,22 @@
     <div class="navbar-collapse collapse" id="layout-navbar-collapse">
         <!-- Divider -->
         <hr class="d-lg-none w-100 my-2">
+        <div class="navbar-nav align-items-lg-center ml-auto" id="menu-topo">
+            <small style="margin-right: 5%">Sessão:</small>
+            <!-- Menu Hotelaria -->
+            <li class="nav-item dropdown {{ !request()->is('*bar*') ? 'show' : '' }}">
+                <a class="nav-link "  href="{{ route('admin.home') }}"   role="tab" aria-controls="hotelaria" aria-selected="{{ !request()->is('/bar*') ? 'true' : 'false' }}">
+                    <h5 class="d-inline">Hotelaria</h5>
+                </a>
+            </li>
+        
+            <!-- Menu Bar -->
+            <li class="nav-item dropdown {{ request()->is('admin/bar*') ? 'show' : '' }}">
+                <a class="nav-link {{ request()->is('admin/bar*') ? 'active' : '' }}" href="{{ route('admin.bar.home') }}" id="navbarBar" role="button" aria-haspopup="true" aria-expanded="{{ request()->is('admin/bar*') ? 'true' : 'false' }}">
+                    <h5 class="d-inline">Bar</h5>
+                </a>
+            </li>
+        </div>
 
         <div class="navbar-nav align-items-lg-center ml-auto">
             <div class="demo-navbar-user nav-item dropdown">

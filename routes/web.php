@@ -11,11 +11,15 @@ use App\Http\Controllers\Admin\EstoqueController;
 use App\Http\Controllers\Admin\ProdutoController;
 use App\Http\Controllers\Admin\ReservaController;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\CategoriaController;
+use App\Http\Controllers\Admin\LocalEstoqueController;
 use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
 use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
+
+include 'bar/routes.php';
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -40,11 +44,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $prefixes = [
             'usuarios' => UsuarioController::class,
             'clientes' => ClienteController::class,
+            'categorias' => CategoriaController::class,
             'quartos' => QuartoController::class,
             'reservas' => ReservaController::class,
             'quartos-opcoes-extras' => QuartoOpcaoExtraController::class,
             'produtos' => ProdutoController::class,
             'estoque' => EstoqueController::class,
+            'locais-estoque' => LocalEstoqueController::class,
         ];
 
         

@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Bar\ItemPedido;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Produto extends Model
 {
@@ -44,12 +45,6 @@ class Produto extends Model
         'TC' => 'Taça',
     ];
 
-    const CATEGORIAS = [
-        'ALIMENTO' => 'Alimento',
-        'BEBIDA' => 'Bebida',
-        'OUTROS' => 'Outros',
-    ];
-
     const IMPRESSORA = [
         'COZINHA',
         'BAR',
@@ -68,5 +63,10 @@ class Produto extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'categoria_produto');
+    }
+
+    public function itens()
+    {
+        return $this->hasMany(ItemPedido::class);
     }
 }

@@ -61,7 +61,7 @@ use App\Models\Produto;
                 <tr>
                     <td>{{ $produto->id }}</td>
                     <td>{{ $produto->descricao }}</td>
-                    <td>{{ $produto->categoria_produto }}</td>
+                    <td>{{ $produto->categoria->nome ?? $produto->categoria_produto }}</td>
                     <td>R$ {{ number_format($produto->preco_venda, 2, ',', '.') }}</td>
                     <td>{{ Carbon::parse($produto->created_at)->format('d-m-Y') }}</td>
                     <td class="cell-nowrap">

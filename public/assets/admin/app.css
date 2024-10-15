@@ -10,6 +10,32 @@
     }
 }
 
+div#menu-topo {
+    justify-content: start;
+    display: contents;
+}
+
+div#menu-topo li {
+    background: #ffffff;
+    border-bottom: 1px solid #ededed;
+    margin-right: 20px;
+}
+
+li.nav-item.dropdown.show a {
+    /* background: #017bff; */
+    color: #ffffff !important;
+    background-color: #165faf !important;
+    border-color: #dee2e6 #dee2e6 #fff;
+    border: 1px solid white;
+    box-shadow: 1px -1px 10px #969696;
+    border-radius: 5px 5px 0px 0px;
+    padding: 5px 20px;
+}
+
+.text-black {
+    color: black !important;
+}
+
 .zoom-in {
     animation: zoomIn 0.5s ease-in-out;
 }

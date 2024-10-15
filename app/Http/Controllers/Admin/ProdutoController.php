@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\Produto;
+use App\Models\Categoria;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -47,7 +48,7 @@ class ProdutoController extends Controller
             $query->where('codigo_interno', 'like', '%' . $filters['codigo_interno'] . '%');
         }
 
-        $categorias = Produto::CATEGORIAS;
+        $categorias = Categoria::all();
 
         $produtos = $query
             ->orderBy('id', 'desc')
@@ -60,7 +61,7 @@ class ProdutoController extends Controller
     {
         $edit = boolval($id);
         $produto = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
-        $categorias = Produto::CATEGORIAS;
+        $categorias = Categoria::all();
 
         return view('admin.produtos.form', compact('produto', 'edit', 'categorias'));
     }
@@ -73,11 +74,14 @@ class ProdutoController extends Controller
         
 
         if ($id = $request->get('id')) {
-            $this->model->findOrFail($id)->update($data);
+            $produto = $this->model->findOrFail($id);
+            $data['criado_por'] = $produto->criado_por; // Pega o valor de criado_por do registro existente
+            $produto->update($data);
         } else {
             $data['criado_por'] = auth()->user()->id;
             $this->model->fill($data)->save();
         }
+
 
         return redirect()
             ->route('admin.produtos.index')
