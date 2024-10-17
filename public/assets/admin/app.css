@@ -425,7 +425,7 @@ html:not(.material-style) .material-style-only {
 
 
 
-#cart-items {
+#cart-items, div#categories-group {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -791,4 +791,30 @@ span.andar {
 .andar-block {
     border-bottom: 1px solid #2323232b;
     padding-bottom: 20px;
+}
+
+
+div#itens-container {
+    max-width: 700px;
+    margin: 0 auto;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    background: white;
+    padding: 20px;
+}
+
+div#itens-container > div {
+    border-bottom: 1px solid #ececec;
+    padding-bottom: 5px;
+    margin-bottom: 20px !important;
+}
+
+button.btn.btn-link.produto-to-add {
+    font-weight: 700;
+    font-size: 18px;
+    color: #2e0f12;
 }

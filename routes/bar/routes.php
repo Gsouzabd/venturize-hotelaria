@@ -1,8 +1,9 @@
 <?php
 
-use App\Http\Controllers\Admin\Bar\BarHomeController;
-use App\Http\Controllers\Admin\Bar\MesaController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\Bar\MesaController;
+use App\Http\Controllers\Admin\Bar\PedidoController;
+use App\Http\Controllers\Admin\Bar\BarHomeController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth:admin'])->group(function () {
@@ -14,6 +15,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             $prefixes = [
                 'mesas' => MesaController::class,
+                'pedidos' => PedidoController::class,
             ];
 
             foreach ($prefixes as $prefix => $controller) {

@@ -5,6 +5,7 @@
     'placeholder' => 'Selecione um item',
     'items' => [],
     'selectedItem' => '',
+    'defaultValue' => '',
 ])
 
 <select name="{{ $name }}"
@@ -12,7 +13,7 @@
     <option value="">{{ $placeholder }}</option>
     @if(!empty($items))
         @foreach($items as $itemKey => $item)
-            <option value="{{ $itemKey }}"{{ (string)$itemKey === (string)$selectedItem ?? '' ? ' selected' : '' }}>
+            <option value="{{ $itemKey }}"{{ (string)$itemKey === (string)($selectedItem ?? $defaultValue) ? ' selected' : '' }}>
                 {{ $item }}
             </option>
         @endforeach

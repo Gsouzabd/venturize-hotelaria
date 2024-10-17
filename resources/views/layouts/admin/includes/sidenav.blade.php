@@ -92,11 +92,24 @@
                 </a>
             </li>
         @else  
+
+        <li class="sidenav-item{{ is_active_path('admin') ? ' active' : '' }}">
+            <a href="{{ route('admin.bar.home') }}" class="sidenav-link">
+                <i class="sidenav-icon fas fa-tachometer-alt"></i>
+                <div>Dashboard</div>
+            </a>
+        </li>
             
         <li class="sidenav-item{{ is_active_path('admin/mesas') ? ' active' : '' }}">
             <a href="{{ route('admin.bar.mesas.index') }}" class="sidenav-link">
                 <i class="sidenav-icon fas fa-utensils"></i>
                 <div>Mesas</div>
+            </a>
+        </li>
+        <li class="sidenav-item{{ is_active_path('admin/pedidos') ? ' active' : '' }}">
+            <a href="{{ route('admin.bar.pedidos.index') }}" class="sidenav-link">
+                <i class="sidenav-icon fas fa-clipboard-list"></i>
+                <div>Pedidos</div>
             </a>
         </li>
         @endif

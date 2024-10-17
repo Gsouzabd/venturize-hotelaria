@@ -17,7 +17,7 @@
     @endif
 
     <!-- Formulário para cadastro de produto -->
-    <x-admin.form save-route="admin.produtos.save" back-route="admin.produtos.index">
+    <x-admin.form save-route="admin.produtos.save" back-route="admin.produtos.index" id="produto-form">
         @csrf
         @if($edit)
             <input type="hidden" name="id" value="{{ $produto->id }}">
@@ -109,7 +109,7 @@
             <!-- Ativo -->
             <x-admin.field cols="6">
                 <x-admin.label label="Ativo" required/>
-                <x-admin.select name="ativo" id="ativo" :items="['1' => 'Sim', '0' => 'Não']" :selected-item="old('ativo', $produto->ativo ?? '')" required/>
+                <x-admin.select name="ativo" id="ativo" :items="['1' => 'Sim', '0' => 'Não']" :selected-item="old('ativo', $produto->ativo ?? '1')" required/>
             </x-admin.field>
         </x-admin.field-group>
 
@@ -127,13 +127,49 @@
             </x-admin.field>
         </x-admin.field-group>
 
-        <x-admin.field-group>
+               <x-admin.field-group>
             <!-- Produto/Serviço -->
             <x-admin.field cols="6">
                 <x-admin.label label="Produto/Serviço" required/>
-                <x-admin.select name="produto_servico" id="produto_servico" :items="['produto' => 'Produto', 'servico' => 'Serviço']" :selected-item="old('produto_servico', $produto->produto_servico ?? '')" required/>
+                <x-admin.select name="produto_servico" id="produto_servico" :items="['produto' => 'Produto', 'servico' => 'Serviço']" :selected-item="old('produto_servico', $produto->produto_servico)" defaultValue="produto" required/>
             </x-admin.field>
         </x-admin.field-group>
     </x-admin.form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('produto-form');
+        form.addEventListener('submit', function (e) {
+            const categoriaProduto = document.querySelector('select[name="categoria_produto"]');
+            const unidade = document.querySelector('select[name="unidade"]');
+            const ativo = document.querySelector('select[name="ativo"]');
+            const produtoServico = document.querySelector('select[name="produto_servico"]');
+
+            if (!categoriaProduto.value) {
+                e.preventDefault();
+                alert('Por favor, selecione uma categoria.');
+                return false;
+            }
+
+            if (!unidade.value) {
+                e.preventDefault();
+                alert('Por favor, selecione uma unidade.');
+                return false;
+            }
+
+            if (!ativo.value) {
+                e.preventDefault();
+                alert('Por favor, selecione se o produto está ativo.');
+                return false;
+            }
+
+            if (!produtoServico.value) {
+                e.preventDefault();
+                alert('Por favor, selecione se é um Produto ou Serviço.');
+                return false;
+            }
+        });
+    });
+</script>
 @endsection

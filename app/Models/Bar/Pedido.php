@@ -2,14 +2,21 @@
 
 namespace App\Models\Bar;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Quarto;
+use App\Models\Cliente;
+use App\Models\Reserva;
+use App\Models\Bar\Mesa;
+use App\Models\Bar\ItemPedido;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 class Pedido extends Model
 {
     protected $fillable = [
         'mesa_id',
+        'reserva_id',
+        'cliente_id',
         'status', // aberto, fechado, pago
         'total',
     ];
@@ -19,8 +26,24 @@ class Pedido extends Model
         return $this->belongsTo(Mesa::class);
     }
 
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class);
+    }
+
+    public function reserva()
+    {
+        return $this->belongsTo(Reserva::class);
+    }
+
+    public function quarto()
+    {
+        return $this->hasOneThrough(Quarto::class, Reserva::class);
+    }
+
     public function itens()
     {
         return $this->hasMany(ItemPedido::class);
     }
+    
 }

@@ -87,4 +87,20 @@ class ClienteController extends Controller
        
         return response()->json($cliente);
     }
+
+    public function search(Request $request)
+    {
+        $query = $request->get('query', '');
+
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $clientes = $this->model->where('nome', 'like', '%' . $query . '%')
+                                ->orWhere('cpf', 'like', '%' . $query . '%')
+                                ->get();
+
+        return response()->json($clientes);
+    }
+    
 }

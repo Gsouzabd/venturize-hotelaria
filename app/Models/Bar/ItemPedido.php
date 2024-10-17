@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ItemPedido extends Model
 {
+
+    protected $table = 'itens_pedidos';
     protected $fillable = [
         'pedido_id',
         'produto_id',

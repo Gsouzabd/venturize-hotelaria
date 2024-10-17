@@ -31,6 +31,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [HomeController::class, 'index'])->name('home');
 
         Route::get('/produtos/search', [ProdutoController::class, 'search'])->name('admin.produtos.search');
+        Route::get('/clientes/search', [ClienteController::class, 'search'])->name('admin.clientes.search');
+
         Route::match(['post', 'put'], '/estoque/movimentacoes/', [MovimentacaoEstoqueController::class, 'save'])->name('movimentacoes-estoque.save');
 
         Route::get('/estoque/movimentacoes/transf', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.transf');
