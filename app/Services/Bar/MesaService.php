@@ -112,51 +112,38 @@ class MesaService {
         return $status;
     }
 
+
     public function cancelarItemPedido($data) {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($data['pedido_id']);
-
+    
         // Verificar se o pedido está aberto
         if ($pedido->status === 'aberto') {
+            $itensCancelados = [];
+    
             // Iterar sobre os itens a serem removidos
             foreach ($data['itens_cart'] as $item) {
-                // Remover o item do pedido
-                $pedido->itens()->where('produto_id', $item['produto_id'])->delete();
-            }
-
-            // Atualizar o total do pedido
-            $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
-            $pedido->update([
-                'total' => $total,
-            ]);
-
-            return "Item removido com sucesso";
-        }
-
-        return "Pedido Fechado";
-    }
-
-    public function adicionarItemPedido($data){
-        // Encontrar o pedido pelo ID
-        $pedido = Pedido::find($data['pedido_id']);
+                // Encontrar o item no pedido
+                $itemPedido = $pedido->itens()->where('produto_id', $item['produto_id'])->first();
     
-        // Verificar se o pedido está aberto
-        if ($pedido->status === 'aberto') {
-            $itens = [];
+                if ($itemPedido) {
+                    // Adicionar o item à lista de itens cancelados
+                    $itensCancelados[] = [
+                        'descricao' => Produto::find($item['produto_id'])->descricao,
+                        'preco' => $itemPedido->preco,
+                        'quantidade' => $item['quantidade'], // Usar a quantidade recebida na requisição
+                    ];
     
-            // Iterar sobre os itens temporários
-            foreach ($data['itens_temp'] as $item) {
-                // Adicionar um novo item ao pedido
-                $novoItem = $pedido->itens()->create([
-                    'produto_id' => $item['produto_id'],
-                    'quantidade' => $item['quantidade'],
-                    'preco' => Produto::find($item['produto_id'])->preco_venda, // Obtenha o preço do produto
-                ]);
-    
-                $itens[] = $novoItem;
-    
-                // Gerar cupom para o item adicionado
-                $this->gerarCupom($pedido, $novoItem);
+                    // Verificar a quantidade a ser cancelada
+                    if ($itemPedido->quantidade > $item['quantidade']) {
+                        // Diminuir a quantidade do item no pedido
+                        $itemPedido->quantidade -= $item['quantidade'];
+                        $itemPedido->save();
+                    } else {
+                        // Remover o item do pedido
+                        $itemPedido->delete();
+                    }
+                }
             }
     
             // Atualizar o total do pedido
@@ -165,19 +152,16 @@ class MesaService {
                 'total' => $total,
             ]);
     
-            return $itens; // Retorna os itens recém-criados
+            return $itensCancelados; // Retorna os itens cancelados
         }
     
         return "Pedido Fechado";
     }
-
-
-    public function gerarCupom($idPedido, $novoItem) {
+    
+    public function gerarCupomCancelamento($idPedido, $itensCancelados) {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($idPedido);
-        if ($pedido instanceof \Illuminate\Support\Collection) {
-            $pedido = $pedido->first();
-        }
+    
         // Configurar Dompdf
         $options = new Options();
         $options->set('defaultFont', 'Courier');
@@ -188,9 +172,88 @@ class MesaService {
         $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
         $dompdf->setPaper($customPaper);
     
-        // dd($pedido);
-        // Dados do pedido e item adicionado
-        $html = view('pdf.cupom', compact('pedido', 'novoItem'))->render();
+        // Dados do pedido e itens cancelados
+        $html = view('pdf.cupom_cancelamento', compact('pedido', 'itensCancelados'))->render();
+    
+        // Carregar o HTML no Dompdf
+        $dompdf->loadHtml($html);
+    
+        // Renderizar o PDF
+        $dompdf->render();
+    
+        // Enviar o PDF para o navegador
+        return $dompdf->output();
+    }
+
+    public function adicionarItemPedido($data) {
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::find($data['pedido_id']);
+    
+        // Verificar se o pedido está aberto
+        if ($pedido->status === 'aberto') {
+            $itens = [];
+    
+            // Iterar sobre os itens temporários
+            foreach ($data['itens_temp'] as $item) {
+                // Verificar se o item já existe no pedido
+                $existingItem = $pedido->itens()->where('produto_id', $item['produto_id'])->first();
+    
+                if ($existingItem) {
+                    // Atualizar a quantidade do item existente
+                    $existingItem->quantidade += $item['quantidade'];
+                    $existingItem->save();
+                
+                    // Criar uma cópia do item existente para adicionar ao array de itens
+                    $updatedItem = clone $existingItem;
+                    $updatedItem->quantidade = $item['quantidade']; // Usar a quantidade recebida na requisição
+                    $itens[] = $updatedItem;
+                } else {
+                    // Adicionar um novo item ao pedido
+                    $novoItem = $pedido->itens()->create([
+                        'produto_id' => $item['produto_id'],
+                        'quantidade' => $item['quantidade'],
+                        'preco' => Produto::find($item['produto_id'])->preco_venda, // Obtenha o preço do produto
+                    ]);
+                    $itens[] = $novoItem;
+                }
+            }
+    
+            // Atualizar o total do pedido
+            $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
+            $pedido->update([
+                'total' => $total,
+            ]);
+    
+            // Adicionar a descrição do produto aos itens
+            foreach ($itens as $item) {
+                $item['descricao'] = Produto::find($item['produto_id'])->descricao;
+            }
+    
+            return $itens; // Retorna os itens recém-criados ou atualizados
+        }
+    
+        return "Pedido Fechado";
+    }
+
+    public function gerarCupom($idPedido, $novosItens) {
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::find($idPedido);
+        if ($pedido instanceof \Illuminate\Support\Collection) {
+            $pedido = $pedido->first();
+        }
+    
+        // Configurar Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Courier');
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf = new Dompdf($options);
+    
+        // Definir o tamanho do papel para impressora térmica (80mm de largura)
+        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $dompdf->setPaper($customPaper);
+    
+        // Dados do pedido e itens adicionados
+        $html = view('pdf.cupom', compact('pedido', 'novosItens'))->render();
     
         // Carregar o HTML no Dompdf
         $dompdf->loadHtml($html);

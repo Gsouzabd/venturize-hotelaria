@@ -98,6 +98,8 @@ class ReservaService
 
         try {
             foreach ($data['quartos'] as $quartoId => $quartoData) {
+                // dd($data['cart_serialized']);
+
                 $cartSerialized = json_decode($data['cart_serialized'], true);
 
                 $quartoCartSerialized = null;

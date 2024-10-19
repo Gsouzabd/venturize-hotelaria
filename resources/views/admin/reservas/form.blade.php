@@ -152,6 +152,7 @@
                     $item = $reserva->getCartSerializedAttribute();
                     $precosDiarios = $reserva->getPrecosDiarios();
                     $acompanhantes = $reserva->acompanhantes;
+                    // dd($precosDiarios);
 
                 @endphp
                 

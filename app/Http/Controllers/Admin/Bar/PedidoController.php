@@ -69,32 +69,36 @@ class PedidoController extends Controller
         $data = $request->all();
 
         // dd($data);
-        if($data['pedido_id']){
-            if($data['action']){
-                if($data['action'] == "add-itens"){
-                    
-                    $itens =  $this->mesaService->adicionarItemPedido($data);
-
-                    // Gerar o PDF do cupom
-                    $novoItem = end($itens); // Pega o último item adicionado
-
-                    $pdfContent = $this->mesaService->gerarCupom($data['pedido_id'], $novoItem);
-            
+        if ($data['pedido_id']) {
+            if ($data['action']) {
+                if ($data['action'] == "add-itens") {
+                    $itens = $this->mesaService->adicionarItemPedido($data);
+        
+                    $pdfContent = $this->mesaService->gerarCupom($data['pedido_id'], $itens);
+        
                     // Salvar o PDF em um arquivo temporário
                     $pdfPath = storage_path("app/public/cupom_pedido_{$data['pedido_id']}.pdf");
                     file_put_contents($pdfPath, $pdfContent);
-            
+        
                     // Retornar uma resposta que abre o PDF em uma nova aba
                     return response()->json([
                         'success' => 'Itens adicionados ao pedido com sucesso.',
                         'pdf_url' => asset("storage/cupom_pedido_{$data['pedido_id']}.pdf")
                     ]);
-                } elseif($data['action'] == "remove-item"){
-                    $this->mesaService->cancelarItemPedido($data);
-
-                    return redirect()
-                        ->route('admin.bar.pedidos.edit', ['id' => $data['pedido_id']])
-                        ->with('notice', 'Item removido com sucesso');
+                } elseif ($data['action'] == "remove-item") {
+                    $itensCancelados = $this->mesaService->cancelarItemPedido($data);
+        
+                    $pdfContent = $this->mesaService->gerarCupomCancelamento($data['pedido_id'], $itensCancelados);
+        
+                    // Salvar o PDF em um arquivo temporário
+                    $pdfPath = storage_path("app/public/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf");
+                    file_put_contents($pdfPath, $pdfContent);
+        
+                    // Retornar uma resposta que abre o PDF em uma nova aba
+                    return response()->json([
+                        'success' => 'Item removido com sucesso.',
+                        'pdf_url' => asset("storage/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf")
+                    ]);
                 }
             }
         }

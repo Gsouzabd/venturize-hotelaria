@@ -84,19 +84,18 @@
                                 </div>
                                 <div class="col-md-2 text-right">
 
-                                    <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline">
+                                    <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline cancel-form">
                                         @csrf
                                         <input type="hidden" name="action" value="remove-item">
                                         <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
-
-                                        <input type="hidden" name="itens_cart[{{ $item->produto_id }}][produto_id]" value="{{ $item->produto_id }}">
+                                        <input type="hidden" name="itens_cart[0][produto_id]" value="{{ $item->produto_id }}">
                                         <button type="submit" class="btn btn-danger btn-sm remove-cart-item">Cancelar</button>
                                     </form>
                                 </div>
                             </div>
                         @endforeach
                     </div>
-                    <x-admin.form save-route="admin.bar.pedidos.save" back-route="admin.bar.pedidos.index" submitTitle='                 <i class="fas fa-check"></i> Confirmar Itens'>
+                    <x-admin.form save-route="admin.bar.pedidos.save" back-route="admin.bar.pedidos.index" submitTitle='<i class="fas fa-check"></i> Confirmar Itens' id="add-items-form">
                         @csrf
                         @if($edit)
                             <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
@@ -152,107 +151,188 @@
         </div>
     </div>
 </div>
+<!-- Modal HTML -->
+<div id="cancelModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="cancelForm">
+                    <div class="form-group">
+                        <label for="cancelQuantity">Quantidade a ser cancelada:</label>
+                        <input type="number" class="form-control" id="cancelQuantity" name="quantidade" min="1" required>
+                    </div>
+                    <input type="hidden" id="cancelPedidoId" name="pedido_id">
+                    <input type="hidden" id="cancelProdutoId" name="produto_id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="confirmCancel">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <script>
-       document.addEventListener('DOMContentLoaded', function () {
-            const categoriaButtons = document.querySelectorAll('.categoria-btn');
-            const produtoBlocos = document.querySelectorAll('.produto-bloco');
-            const itensContainer = document.getElementById('itens-container');
-            const totalInput = document.getElementById('total');
-    
-            function updateTotal() {
-                let total = 0;
-    
-                // Total dos itens existentes no pedido
-                document.querySelectorAll('.cart-item-row').forEach(row => {
-                    const quantidade = parseFloat(row.querySelector('.item-quantidade').value);
-                    const preco = parseFloat(row.getAttribute('data-produto-preco'));
-                    total += quantidade * preco;
+    document.addEventListener('DOMContentLoaded', function () {
+        const categoriaButtons = document.querySelectorAll('.categoria-btn');
+        const produtoBlocos = document.querySelectorAll('.produto-bloco');
+        const itensContainer = document.getElementById('itens-container');
+        const totalInput = document.getElementById('total');
+
+        function updateTotal() {
+            let total = 0;
+
+            // Total dos itens existentes no pedido
+            document.querySelectorAll('.cart-item-row').forEach(row => {
+                const quantidade = parseFloat(row.querySelector('.item-quantidade').value);
+                const preco = parseFloat(row.getAttribute('data-produto-preco'));
+                total += quantidade * preco;
+            });
+
+            // Total dos itens temporários
+            document.querySelectorAll('.item-row').forEach(row => {
+                const quantidade = parseFloat(row.querySelector('.item-quantidade').value);
+                const preco = parseFloat(row.getAttribute('data-produto-preco'));
+                total += quantidade * preco;
+            });
+
+            totalInput.value = total.toFixed(2);
+        }
+
+        categoriaButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const categoriaId = this.getAttribute('data-categoria-id');
+
+                produtoBlocos.forEach(bloco => {
+                    bloco.style.display = 'none';
                 });
-    
-                // Total dos itens temporários
+
+                const bloco = document.getElementById(`categoria-${categoriaId}`);
+                if (bloco) {
+                    bloco.style.display = 'block';
+                }
+            });
+        });
+
+        document.querySelectorAll('.produto-to-add').forEach(button => {
+            button.addEventListener('click', function () {
+                const produtoId = this.getAttribute('data-produto-id');
+                const produtoDescricao = this.getAttribute('data-produto-descricao');
+                const produtoPreco = this.getAttribute('data-produto-preco');
+
+                let itemExists = false;
                 document.querySelectorAll('.item-row').forEach(row => {
-                    const quantidade = parseFloat(row.querySelector('.item-quantidade').value);
-                    const preco = parseFloat(row.getAttribute('data-produto-preco'));
-                    total += quantidade * preco;
-                });
-    
-                totalInput.value = total.toFixed(2);
-            }
-    
-            categoriaButtons.forEach(button => {
-                button.addEventListener('click', function () {
-                    const categoriaId = this.getAttribute('data-categoria-id');
-    
-                    produtoBlocos.forEach(bloco => {
-                        bloco.style.display = 'none';
-                    });
-    
-                    const bloco = document.getElementById(`categoria-${categoriaId}`);
-                    if (bloco) {
-                        bloco.style.display = 'block';
+                    if (row.getAttribute('data-produto-id') === produtoId) {
+                        itemExists = true;
+                        const quantidadeInput = row.querySelector('.item-quantidade');
+                        quantidadeInput.value = parseInt(quantidadeInput.value) + 1;
+                        updateTotal();
                     }
                 });
-            });
-    
-            document.querySelectorAll('.produto-to-add').forEach(button => {
-                button.addEventListener('click', function () {
-                    const produtoId = this.getAttribute('data-produto-id');
-                    const produtoDescricao = this.getAttribute('data-produto-descricao');
-                    const produtoPreco = this.getAttribute('data-produto-preco');
-    
-                    let itemExists = false;
-                    document.querySelectorAll('.item-row').forEach(row => {
-                        if (row.getAttribute('data-produto-id') === produtoId) {
-                            itemExists = true;
-                        }
+
+                if (!itemExists) {
+                    const itemRow = document.createElement('div');
+                    itemRow.classList.add('item-row', 'd-flex', 'justify-content-between', 'mb-2');
+                    itemRow.setAttribute('data-produto-id', produtoId);
+                    itemRow.setAttribute('data-produto-preco', produtoPreco);
+                    itemRow.innerHTML = `
+                        ${produtoDescricao} - R$ ${parseFloat(produtoPreco).toFixed(2).replace('.', ',')}
+                        <input type="number" class="item-quantidade" name="itens_temp[${produtoId}][quantidade]" value="1" min="1" style="width: 60px; margin-left: 10px;">
+                        <button type="button" class="btn btn-danger btn-sm remove-item">Remover</button>
+                        <input type="hidden" name="itens_temp[${produtoId}][produto_id]" value="${produtoId}">
+                    `;
+
+                    itensContainer.appendChild(itemRow);
+
+                    itemRow.querySelector('.remove-item').addEventListener('click', function () {
+                        itemRow.remove();
+                        updateTotal();
                     });
-    
-                    if (!itemExists) {
-                        const itemRow = document.createElement('div');
-                        itemRow.classList.add('item-row', 'd-flex', 'justify-content-between', 'mb-2');
-                        itemRow.setAttribute('data-produto-id', produtoId);
-                        itemRow.setAttribute('data-produto-preco', produtoPreco);
-                        itemRow.innerHTML = `
-                            ${produtoDescricao} - R$ ${parseFloat(produtoPreco).toFixed(2).replace('.', ',')}
-                            <input type="number" class="item-quantidade" name="itens_temp[${produtoId}][quantidade]" value="1" min="1" style="width: 60px; margin-left: 10px;">
-                            <button type="button" class="btn btn-danger btn-sm remove-item">Remover</button>
-                            <input type="hidden" name="itens_temp[${produtoId}][produto_id]" value="${produtoId}">
-                        `;
-    
-                        itensContainer.appendChild(itemRow);
-    
-                        itemRow.querySelector('.remove-item').addEventListener('click', function () {
-                            itemRow.remove();
-                            updateTotal();
-                        });
-    
-                        itemRow.querySelector('.item-quantidade').addEventListener('change', function () {
-                            updateTotal();
-                        });
-                    }
-    
-                    updateTotal();
-                });
+
+                    itemRow.querySelector('.item-quantidade').addEventListener('change', function () {
+                        updateTotal();
+                    });
+                }
+
+                updateTotal();
             });
-    
-            // Adicionar evento de mudança de quantidade aos itens existentes no pedido
-            document.querySelectorAll('.item-quantidade').forEach(input => {
-                input.addEventListener('change', function () {
-                    updateTotal();
-                });
+        });
+
+        // Adicionar evento de mudança de quantidade aos itens existentes no pedido
+        document.querySelectorAll('.item-quantidade').forEach(input => {
+            input.addEventListener('change', function () {
+                updateTotal();
             });
-    
-            updateTotal();
-    
-            // Função para enviar o formulário e abrir o PDF em uma nova aba
-            function submitForm(event) {
+        });
+
+        updateTotal();
+
+        // Função para enviar o formulário de adicionar itens e abrir o PDF em uma nova aba
+        function submitAddItemsForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const pedidoId = form.querySelector('input[name="pedido_id"]').value;
+
+            fetch(`/admin/bar/pedidos/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': APP_CSRF_TOKEN
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.pdf_url) {
+                    window.open(data.pdf_url, '_blank');
+                }
+                if (data.success) {
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Adicionar evento de submit ao formulário de adicionar itens
+        const addItemsForm = document.getElementById('add-items-form');
+        if (addItemsForm) {
+            addItemsForm.addEventListener('submit', submitAddItemsForm);
+        }
+
+               // Lógica para o formulário de cancelamento
+        const cancelForms = document.querySelectorAll('.cancel-form');
+        
+        cancelForms.forEach(form => {
+            form.addEventListener('submit', function (event) {
                 event.preventDefault();
-                const form = event.target;
-                const formData = new FormData(form);
                 const pedidoId = form.querySelector('input[name="pedido_id"]').value;
-    
-                fetch(`/admin/bar/pedidos/`, {
+                const produtoId = form.querySelector('input[name="itens_cart[0][produto_id]"]').value; // Adjust the selector as needed
+        
+                // Prompt the user for the quantity to be canceled
+                const quantidade = prompt('Digite a quantidade a ser cancelada:');
+                if (quantidade === null || quantidade === '' || isNaN(quantidade) || quantidade <= 0) {
+                    alert('Quantidade inválida.');
+                    return;
+                }
+        
+                // Create a FormData object and append the necessary data
+                const formData = new FormData();
+                formData.append('action', 'remove-item');
+                formData.append('pedido_id', pedidoId);
+                formData.append('itens_cart[0][produto_id]', produtoId);
+                formData.append('itens_cart[0][quantidade]', quantidade);
+        
+                fetch('/admin/bar/pedidos/', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -270,13 +350,11 @@
                     }
                 })
                 .catch(error => console.error('Error:', error));
-            }
-    
-            // Adicionar evento de submit ao formulário
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', submitForm);
             });
         });
-
+    });
 </script>
+
+
+
 @endsection

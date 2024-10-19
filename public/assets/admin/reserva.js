@@ -23,8 +23,8 @@ async function adicionarQuartoAoCart(
     const totalf = totalSelect || precosData.total;
     const total = parseFloat(totalf); // Garantir que total seja um número
     console.log(precosDiariosSelect);
-    console.log(totalSelect);
-    console.log(precosDiarios);
+    // console.log(totalSelect);
+    // console.log(precosDiarios);
 
     const isFormattedDate = (dateStr) => {
         const regex = /^\d{2}-\d{2}-\d{4}$/;
@@ -33,7 +33,6 @@ async function adicionarQuartoAoCart(
 
     // Função para formatar a data de yyyy-mm-dd hh:mm:ss para dd-mm-yyyy
     const formatDate = (dateStr) => {
-        console.log('formatDate', dateStr);
         if (typeof dateStr !== 'string') {
             dateStr = String(dateStr);
         }
@@ -57,24 +56,24 @@ async function adicionarQuartoAoCart(
     const isEdit = document.querySelector('input[name="is_edit"]').value;
     var reservaId = document.querySelector('input[name="reserva_id"]').value;
 
-    console.log('isEdit',isEdit);
-    console.log('cart.length', cart.length);
+
 
     if(isEdit == '1' && cart.length == 0){
         reservaIdInput = `<input type="hidden" name="quartos[${quartoId}][reserva_id]" value="${reservaId}">`;
     }else{
         reservaId = ''
     }
-    console.log('reservaIdInput', reservaIdInput);
 
 
     console.log('adicionando ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total);
-    cart.push({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId });
+    
+    // Create a deep copy of the object to avoid reference issues
+    const itemToAdd = JSON.parse(JSON.stringify({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId }));
+    
+    cart.push(itemToAdd);
     localStorage.setItem('cart', JSON.stringify(cart));
-
     // Atualizar o total geral
     atualizarValorTotalDoCart();
-    console.log(precosDiarios);
     if (!Array.isArray(precosDiarios)) {
         precosDiarios = Object.entries(precosDiarios).map(([data, preco]) => ({
             data,
@@ -92,7 +91,7 @@ async function adicionarQuartoAoCart(
                     <div class="col-md-4 subtotal-forday">
                         <span>${formatDate(item.data)}:</span>
                         <input type="hidden" name="quartos[${quartoId}][precos_diarios][${j}][data]" value="${item.data}"> 
-                        <input type="number" class="preco-diario form-group" data-index="${j}" data-quarto-id="${quartoId}" data-checkin="${dataCheckin}" data-checkout="${dataCheckout}" value="${parseFloat(item.preco).toFixed(2)}" step="0.01" min="0">
+                        <input type="number" class="preco-diario form-group" data-date="${item.data}" data-index="${j}" data-quarto-id="${quartoId}" data-checkin="${dataCheckin}" data-checkout="${dataCheckout}" value="${parseFloat(item.preco).toFixed(2)}" step="0.01" min="0">
                     </div>
                 `;
             }
@@ -101,10 +100,11 @@ async function adicionarQuartoAoCart(
         return html;
     };
 
+
     const renderAcompanhantes = (acompanhantes, quartoId, edit = null) => {
         let acompanhantesHtml = '';
         acompanhantes.forEach((acompanhante, index) => {
-            console.log(acompanhante)
+            // console.log(acompanhante)
             const { tipo, nome, cpf, data_nascimento, email, telefone } = acompanhante;
     
             // Ignorar o primeiro índice se o tipo for "Adulto"
@@ -169,7 +169,7 @@ async function adicionarQuartoAoCart(
         acompanhantesHtml += renderAcompanhantes(Array(criancas_ate_7).fill({ tipo: 'Criança até 7 anos' }), quartoId);
     }
 
-
+    
 
 
     // Adicionar o item ao carrinho visualmente
@@ -321,6 +321,8 @@ async function adicionarQuartoAoCart(
     </div>
 `;
 
+
+
     cartItems.appendChild(cartItem);
 
     // Adicionar máscara ao campo CPF
@@ -388,7 +390,7 @@ async function adicionarQuartoAoCart(
             atualizarValorTotalDoCart();
         });
     });
-
+    
     // Adicionar event listeners para atualizar o valor total ao alterar os preços diários
     const precoDiarioInputs = cartItem.querySelectorAll('.preco-diario');
     const valorTotalSpan = document.getElementById(`valor-total-${quartoId}`);
@@ -396,7 +398,10 @@ async function adicionarQuartoAoCart(
     function atualizarValorTotal() {
         let total = 0;
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
         precoDiarioInputs.forEach(input => {
+            console.log('cartItem.precosDiarios', input.value);
+
             const valorDiario = parseFloat(input.value) || 0;
             total += valorDiario;
 
@@ -405,7 +410,7 @@ async function adicionarQuartoAoCart(
             const dataCheckin = input.getAttribute('data-checkin');
             const dataCheckout = input.getAttribute('data-checkout');
             const dataIndex = input.getAttribute('data-index');
-            const data = input.getAttribute('data-checkout');
+            const data = input.getAttribute('data-date');
 
             if (!dataCheckin || !dataCheckout || !data) {
                 console.error('Data inválida encontrada:', { dataCheckin, dataCheckout, data });
@@ -434,11 +439,11 @@ async function adicionarQuartoAoCart(
                         }
                     });
                 }
-                
+                console.log('cartItem.precosDiariosDepois', cartItem.precosDiarios);
+
                 // Atualiza o valor diário no objeto precosDiarios
                 const precoDiario = { data: formatDate(data), preco: valorDiario.toFixed(2) };
                 cartItem.precosDiarios[dataIndex] = precoDiario;
-                console.log('cartItem', cartItem);
 
                 // Recalcula o total do item
                 cartItem.total = cartItem.precosDiarios.reduce((acc, val) => acc + parseFloat(val.preco), 0).toFixed(2);
@@ -466,7 +471,10 @@ async function adicionarQuartoAoCart(
     const cartColumn = document.getElementById('cart-col');
     cartColumn.style.display = 'block'; // Torna o elemento visível
     cartColumn.classList.add('fade-in-right'); // Adiciona a animação de entrada
+
+
 }
+
 
 const saveInfoButton = document.getElementById('saveInfoButton');
 const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
@@ -932,6 +940,7 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
 
     const cpfJaExiste = responsaveis.some(responsavel => responsavel.cpf === cpf);
 
+    console.log('precosdiarios que vem do modal', precosDiarios);
     if (cpfJaExiste && cpf != '') {
         alert('CPF já está atrelado a um quarto, informe um novo.');
     } else {
