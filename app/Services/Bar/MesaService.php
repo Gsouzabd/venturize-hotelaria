@@ -173,7 +173,7 @@ class MesaService {
         $dompdf->setPaper($customPaper);
     
         // Dados do pedido e itens cancelados
-        $html = view('pdf.cupom_cancelamento', compact('pedido', 'itensCancelados'))->render();
+        $html = view('pdf.cupom_cancelamento', compact('pedido', 'itensCancelados',))->render();
     
         // Carregar o HTML no Dompdf
         $dompdf->loadHtml($html);
@@ -253,7 +253,7 @@ class MesaService {
         $dompdf->setPaper($customPaper);
     
         // Dados do pedido e itens adicionados
-        $html = view('pdf.cupom', compact('pedido', 'novosItens'))->render();
+        $html = view('pdf.cupom_item_adicionado', compact('pedido', 'novosItens'))->render();
     
         // Carregar o HTML no Dompdf
         $dompdf->loadHtml($html);

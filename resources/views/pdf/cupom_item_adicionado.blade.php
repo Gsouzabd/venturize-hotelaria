@@ -7,6 +7,7 @@
     <style>
         body {
             font-family: 'Courier', monospace;
+
             font-size: 12px;
             background-color: #fff;
         }
@@ -46,7 +47,7 @@
 <body>
     <div class="cupom">
         <h3>Bar</h3>
-        <h5>Cancelamento de Item</h5>
+        <h5>Item Adicionado</h5>
         <p style="text-align:center; font-size: 10px;">
             Data e Hora: {{ \Carbon\Carbon::now()->setTimezone('America/Sao_Paulo')->format('d/m/Y H:i:s') }}
         </p>        
@@ -61,18 +62,15 @@
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px; font-weight:300">Qtde</th>
-                    <th style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px; font-weight:300">Produto</th>
-                    <th style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px; font-weight:300">Justificativa</th>
-
+                    <th style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px; font-weight:300;">Qtde</th>
+                    <th style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px; font-weight:300;">Produto</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($itensCancelados as $item)
+                @foreach ($novosItens as $item)
                     <tr>
                         <td style="padding: 8px;">{{ $item['quantidade'] }}</td>
                         <td style="padding: 8px;">{{ $item['descricao'] }}</td>
-                        <td style="padding: 8px;">{{ $item['justificativa'] }}</td>
                     </tr>
                 @endforeach
             </tbody>

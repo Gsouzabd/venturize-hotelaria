@@ -80,7 +80,7 @@
                                     <span class="font-weight-bold">{{ $item->produto->descricao }}</span> - R$ {{ number_format($item->produto->preco_venda, 2, ',', '.') }}
                                 </div>
                                 <div class="col-md-2">
-                                    <input type="number" class="form-control item-quantidade" name="itens_cart[{{ $item->produto_id }}][quantidade]" value="{{ $item->quantidade }}" min="1">
+                                    <input type="number" class="form-control item-quantidade" name="itens_cart[{{ $item->produto_id }}][quantidade]" value="{{ $item->quantidade }}" min="1" readonly>
                                 </div>
                                 <div class="col-md-2 text-right">
 
@@ -104,31 +104,41 @@
                         @endif
                         <!-- Seção de Adição de Itens -->
                         <x-admin.field-group>
-                            <x-admin.field cols="6">
+                            <x-admin.field cols="4">
                                 <x-admin.label label="Mesa" required/>
                                 <x-admin.select name="mesa_id" id="mesa_id" :value="old('mesa_id', $pedido->mesa_id)"
                                     :items="$mesas->pluck('numero', 'id')" selectedItem="{{ old('mesa_id', $pedido->mesa_id) }}" required/>
                             </x-admin.field>
 
-                            <x-admin.field cols="6">
+                            <x-admin.field cols="4">
                                 <x-admin.label label="Cliente" required/>
                                 <x-admin.select name="cliente_id" id="cliente_id" :value="old('cliente_id', $pedido->cliente_id)"
                                     :items="$clientes->pluck('nome', 'id')" selectedItem="{{ old('cliente_id', $pedido->cliente_id) }}" disabled/>
                                 <input type="hidden" name="cliente_id" value="{{ old('cliente_id', $pedido->cliente_id) }}">
                             </x-admin.field>
-                        </x-admin.field-group>
 
-                        <x-admin.field-group>
-                            <x-admin.field cols="6">
+                            <x-admin.field cols="4">
                                 <x-admin.label label="Status" required/>
                                 <x-admin.select name="status" id="status" :value="old('status', $pedido->status)"
                                     :items="['aberto' => 'Aberto', 'fechado' => 'Fechado', 'pago' => 'Pago']"
                                     selectedItem="{{ old('status', $pedido->status) }}" required/>
                             </x-admin.field>
+                        </x-admin.field-group>
 
-                            <x-admin.field cols="6">
+                        <x-admin.field-group>
+                            <x-admin.field cols="4">
                                 <x-admin.label label="Total" required/>
                                 <x-admin.text name="total" id="total" :value="old('total', $pedido->total ?? '0.00')" required/>
+                            </x-admin.field>
+                            
+                            <x-admin.field cols="4">
+                                <x-admin.label label="Taxa de Serviço (10%)" required/>
+                                <x-admin.text name="service_fee" id="service_fee" :value="old('service_fee', '0.00')" readonly/>
+                            </x-admin.field>
+                            
+                            <x-admin.field cols="4">
+                                <x-admin.label label="Total com Taxa de Serviço" required/>
+                                <x-admin.text name="total_with_service_fee" id="total_with_service_fee" :value="old('total_with_service_fee', '0.00')" readonly/>
                             </x-admin.field>
                         </x-admin.field-group>
 
@@ -151,8 +161,10 @@
         </div>
     </div>
 </div>
+
+
 <!-- Modal HTML -->
-<div id="cancelModal" class="modal" tabindex="-1" role="dialog">
+<div id="cancelModal" class="modal fade" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -163,9 +175,14 @@
             </div>
             <div class="modal-body">
                 <form id="cancelForm">
+                    <input type="hidden" name="action" value="remove-item">
                     <div class="form-group">
                         <label for="cancelQuantity">Quantidade a ser cancelada:</label>
                         <input type="number" class="form-control" id="cancelQuantity" name="quantidade" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cancelJustification">Justificativa para o cancelamento:</label>
+                        <textarea class="form-control" id="cancelJustification" name="justificativa" required></textarea>
                     </div>
                     <input type="hidden" id="cancelPedidoId" name="pedido_id">
                     <input type="hidden" id="cancelProdutoId" name="produto_id">
@@ -178,8 +195,6 @@
         </div>
     </div>
 </div>
-
-
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -264,6 +279,8 @@
                 }
 
                 updateTotal();
+                calculateServiceFee();
+
             });
         });
 
@@ -271,10 +288,25 @@
         document.querySelectorAll('.item-quantidade').forEach(input => {
             input.addEventListener('change', function () {
                 updateTotal();
+                calculateServiceFee();
             });
         });
 
         updateTotal();
+        calculateServiceFee();
+
+
+        function calculateServiceFee() {
+            const totalInput = document.getElementById('total');
+            const serviceFeeInput = document.getElementById('service_fee');
+            const totalWithServiceFeeInput = document.getElementById('total_with_service_fee');
+            const total = parseFloat(totalInput.value) || 0;
+            const serviceFee = total * 0.10;
+            const totalWithServiceFee = total + serviceFee;
+
+            serviceFeeInput.value = serviceFee.toFixed(2);
+            totalWithServiceFeeInput.value = totalWithServiceFee.toFixed(2);
+        }
 
         // Função para enviar o formulário de adicionar itens e abrir o PDF em uma nova aba
         function submitAddItemsForm(event) {
@@ -309,29 +341,44 @@
             addItemsForm.addEventListener('submit', submitAddItemsForm);
         }
 
-               // Lógica para o formulário de cancelamento
         const cancelForms = document.querySelectorAll('.cancel-form');
-        
+        const cancelModal = document.getElementById('cancelModal');
+        const cancelForm = document.getElementById('cancelForm');
+        const cancelQuantityInput = document.getElementById('cancelQuantity');
+        const cancelJustificationInput = document.getElementById('cancelJustification');
+        const cancelPedidoIdInput = document.getElementById('cancelPedidoId');
+        const cancelProdutoIdInput = document.getElementById('cancelProdutoId');
+        const confirmCancelButton = document.getElementById('confirmCancel');
+
         cancelForms.forEach(form => {
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 const pedidoId = form.querySelector('input[name="pedido_id"]').value;
                 const produtoId = form.querySelector('input[name="itens_cart[0][produto_id]"]').value; // Adjust the selector as needed
-        
-                // Prompt the user for the quantity to be canceled
-                const quantidade = prompt('Digite a quantidade a ser cancelada:');
-                if (quantidade === null || quantidade === '' || isNaN(quantidade) || quantidade <= 0) {
-                    alert('Quantidade inválida.');
-                    return;
-                }
-        
-                // Create a FormData object and append the necessary data
-                const formData = new FormData();
-                formData.append('action', 'remove-item');
-                formData.append('pedido_id', pedidoId);
+
+                // Set the hidden inputs in the modal form
+                cancelPedidoIdInput.value = pedidoId;
+                cancelProdutoIdInput.value = produtoId;
+
+                // Show the modal
+                $(cancelModal).modal('show');
+            });
+        });
+
+        confirmCancelButton.addEventListener('click', function () {
+            if (cancelForm.checkValidity()) {
+                const formData = new FormData(cancelForm);
+
+                // Add the itens_cart data to the formData
+                const pedidoId = cancelPedidoIdInput.value;
+                const produtoId = cancelProdutoIdInput.value;
+                const quantidade = cancelQuantityInput.value;
+                const justificativa = cancelJustificationInput.value;
+
                 formData.append('itens_cart[0][produto_id]', produtoId);
                 formData.append('itens_cart[0][quantidade]', quantidade);
-        
+                formData.append('itens_cart[0][justificativa]', justificativa);
+
                 fetch('/admin/bar/pedidos/', {
                     method: 'POST',
                     body: formData,
@@ -350,11 +397,37 @@
                     }
                 })
                 .catch(error => console.error('Error:', error));
-            });
+
+                // Hide the modal
+                $(cancelModal).modal('hide');
+            } else {
+                cancelForm.reportValidity();
+            }
         });
     });
 </script>
+<!-- Script para impedir que o usuário saia da página com itens no carrinho -->
+<script>
+    function checkForUnsavedItems(event) {
+        const itensContainer = document.getElementById('itens-container');
+        if (itensContainer && itensContainer.children.length > 0) {
+            // Display a confirmation dialog
+            const confirmationMessage = 'Você tem itens para ser adicionado no pedido. Tem certeza de que deseja sair da página?';
+            if (!confirm(confirmationMessage)) {
+                // Cancel the event
+                event.preventDefault();
+                // Chrome requires returnValue to be set for beforeunload event
+                event.returnValue = '';
+            }
+        }
+    }
 
 
+    // Handle click event on .sidenav-item a elements
+    document.querySelectorAll('.sidenav-item a, .nav-link ').forEach(function(link) {
+        link.addEventListener('click', checkForUnsavedItems);
+    });
+</script>
+</script>
 
 @endsection

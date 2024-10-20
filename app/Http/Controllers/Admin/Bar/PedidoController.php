@@ -69,8 +69,8 @@ class PedidoController extends Controller
         $data = $request->all();
 
         // dd($data);
-        if ($data['pedido_id']) {
-            if ($data['action']) {
+        if (isset($data['pedido_id'])) {
+            if (isset($data['action'])) {
                 if ($data['action'] == "add-itens") {
                     $itens = $this->mesaService->adicionarItemPedido($data);
         
@@ -87,6 +87,9 @@ class PedidoController extends Controller
                     ]);
                 } elseif ($data['action'] == "remove-item") {
                     $itensCancelados = $this->mesaService->cancelarItemPedido($data);
+                    
+                    $justificativa = $data['justificativa'];
+                    $itensCancelados[0]['justificativa'] = $justificativa;
         
                     $pdfContent = $this->mesaService->gerarCupomCancelamento($data['pedido_id'], $itensCancelados);
         
