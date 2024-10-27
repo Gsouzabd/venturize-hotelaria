@@ -19,6 +19,9 @@ class Pedido extends Model
         'cliente_id',
         'status', // aberto, fechado, pago
         'total',
+        'taxa_servico',
+        'remover_taxa',
+        'total_com_taxa',
     ];
 
     public function mesa()

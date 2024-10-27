@@ -18,7 +18,9 @@ use App\Http\Controllers\Admin\ImportarUsuarioController;
 use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
-
+// SEMPRE RODAR O COMANDO:
+//php artisan cache:clear
+//php artisan route:cache
 include 'bar/routes.php';
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);

@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Bar\MesaController;
 use App\Http\Controllers\Admin\Bar\PedidoController;
 use App\Http\Controllers\Admin\Bar\BarHomeController;
-
+// SEMPRE RODAR O COMANDO:
+//php artisan cache:clear
+//php artisan route:cache
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth:admin'])->group(function () {
 
@@ -12,7 +14,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('bar')->group(function () {
 
             Route::get('/', [BarHomeController::class, 'index'])->name('bar.home');
-
+            Route::get('/pedidos/{idPedido}/cupom-parcial', [PedidoController::class, 'showCupomParcial'])->name('bar.pedidos.cupom-parcial');
             $prefixes = [
                 'mesas' => MesaController::class,
                 'pedidos' => PedidoController::class,

@@ -67,6 +67,190 @@
         </x-admin.field-group>
 
         <x-admin.field-group>
+            <!-- Checkbox para habilitar composição -->
+            <x-admin.field cols="6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="possui_composicao" name="possui_composicao" {{ old('possui_composicao', $produto->composicoes()->exists()) ? 'checked' : '' }}>                    <label class="form-check-label" for="possui_composicao">
+                        Possui Composição?
+                    </label>
+                </div>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <!-- Campos de Composição (escondidos por padrão) -->
+        <div id="composicao-section" style="display: none;">
+            <x-admin.field-group>
+                <x-admin.field cols="12">
+                    <x-admin.label label="Composições" />
+                    <table class="table" id="composicoes-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Quantidade</th>
+                                <th>Unidade</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if($edit && $produto->composicoes()->exists())
+                                @foreach($produto->composicoes as $index => $composicao)
+                                    <tr>
+                                        <td>
+                                            <input type="text" name="insumo[{{ $index }}][nome]" class="form-control desc-produto-composicao" value="{{ $composicao->insumo->descricao }}" required>
+                                            <input type="hidden" name="insumo[{{ $index }}][produto_id]" class="produto-id" value="{{ $composicao->insumo_id }}">
+                                            <input type="hidden" name="insumo[{{ $index }}][unidade]" class="produto-unidade" value="{{ $composicao->insumo->unidade }}">
+                                        </td>
+                                        <td>
+                                            <input type="number" name="insumo[{{ $index }}][quantidade]" class="form-control" value="{{ $composicao->quantidade }}" required>
+                                        </td>
+                                        <td>
+                                            <input type="text" name="insumo[{{ $index }}][unidade_display]" class="form-control unidade-display" value="{{ $composicao->insumo->unidade }}" readonly>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger remove-composicao-btn">Remover</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
+                        </tbody>
+                    </table>
+                    <div id="produto_suggestions" class="dropdown-menu"></div>
+                    <button type="button" id="add-composicao-btn" class="btn btn-primary">Adicionar Composição</button>
+                </x-admin.field>
+            </x-admin.field-group>
+        </div>
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const possuiComposicaoCheckbox = document.getElementById('possui_composicao');
+                const composicaoSection = document.getElementById('composicao-section');
+        
+                // Show or hide the composition section based on the checkbox state
+                function toggleComposicaoSection() {
+                    if (possuiComposicaoCheckbox.checked) {
+                        composicaoSection.style.display = 'block';
+                    } else {
+                        composicaoSection.style.display = 'none';
+                    }
+                }
+        
+                // Initial check
+                toggleComposicaoSection();
+        
+                // Add event listener to the checkbox
+                possuiComposicaoCheckbox.addEventListener('change', toggleComposicaoSection);
+        
+                // JavaScript for adding and removing compositions
+                const addComposicaoBtn = document.getElementById('add-composicao-btn');
+                const composicoesTableBody = document.querySelector('#composicoes-table tbody');
+                const suggestionsBox = document.getElementById('produto_suggestions');
+                let composicaoIndex = {{ $edit && $produto->composicoes()->exists() ? $produto->composicoes->count() : 0 }};
+                let activeInput = null;
+        
+                addComposicaoBtn.addEventListener('click', function () {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <input type="text" name="insumo[${composicaoIndex}][nome]" class="form-control desc-produto-composicao" required>
+                            <input type="hidden" name="insumo[${composicaoIndex}][produto_id]" class="produto-id">
+                            <input type="hidden" name="insumo[${composicaoIndex}][unidade]" class="produto-unidade">
+                        </td>
+                        <td>
+                            <input type="number" name="insumo[${composicaoIndex}][quantidade]" class="form-control" required>
+                        </td>
+                        <td>
+                            <input type="text" name="insumo[${composicaoIndex}][unidade_display]" class="form-control unidade-display" readonly>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger remove-composicao-btn">Remover</button>
+                        </td>
+                    `;
+                    composicoesTableBody.appendChild(row);
+                    composicaoIndex++;
+                });
+        
+                document.addEventListener('focusin', function (event) {
+                    if (event.target.classList.contains('desc-produto-composicao')) {
+                        activeInput = event.target;
+                    }
+                });
+        
+                document.addEventListener('input', function (event) {
+                    if (event.target.classList.contains('desc-produto-composicao')) {
+                        const query = event.target.value;
+        
+                        if (query.length < 2) {
+                            suggestionsBox.style.display = 'none';
+                            return;
+                        }
+        
+                        console.log(`Fetching produtos with query: ${query}`);
+        
+                        fetch(`/admin/produtos/search?query=${query}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                console.log('Received data:', data);
+                                suggestionsBox.innerHTML = '';
+                                data.forEach(produto => {
+                                    const suggestionItem = document.createElement('a');
+                                    suggestionItem.classList.add('dropdown-item');
+                                    suggestionItem.textContent = `ID: ${produto.id} ${produto.descricao}`;
+                                    suggestionItem.dataset.id = produto.id;
+                                    suggestionItem.dataset.descricao = produto.descricao;
+                                    suggestionItem.dataset.unidade = produto.unidade;
+                                    suggestionsBox.appendChild(suggestionItem);
+                                });
+                                suggestionsBox.style.display = 'block';
+                            })
+                            .catch(error => {
+                                console.error('Fetch error:', error);
+                            });
+                    }
+                });
+        
+                suggestionsBox.addEventListener('click', function (event) {
+                    if (event.target.classList.contains('dropdown-item')) {
+                        const produtoId = event.target.dataset.id;
+                        const produtoDescricao = event.target.dataset.descricao;
+                        const produtoUnidade = event.target.dataset.unidade;
+        
+                        const activeRow = activeInput.closest('tr');
+                        const activeHiddenInput = activeRow.querySelector('.produto-id');
+                        const activeUnidadeInput = activeRow.querySelector('.produto-unidade');
+                        const activeUnidadeDisplayInput = activeRow.querySelector('.unidade-display');
+        
+                        activeInput.value = produtoDescricao;
+                        activeHiddenInput.value = produtoId;
+                        activeUnidadeInput.value = produtoUnidade;
+                        activeUnidadeDisplayInput.value = produtoUnidade;
+        
+                        suggestionsBox.style.display = 'none';
+                    }
+                });
+        
+                document.addEventListener('click', function (event) {
+                    if (!suggestionsBox.contains(event.target) && !event.target.classList.contains('desc-produto-composicao')) {
+                        suggestionsBox.style.display = 'none';
+                    }
+                });
+        
+                composicoesTableBody.addEventListener('click', function (event) {
+                    if (event.target.classList.contains('remove-composicao-btn')) {
+                        const row = event.target.closest('tr');
+                        row.remove();
+                        // Optionally, you can decrement composicaoIndex or handle re-indexing here
+                    }
+                });
+            });
+        </script>
+        
+
+        <x-admin.field-group>
             <!-- Categoria Produto -->
             <x-admin.field cols="6">
                 <x-admin.label label="Categoria" required/>
@@ -171,5 +355,138 @@
             }
         });
     });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const possuiComposicaoCheckbox = document.getElementById('possui_composicao');
+        const composicaoSection = document.getElementById('composicao-section');
+        
+        // Mostrar ou esconder a seção de composição com base no estado do checkbox
+        possuiComposicaoCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                composicaoSection.style.display = 'block';
+            } else {
+                composicaoSection.style.display = 'none';
+            }
+        });
+
+        // Exibir a seção se o checkbox já estiver marcado ao carregar a página
+        if (possuiComposicaoCheckbox.checked) {
+            composicaoSection.style.display = 'block';
+        }
+    });
+
 </script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addComposicaoBtn = document.getElementById('add-composicao-btn');
+        const composicoesTableBody = document.querySelector('#composicoes-table tbody');
+        const suggestionsBox = document.getElementById('produto_suggestions');
+        let composicaoIndex = 0;
+        let activeInput = null;
+
+        addComposicaoBtn.addEventListener('click', function () {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <input type="text" name="insumo[${composicaoIndex}][nome]" class="form-control desc-produto-composicao" required>
+                    <input type="hidden" name="insumo[${composicaoIndex}][produto_id]" class="produto-id">
+                    <input type="hidden" name="insumo[${composicaoIndex}][unidade]" class="produto-unidade">
+                </td>
+                <td>
+                    <input type="number" name="insumo[${composicaoIndex}][quantidade]" class="form-control" required>
+                </td>
+                <td>
+                    <input type="text" name="insumo[${composicaoIndex}][unidade_display]" class="form-control unidade-display" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger remove-composicao-btn">Remover</button>
+                </td>
+            `;
+            composicoesTableBody.appendChild(row);
+            composicaoIndex++;
+        });
+
+        document.addEventListener('focusin', function (event) {
+            if (event.target.classList.contains('desc-produto-composicao')) {
+                activeInput = event.target;
+            }
+        });
+
+        document.addEventListener('input', function (event) {
+            if (event.target.classList.contains('desc-produto-composicao')) {
+                const query = event.target.value;
+
+                if (query.length < 2) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                console.log(`Fetching produtos with query: ${query}`);
+
+                fetch(`/admin/produtos/search?query=${query}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Received data:', data);
+                        suggestionsBox.innerHTML = '';
+                        data.forEach(produto => {
+                            const suggestionItem = document.createElement('a');
+                            suggestionItem.classList.add('dropdown-item');
+                            suggestionItem.textContent = `ID: ${produto.id} ${produto.descricao}`;
+                            suggestionItem.dataset.id = produto.id;
+                            suggestionItem.dataset.descricao = produto.descricao;
+                            suggestionItem.dataset.unidade = produto.unidade + ' - ' + produto.unidade_nome;
+                            suggestionsBox.appendChild(suggestionItem);
+                        });
+                        suggestionsBox.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                    });
+            }
+        });
+
+        suggestionsBox.addEventListener('click', function (event) {
+            if (event.target.classList.contains('dropdown-item')) {
+                const produtoId = event.target.dataset.id;
+                const produtoDescricao = event.target.dataset.descricao;
+                const produtoUnidade = event.target.dataset.unidade;
+
+                const activeRow = activeInput.closest('tr');
+                const activeHiddenInput = activeRow.querySelector('.produto-id');
+                const activeUnidadeInput = activeRow.querySelector('.produto-unidade');
+                const activeUnidadeDisplayInput = activeRow.querySelector('.unidade-display');
+
+                activeInput.value = produtoDescricao;
+                activeHiddenInput.value = produtoId;
+                activeUnidadeInput.value = produtoUnidade;
+                activeUnidadeDisplayInput.value = produtoUnidade;
+
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!suggestionsBox.contains(event.target) && !event.target.classList.contains('desc-produto-composicao')) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        composicoesTableBody.addEventListener('click', function (event) {
+            if (event.target.classList.contains('remove-composicao-btn')) {
+                const row = event.target.closest('tr');
+                row.remove();
+                // Optionally, you can decrement composicaoIndex or handle re-indexing here
+            }
+        });
+    });
+</script>
+
 @endsection

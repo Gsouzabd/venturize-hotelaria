@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Produto;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
+use App\Models\ProdutoComposicao;
 use App\Http\Controllers\Controller;
 
 class ProdutoController extends Controller
@@ -69,20 +70,33 @@ class ProdutoController extends Controller
     public function save(Request $request)
     {
         $data = $request->all();
-
-        // dd($data);
-        
-
+    
+        // Save the main product data
         if ($id = $request->get('id')) {
             $produto = $this->model->findOrFail($id);
             $data['criado_por'] = $produto->criado_por; // Pega o valor de criado_por do registro existente
             $produto->update($data);
         } else {
             $data['criado_por'] = auth()->user()->id;
-            $this->model->fill($data)->save();
+            $produto = $this->model->create($data);
         }
-
-
+    
+        // Save the product composition if it exists
+        if ($request->has('possui_composicao') && $request->get('possui_composicao') == 'on') {
+            // Delete existing compositions if updating
+            if ($id) {
+                ProdutoComposicao::where('produto_id', $produto->id)->delete();
+            }
+    
+            foreach ($data['insumo'] as $insumo) {
+                ProdutoComposicao::create([
+                    'produto_id' => $produto->id,
+                    'insumo_id' => $insumo['produto_id'],
+                    'quantidade' => $insumo['quantidade'],
+                ]);
+            }
+        }
+    
         return redirect()
             ->route('admin.produtos.index')
             ->with('notice', config('app.messages.' . ($id ? 'update' : 'insert')));
@@ -98,14 +112,23 @@ class ProdutoController extends Controller
             ->with('notice', config('app.messages.delete'));
     }
 
+
     public function search(Request $request)
     {
         $query = $request->get('query');
-        $produtos = Produto::where('descricao', 'like', "%{$query}%")->get(['id', 'descricao']);
+        $produtos = Produto::where('descricao', 'like', "%{$query}%")->get(['id', 'descricao', 'unidade']);
+    
+        // Map unit codes to full names
+        $unidades = Produto::UNIDADES;
+    
+        // Add full unit name to each product
+        $produtos->transform(function ($produto) use ($unidades) {
+            $produto->unidade_nome = $unidades[$produto->unidade] ?? $produto->unidade;
+            return $produto;
+        });
     
         return response()->json($produtos);
     }
-
 
 
 }

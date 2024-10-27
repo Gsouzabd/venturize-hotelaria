@@ -27,6 +27,7 @@
                                 <th>Produto</th>
                                 <th>Quantidade</th>
                                 <th>Tipo</th>
+                                <th>Justificativa</th>
                                 <th>Usuário</th>
                                 <th>Data</th>
                                 <th>Ações</th>
@@ -34,7 +35,7 @@
                         </thead>
                         <tbody>
                             @php
-                                $movimentacoes = $local->movimentacoesOrigem->merge($local->movimentacoesDestino);
+                                $movimentacoes = $local->movimentacoesOrigem->merge($local->movimentacoesDestino)->sortByDesc('data_movimentacao');
                             @endphp
                             @forelse ($movimentacoes as $movimentacao)
                                 <tr>
@@ -45,6 +46,7 @@
                                         {{ ucfirst($movimentacao->tipo) }} 
                                         @if( $movimentacao->tipo == 'transferencia')( {{$local->id == $movimentacao->local_estoque_destino_id ? 'Entrada' : 'Saída'}} ) @endif
                                     </td>
+                                    <td>{{ $movimentacao->justificativa }}</td>
                                     <td>{{ $movimentacao->usuario->nome }}</td>
                                     <td>{{ Carbon\Carbon::parse($movimentacao->data_movimentacao)->format('d-m-Y H:i') }}</td>
                                     <td>

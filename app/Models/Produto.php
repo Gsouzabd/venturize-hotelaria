@@ -69,4 +69,9 @@ class Produto extends Model
     {
         return $this->hasMany(ItemPedido::class);
     }
+
+    public function composicoes()
+    {
+        return $this->hasMany(ProdutoComposicao::class, 'produto_id');
+    }
 }

@@ -1,7 +1,8 @@
 @extends('layouts.admin.master')
 
 @php 
-use Carbon\Carbon; 
+use Carbon\Carbon;
+use App\Models\Produto; 
 @endphp
 
 @section('title', 'Estoque')
@@ -31,6 +32,7 @@ use Carbon\Carbon;
                                 <th>ID Produto</th>
                                 <th>Produto</th>
                                 <th>Quantidade</th>
+                                <th>Unidade</th>
                                 <th>Data de Criação</th>
                                 <th>Ações</th>
                             </tr>
@@ -42,6 +44,7 @@ use Carbon\Carbon;
                                     <td>{{ $estoque->produto->id }}</td>
                                     <td>{{ $estoque->produto->descricao }}</td>
                                     <td>{{ $estoque->quantidade }}</td>
+                                    <td>{{ $estoque->produto->unidade}} - {{\App\Models\Produto::UNIDADES[$estoque->produto->unidade] }}</td>
                                     <td>{{ Carbon::parse($estoque->created_at)->format('d-m-Y') }}</td>
                                     <td class="cell-nowrap">
                                         <x-admin.edit-btn route="admin.estoque.edit" :route-params="['local_estoque_id' => $local->id, 'id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>

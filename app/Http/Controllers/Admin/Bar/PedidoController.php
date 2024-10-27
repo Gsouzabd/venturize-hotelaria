@@ -74,7 +74,7 @@ class PedidoController extends Controller
                 if ($data['action'] == "add-itens") {
                     $itens = $this->mesaService->adicionarItemPedido($data);
         
-                    $pdfContent = $this->mesaService->gerarCupom($data['pedido_id'], $itens);
+                    $pdfContent = $this->mesaService->gerarCupomItemAdicionado($data['pedido_id'], $itens);
         
                     // Salvar o PDF em um arquivo temporário
                     $pdfPath = storage_path("app/public/cupom_pedido_{$data['pedido_id']}.pdf");
@@ -102,6 +102,30 @@ class PedidoController extends Controller
                         'success' => 'Item removido com sucesso.',
                         'pdf_url' => asset("storage/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf")
                     ]);
+                } elseif ($data['action'] == "fechar-pedido") {
+                    // dd($data);  
+                    // var_dump($data);
+                    $removerTaxaServico = $data['removeServiceFee'];
+                    // dd($removerTaxaServico);
+                    $pedidoId = $this->mesaService->fecharConta($data['pedido_id'], $removerTaxaServico);
+
+                    if ($pedidoId) {
+                        $pdfContent = $this->mesaService->gerarCupomFechamento($pedidoId);
+        
+                        // Salvar o PDF em um arquivo temporário
+                        $pdfPath = storage_path("app/public/cupom_fechamento_pedido_{$pedidoId}.pdf");
+                        file_put_contents($pdfPath, $pdfContent);
+        
+                        // Retornar uma resposta que abre o PDF em uma nova aba
+                        return response()->json([
+                            'success' => 'Pedido fechado com sucesso.',
+                            'pdf_url' => asset("storage/cupom_fechamento_pedido_{$pedidoId}.pdf")
+                        ]);
+                    } else {
+                        return response()->json([
+                            'error' => 'Erro ao fechar a mesa.'
+                        ]);
+                    }
                 }
             }
         }
@@ -130,5 +154,11 @@ class PedidoController extends Controller
         return redirect()
             ->route('admin.bar.pedidos.index')
             ->with('notice', config('app.messages.delete'));
+    }
+
+    public function showCupomParcial($idPedido)
+    {
+        $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
+        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
     }
 }

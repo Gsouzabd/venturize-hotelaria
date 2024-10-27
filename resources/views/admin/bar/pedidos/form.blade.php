@@ -19,6 +19,12 @@
         </div>
     @endif
 
+    @if(request()->query('success') === 'pedido-fechado')
+        <div class="alert alert-success">
+            Mesa fechada com sucesso!
+        </div>
+    @endif
+
     <div class="row">
         <!-- Sidebar de Categorias -->
         <div class="col-md-4">
@@ -142,25 +148,125 @@
                             </x-admin.field>
                         </x-admin.field-group>
 
+                        <!-- Botão para gerar o cupom parcial -->
+                        <button type="button" class="btn btn-primary" id="gerarParcialBtn" style="float: right; margin-bottom: 2%">Gerar Cupom Parcial</button>
+
                         <!-- Seção para Adicionar Itens ao Pedido -->
-                        <x-admin.field-group>
-                            <x-admin.field cols="12">
-                                <x-admin.label label="Itens Temporários (para confirmar)" required/>
+                        <x-admin.field-group style="margin-top: 2%">
+                            <x-admin.field cols="12" style="text-align: center;">
+                                <x-admin.label label="Itens Temporários (para confirmar)" />
                                 <div id="itens-container"></div>
                             </x-admin.field>
                         </x-admin.field-group>
 
                         @if($pedido->itens->isEmpty())
                             <div class="alert alert-warning mt-3">
-                                Atenção! Não existem produtos lançados para essa mesa/cupom!
+                                Atenção! Não existem produtos lançados para essa mesa/pedido!
                             </div>
                         @endif
                     </x-admin.form>
+   <!-- Formulário para fechar o pedido -->
+   <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline" id="fecharPedidoForm">
+    @csrf
+    <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
+    <input type="hidden" name="action" value="fechar-pedido">
+    <button type="button" class="btn btn-primary" id="fecharPedidoBtn" style="width: 100%; margin-top: 5%; padding: 1%">Fechar Mesa</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Modal HTML -->
+<div id="confirmCloseModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Fechamento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Você tem certeza que deseja fechar esta mesa e enviar o pedido para reserva?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="removeServiceFee" name="removeServiceFee">
+                    <label class="form-check-label" for="removeServiceFee">
+                       <strong> O cliente deseja remover taxa de serviço - 10%? </strong>
+                    </label>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmCloseBtn">Confirmar</button>
             </div>
         </div>
     </div>
 </div>
+</div>
+
+
+<!--! Script para fechar o pedido !-->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fecharPedidoBtn = document.getElementById('fecharPedidoBtn');
+        const confirmCloseBtn = document.getElementById('confirmCloseBtn');
+        const fecharPedidoForm = document.getElementById('fecharPedidoForm');
+        const removeServiceFeeCheckbox = document.getElementById('removeServiceFee');
+
+
+        fecharPedidoBtn.addEventListener('click', function () {
+            $('#confirmCloseModal').modal('show');
+        });
+
+        confirmCloseBtn.addEventListener('click', function () {
+            const formData = new FormData(fecharPedidoForm);
+            formData.append('removeServiceFee', removeServiceFeeCheckbox.checked);
+
+            fetch('/admin/bar/pedidos/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.pdf_url) {
+                    window.open(data.pdf_url, '_blank');
+                }
+                if (data.success) {
+                    window.location.href = window.location.pathname + '?success=pedido-fechado';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+
+            $('#confirmCloseModal').modal('hide');
+        });
+
+        const gerarParcialBtn = document.getElementById('gerarParcialBtn');
+
+        gerarParcialBtn.addEventListener('click', function () {
+            const pedidoId = {{ $pedido->id }};
+            fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+</script>
 
 
 <!-- Modal HTML -->
@@ -195,6 +301,27 @@
         </div>
     </div>
 </div>
+
+<div id="unsavedItemsModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Itens não salvos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>A mesa possui itens para ser adicionado ao pedido. Por favor, adicione-os ou remova-os antes de sair da página.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -267,6 +394,17 @@
                     `;
 
                     itensContainer.appendChild(itemRow);
+
+
+
+                   // Display success notice
+                   const successNotice = document.createElement('div');
+                    successNotice.classList.add('alert', 'alert-success', 'mt-2');
+                    successNotice.textContent = 'Item adicionado na lista de inclusão. Clique em "Confirmar Itens" para salvar.';
+                    itensContainer.prepend(successNotice);
+
+                    // scroll to itens-container
+                    itensContainer.scrollIntoView({ behavior: 'smooth' });
 
                     itemRow.querySelector('.remove-item').addEventListener('click', function () {
                         itemRow.remove();
@@ -406,28 +544,51 @@
         });
     });
 </script>
+
 <!-- Script para impedir que o usuário saia da página com itens no carrinho -->
 <script>
     function checkForUnsavedItems(event) {
         const itensContainer = document.getElementById('itens-container');
-        if (itensContainer && itensContainer.children.length > 0) {
-            // Display a confirmation dialog
-            const confirmationMessage = 'Você tem itens para ser adicionado no pedido. Tem certeza de que deseja sair da página?';
-            if (!confirm(confirmationMessage)) {
-                // Cancel the event
-                event.preventDefault();
-                // Chrome requires returnValue to be set for beforeunload event
-                event.returnValue = '';
-            }
+        if (itensContainer && itensContainer.children.length > 0) {        event.preventDefault();
+            event.stopPropagation();
+
+            // Show the modal
+            $('#unsavedItemsModal').modal('show');
+
         }
     }
 
-
     // Handle click event on .sidenav-item a elements
-    document.querySelectorAll('.sidenav-item a, .nav-link ').forEach(function(link) {
+    document.querySelectorAll('.sidenav-item a, .nav-link').forEach(function(link) {
+
         link.addEventListener('click', checkForUnsavedItems);
+       
     });
 </script>
+
+<!-- Script para  gerar parcial -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gerarParcialBtn = document.getElementById('gerarParcialBtn');
+
+        gerarParcialBtn.addEventListener('click', function () {
+            const pedidoId = {{ $pedido->id }};
+            fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': APP_CSRF_TOKEN
+                }
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
 </script>
 
 @endsection

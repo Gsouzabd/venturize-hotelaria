@@ -9,9 +9,18 @@ use App\Models\Produto;
 use App\Models\Reserva;
 use App\Models\Bar\Mesa;
 use App\Models\Bar\Pedido;
+use App\Models\LocalEstoque;
 use Illuminate\Support\Facades\DB;
+use App\Services\MovimentacaoEstoqueService;
 
 class MesaService {
+
+    private $movimentacaoEstoqueService;
+
+    public function __construct(MovimentacaoEstoqueService $movimentacaoEstoqueService)
+    {
+        $this->movimentacaoEstoqueService = $movimentacaoEstoqueService;
+    }
 
     public function abrirMesa($data)
     {
@@ -43,41 +52,6 @@ class MesaService {
 
         return "Mesa Ocupada";
     }
-
-    public function fecharMesa($mesaId)
-    {
-        // Encontrar a mesa pelo ID
-        $mesa = Mesa::find($mesaId);
-
-        // Verificar se a mesa está ocupada
-        if ($mesa->status === 'ocupada') {
-            // Encontrar o pedido aberto para essa mesa
-            $pedido = Pedido::where('mesa_id', $mesaId)->where('status', 'aberto')->first();
-
-            if ($pedido) {
-                // Calcular o total do pedido (exemplo simples somando o preço dos itens)
-                $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
-
-                // Atualizar o pedido com o total e marcar como 'pago'
-                $pedido->update([
-                    'status' => 'pago',
-                    'total' => $total,
-                ]);
-
-                // Liberar a mesa (alterar status para 'disponível')
-                $mesa->update([
-                    'status' => 'disponível',
-                ]);
-
-                return response()->json(['message' => 'Mesa fechada e pagamento realizado com sucesso.']);
-            }
-
-            return response()->json(['error' => 'Não há pedidos abertos para essa mesa.'], 400);
-        }
-
-        return response()->json(['error' => 'Mesa já está disponível ou reservada.'], 400);
-    }
-
     public function statusMesaNoDia()
     {
         $mesas = Mesa::all();
@@ -111,7 +85,7 @@ class MesaService {
 
         return $status;
     }
-
+    
 
     public function cancelarItemPedido($data) {
         // Encontrar o pedido pelo ID
@@ -142,6 +116,28 @@ class MesaService {
                     } else {
                         // Remover o item do pedido
                         $itemPedido->delete();
+                    }
+    
+                    // Registrar a entrada no estoque
+                    $produto = Produto::find($item['produto_id']);
+                    if ($produto->composicoes()->exists()) {
+                        foreach ($produto->composicoes as $composicao) {
+                            $this->movimentacaoEstoqueService->registrarEntrada([
+                                'produto_id' => $composicao->insumo_id,
+                                'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                                'quantidade' => $composicao->quantidade * $item['quantidade'],
+                                'valor_unitario' => Produto::find($composicao->insumo_id)->preco_custo,
+                                'justificativa' => 'Cancelamento de venda de produto no bar',
+                            ]);
+                        }
+                    } else {
+                        $this->movimentacaoEstoqueService->registrarEntrada([
+                            'produto_id' => $item['produto_id'],
+                            'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                            'quantidade' => $item['quantidade'],
+                            'valor_unitario' => Produto::find($item['produto_id'])->preco_custo,
+                            'justificativa' => 'Cancelamento de venda de produto no bar',
+                        ]);
                     }
                 }
             }
@@ -197,6 +193,7 @@ class MesaService {
             foreach ($data['itens_temp'] as $item) {
                 // Verificar se o item já existe no pedido
                 $existingItem = $pedido->itens()->where('produto_id', $item['produto_id'])->first();
+                $produto = Produto::find($item['produto_id']);
     
                 if ($existingItem) {
                     // Atualizar a quantidade do item existente
@@ -216,12 +213,35 @@ class MesaService {
                     ]);
                     $itens[] = $novoItem;
                 }
+
+                if($produto->composicoes()->exists()){
+                    foreach ($produto->composicoes as $composicao) {
+                        $this->movimentacaoEstoqueService->registrarSaida([
+                            'produto_id' => $composicao->insumo_id,
+                            'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                            'quantidade' => $composicao->quantidade,
+                            'valor_unitario_venda' => Produto::find($composicao->insumo_id)->preco_venda,
+                            'justificativa' => 'Venda de produto no bar',
+                        ]);
+                    }
+                }else{
+                    $this->movimentacaoEstoqueService->registrarSaida([
+                        'produto_id' => $item['produto_id'],
+                        'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                        'quantidade' => $item['quantidade'],
+                        'valor_unitario_venda' => Produto::find($item['produto_id'])->preco_venda,
+                        'justificativa' => 'Venda de produto no bar',
+                    ]);
+                }
+
             }
     
             // Atualizar o total do pedido
             $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
             $pedido->update([
                 'total' => $total,
+                'taxa_servico' => $total * 0.1,
+                'total_com_taxa' => $total + ($total * 0.1),
             ]);
     
             // Adicionar a descrição do produto aos itens
@@ -235,7 +255,70 @@ class MesaService {
         return "Pedido Fechado";
     }
 
-    public function gerarCupom($idPedido, $novosItens) {
+    public function fecharConta($idPedido, $removerTaxaServico = false)
+    {
+        // dd($removerTaxaServico);
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::find($idPedido);
+        if ($pedido instanceof \Illuminate\Support\Collection) {
+            $pedido = $pedido->first();
+        }
+
+        if ($pedido && $pedido->status === 'aberto') {
+            // Atualizar o status do pedido para 'fechado'
+            $pedido->status = 'fechado';
+            $pedido->remover_taxa = $removerTaxaServico != "false" ? 1 : 0;
+            $pedido->save();
+
+            // Atualizar o status da mesa para 'disponível'
+            $mesa = Mesa::find($pedido->mesa_id);
+            if ($mesa) {
+                $mesa->status = 'disponível';
+                $mesa->save();
+            }
+
+            // Gerar o cupom de fechamento
+            $this->gerarCupomFechamento($idPedido);
+
+            return $pedido->id;
+        }
+
+        return null;
+    }
+
+    public function gerarCupomFechamento($idPedido)
+    {
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::with('itens.produto')->find($idPedido);
+        if ($pedido instanceof \Illuminate\Support\Collection) {
+            $pedido = $pedido->first();
+        }
+        // dd($pedido);
+        // Configurar Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Courier');
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf = new Dompdf($options);
+
+        // Definir o tamanho do papel para impressora térmica (80mm de largura)
+        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $dompdf->setPaper($customPaper);
+
+        // Dados do pedido e itens
+        $html = view('pdf.cupom_fechamento', compact('pedido'))->render();
+
+        // Carregar o HTML no Dompdf
+        $dompdf->loadHtml($html);
+
+        // Renderizar o PDF
+        $dompdf->render();
+
+        // Enviar o PDF para o navegador
+        return $dompdf->output();
+    }
+
+
+    public function gerarCupomItemAdicionado($idPedido, $novosItens) {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($idPedido);
         if ($pedido instanceof \Illuminate\Support\Collection) {
@@ -261,6 +344,37 @@ class MesaService {
         // Renderizar o PDF
         $dompdf->render();
     
+        // Enviar o PDF para o navegador
+        return $dompdf->output();
+    }
+
+    public function gerarCupomParcial($idPedido)
+    {
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::with('itens.produto')->find($idPedido);
+        if ($pedido instanceof \Illuminate\Support\Collection) {
+            $pedido = $pedido->first();
+        }
+
+        // Configurar Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Courier');
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf = new Dompdf($options);
+
+        // Definir o tamanho do papel para impressora térmica (80mm de largura)
+        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $dompdf->setPaper($customPaper);
+
+        // Dados do pedido e itens
+        $html = view('pdf.cupom_parcial', compact('pedido'))->render();
+
+        // Carregar o HTML no Dompdf
+        $dompdf->loadHtml($html);
+
+        // Renderizar o PDF
+        $dompdf->render();
+
         // Enviar o PDF para o navegador
         return $dompdf->output();
     }

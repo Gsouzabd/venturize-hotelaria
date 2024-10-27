@@ -70,14 +70,22 @@ class MovimentacaoEstoqueService
 
     public function registrarSaida(array $movimentacao)
     {
+
+        // dd($movimentacao);
         // Atualizar o estoque
         $estoque = Estoque::where([
             'produto_id' => $movimentacao['produto_id'],
             'local_estoque_id' => $movimentacao['local_estoque_id'],
         ])->first();
 
-        if (!$estoque || $estoque->quantidade < $movimentacao['quantidade']) {
-            throw new \Exception('Estoque insuficiente para o produto ID: ' . $movimentacao['produto_id']);
+        
+        if (!$estoque) {
+            // Criar um novo estoque mesmo que o valor seja negativo
+            $estoque = new Estoque([
+                'produto_id' => $movimentacao['produto_id'],
+                'local_estoque_id' => $movimentacao['local_estoque_id'],
+                'quantidade' => 0,
+            ]);
         }
 
 
@@ -93,7 +101,7 @@ class MovimentacaoEstoqueService
             'tipo' => 'saida',
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'preco_venda' => $movimentacao['valor_unitario'],
+            'valor_unitario_venda' => $movimentacao['valor_unitario_venda'],
             'justificativa' => $movimentacao['justificativa'],
         ]);
 
@@ -109,9 +117,9 @@ class MovimentacaoEstoqueService
             'local_estoque_id' => $movimentacao['estoque_origem_id'],
         ])->first();
 
-        if (!$estoqueOrigem || $estoqueOrigem->quantidade < $movimentacao['quantidade']) {
-            throw new \Exception('Estoque insuficiente para o produto ID: ' . $movimentacao['produto_id']);
-        }
+        // if (!$estoqueOrigem || $estoqueOrigem->quantidade < $movimentacao['quantidade']) {
+        //     throw new \Exception('Estoque insuficiente para o produto ID: ' . $movimentacao['produto_id']);
+        // }
 
         $estoqueOrigem->quantidade -= $movimentacao['quantidade'];
         $estoqueOrigem->save();

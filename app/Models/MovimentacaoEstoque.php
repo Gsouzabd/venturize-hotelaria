@@ -21,6 +21,7 @@ class MovimentacaoEstoque extends Model
         'data_movimentacao',
         'valor_unitario_custo', // Novo campo
         'valor_unitario_venda', // Novo campo
+        'justificativa',
     ];
 
     public function produto()
