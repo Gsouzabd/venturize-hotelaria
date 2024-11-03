@@ -19,16 +19,18 @@
                         <i class="fas fa-info-circle"></i> Informações Gerais
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
-                        <i class="fas fa-calendar-alt"></i> Disponibilidade
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{$edit ? '' : 'disabled'}}" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
-                        <i class="fas fa-credit-card"></i> Pagamento
-                    </a>
-                </li>
+                @if ($edit && $reserva->situacao_reserva != 'HOSPEDADO')
+                    <li class="nav-item">
+                        <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
+                            <i class="fas fa-calendar-alt"></i> Disponibilidade
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{$edit ? '' : 'disabled'}}" id="pagamento-tab" data-toggle="tab" href="#pagamento" role="tab" aria-controls="pagamento" aria-selected="false">
+                            <i class="fas fa-credit-card"></i> Pagamento
+                        </a>
+                    </li>
+                @endif
                 @if ($edit && $reserva->situacao_reserva != 'CANCELADA')
                     @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'CANCELADO']))
                         <li class="nav-item">
@@ -44,26 +46,44 @@
                         </li>
                     @endif
                 @endif
-
+                
+                @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+                <li class="nav-item">
+                    <a class="nav-link" id="checkout-tab" data-toggle="tab" href="#checkout" role="tab" aria-controls="checkout" aria-selected="false">
+                        <i class="fas fa-utensils"></i> Consumo 
+                    </a>
+                </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="checkout-tab" data-toggle="tab" href="#checkout" role="tab" aria-controls="checkout" aria-selected="false">
+                            <i class="fas fa-sign-out-alt"></i> Check-out
+                        </a>
+                    </li>
+                @endif
             </ul>
 
             @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
-                <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}">
+                <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}" target="_blank">
                     <i class="fas fa-file-alt"></i> Gerar Ficha Nacional
+                </a>
+                <a class="btn btn-secondary float-right mr-2" href="{{ route('admin.reservas.gerar-extrato', ['id' => $reserva->id]) }}" target="_blank">
+                    <i class="fas fa-file-pdf"></i> Gerar Extrato
                 </a>
             @endif
 
             <!-- Conteúdo das tabs -->
-            <div class="tab-content " id="reservaTabContent">
+            <div class="tab-content" id="reservaTabContent">
                 <!-- Tab 1: Informações Gerais -->
                 @include('admin.reservas.partials.informacoes-gerais')
-
                 <!-- Tab 2: Disponibilidade -->
                 @include('admin.reservas.partials.disponibilidade')
-
                 <!-- Tab 3: Pagamento -->
-                @include('admin.reservas.partials.pagamento')
-
+                @if ($edit && $reserva->situacao_reserva != 'HOSPEDADO')
+                    @include('admin.reservas.partials.pagamento')
+                @endif
+                @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+                    <!-- Tab 5: Check-out -->
+                    @include('admin.reservas.partials.checkout')
+                @endif
                 <!-- Tab 4: Check-in -->
                 @include('admin.reservas.partials.checkin')
 

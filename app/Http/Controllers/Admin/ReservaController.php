@@ -2,6 +2,8 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use App\Models\Quarto;
 use App\Models\CheckIn;
 use App\Models\Cliente;
@@ -153,7 +155,18 @@ class ReservaController extends Controller
 
         $metodosPagamento = Pagamento::METODOS_PAGAMENTO;
 
-        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores', 'metodosPagamento'));
+
+        $totalCheckout = $reserva->total;
+        $totalPedido = 0;
+        if($reserva->pedidos()->count() > 0) {
+            foreach ($reserva->pedidos as $pedido) {
+                $totalPedido += floatval($pedido->total_com_taxa ?? $pedido->total);
+            }
+            $totalCheckout = floatval( $totalCheckout + $totalPedido );
+            $totalCheckout = number_format($totalCheckout, 2, ',', '.');
+        }
+
+        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores', 'metodosPagamento', 'totalCheckout'));
     }
 
     public function save(ReservaRequest $request)
@@ -247,6 +260,26 @@ class ReservaController extends Controller
         $this->reservaService->gerarFichaNacional($id);
     }
 
+    public function gerarExtrato($id)
+    {
+        $reserva = Reserva::with(['quarto', 'pedidos'])->findOrFail($id);
+
+        $totalConsumoBar = $reserva->pedidos->sum('total');
+        $totalTaxaServicoConsumoBar = $reserva->pedidos->filter(function($pedido) {
+            return $pedido->remover_taxa != 0;
+        })->sum('taxa_servico');
+
+        $pdfOptions = new Options();
+        $pdfOptions->set('defaultFont', 'Courier');
+        $dompdf = new Dompdf($pdfOptions);
+
+        $html = view('pdf.extrato_reserva', compact('reserva', 'totalConsumoBar', 'totalTaxaServicoConsumoBar'))->render();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->stream('extrato_reserva.pdf');
+    }
 }
 
 

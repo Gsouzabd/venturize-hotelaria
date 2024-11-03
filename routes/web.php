@@ -43,7 +43,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/estoque/movimentacoes/create', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.create');
         Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
 
-
+        Route::get('/reservas/{id}/gerar-extrato', [ReservaController::class, 'gerarExtrato'])->name('reservas.gerar-extrato');
 
         $prefixes = [
             'usuarios' => UsuarioController::class,

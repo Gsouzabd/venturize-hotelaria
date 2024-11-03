@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cupom do Pedido</title>
+    <title>Extrato da Reserva</title>
     <style>
         body {
             font-family: 'Courier', monospace;
@@ -53,32 +53,46 @@
 </head>
 <body>
     <div class="cupom">
-        <h3>Bar</h3>
-        <h5>Item Adicionado</h5>
+        <h3>Reserva</h3>
+        <h5>Detalhes da Reserva</h5>
         <p style="text-align:center; font-size: 10px;">
             Data: {{ \Carbon\Carbon::now()->setTimezone('America/Sao_Paulo')->format('d/m/Y') }}
         </p>        
         <br/>
-        <p><strong>N° Pedido:</strong> {{ $pedido->id }}</p>
-        <p><strong>N° Mesa:</strong> {{ $pedido->mesa->numero }}</p>
-        {{-- <p><strong>Status Mesa:</strong> {{ $pedido->status }}</p> --}}
-        <p><strong>N° Reserva:</strong> {{ $pedido->reserva->id }}</p>
-        <p><strong>N° Quarto:</strong> {{ $pedido->reserva->quarto->numero }}</p>
-        <p><strong>Cliente:</strong> {{ $pedido->cliente->nome }}</p>
+        <p><strong>N° Reserva:</strong> {{ $reserva->id }}</p>
+        <p><strong>N° Quarto:</strong> {{ $reserva->quarto->numero }}</p>
+        <p><strong>Classificação:</strong> {{ $reserva->quarto->classificacao }}</p>
+        <p><strong>Cliente:</strong> {{ $reserva->clienteSolicitante->nome }}</p>
         <hr>
-        {{-- @php dd($novosItens); @endphp --}}
         <table>
             <thead>
                 <tr>
-                    <th>Qtde</th>
-                    <th>Produto</th>
+                    <th>Origem</th>
+                    <th></th>
+                    <th>Valor</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($novosItens as $item)
+                <tr style="d-flex justify-content-between">
+                    <td>Reserva - Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}</td>
+                    <td></td>
+                    <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td>Consumo Bar</td>
+                    <td></td>
+                    <td>R$ {{ number_format($totalConsumoBar, 2, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td>Consumo Bar - Taxa de Serviço</td>
+                    <td></td>
+                    <td>R$ {{ number_format($totalTaxaServicoConsumoBar, 2, ',', '.') }}</td>
+                </tr>
+                @foreach ($reserva->pedidos as $pedido)
                     <tr>
-                        <td>{{ $item['quantidade'] }}</td>
-                        <td>{{ $item['descricao'] }}</td>
+                        <td>Pedido #{{ $pedido->id }} - Mesa {{ $pedido->mesa->numero }}</td>
+                        <td></td>
+                        <td>R$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

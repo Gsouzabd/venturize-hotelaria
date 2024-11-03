@@ -8,6 +8,7 @@ use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Usuario;
 use App\Models\Pagamento;
+use App\Models\Bar\Pedido;
 use Illuminate\Database\Eloquent\Model;
 
 class Reserva extends Model
@@ -124,11 +125,14 @@ class Reserva extends Model
         return $precos;
     }
 
-
     public function checkIn()
     {
         return $this->hasOne(CheckIn::class);
     }
 
+    public function pedidos()
+    {
+        return $this->hasMany(Pedido::class);
+    }
     
 }

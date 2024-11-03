@@ -110,10 +110,14 @@
                         @endif
                         <!-- Seção de Adição de Itens -->
                         <x-admin.field-group>
-                            <x-admin.field cols="4">
+                            <x-admin.field cols="2">
                                 <x-admin.label label="Mesa" required/>
                                 <x-admin.select name="mesa_id" id="mesa_id" :value="old('mesa_id', $pedido->mesa_id)"
-                                    :items="$mesas->pluck('numero', 'id')" selectedItem="{{ old('mesa_id', $pedido->mesa_id) }}" required/>
+                                    :items="$mesas->pluck('numero', 'id')" selectedItem="{{ old('mesa_id', $pedido->mesa_id) }}" required disabled/>
+                            </x-admin.field>
+                            <x-admin.field cols="2">
+                                <x-admin.label label="N° Reserva" required/>
+                                <x-admin.text name="reserva_id" id="reserva_id" :value="old('reserva_id', $pedido->reserva_id)" readonly/>
                             </x-admin.field>
 
                             <x-admin.field cols="4">
@@ -122,6 +126,7 @@
                                     :items="$clientes->pluck('nome', 'id')" selectedItem="{{ old('cliente_id', $pedido->cliente_id) }}" disabled/>
                                 <input type="hidden" name="cliente_id" value="{{ old('cliente_id', $pedido->cliente_id) }}">
                             </x-admin.field>
+                            
 
                             <x-admin.field cols="4">
                                 <x-admin.label label="Status" required/>
@@ -165,17 +170,25 @@
                             </div>
                         @endif
                     </x-admin.form>
-   <!-- Formulário para fechar o pedido -->
-   <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline" id="fecharPedidoForm">
-    @csrf
-    <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
-    <input type="hidden" name="action" value="fechar-pedido">
-    <button type="button" class="btn btn-primary" id="fecharPedidoBtn" style="width: 100%; margin-top: 5%; padding: 1%">Fechar Mesa</button>
-</form>
-</div>
-</div>
-</div>
-</div>
+                    <!-- Formulário para fechar o pedido -->
+                    <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline" id="fecharPedidoForm">
+                        @csrf
+                        <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
+                        <input type="hidden" name="action" value="fechar-pedido">
+                        @if( $pedido->status === 'aberto')
+                            <button type="button" class="btn btn-primary" id="fecharPedidoBtn" style="width: 100%; margin-top: 5%; padding: 1%">Fechar Mesa</button>
+                        @else
+                            <div class="alert alert-info" style="background: #326dd7; color: white">
+                                A mesa foi <strong>FECHADA</strong> e o pedido atrelado à reserva <strong>{{ $pedido->reserva_id }}</strong>.
+                                <br/><br/>            
+                                <strong>Data da operação: </strong> {{$pedido->updated_at ? timestamp_br($pedido->updated_at) : '' }}
+                            </div>                       
+                        @endif
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal HTML -->
@@ -235,7 +248,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.pdf_url) {
-                    window.open(data.pdf_url, '_blank');
+                    const printWindow = window.open(data.pdf_url, '_blank');
+                    printWindow.onload = function() {
+                        printWindow.print();
+                    };
                 }
                 if (data.success) {
                     window.location.href = window.location.pathname + '?success=pedido-fechado';
@@ -464,7 +480,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.pdf_url) {
-                    window.open(data.pdf_url, '_blank');
+                    const printWindow = window.open(data.pdf_url, '_blank');
+                    printWindow.onload = function() {
+                        printWindow.print();
+                    };
                 }
                 if (data.success) {
                     window.location.reload();
