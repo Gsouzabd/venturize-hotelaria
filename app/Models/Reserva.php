@@ -66,6 +66,10 @@ class Reserva extends Model
             'label' => 'No Show',
             'background' => 'orange',
         ],
+        'FINALIZADO' => [
+            'label' => 'Finalizado',
+            'background' => 'gray',
+        ],
     ];
 
     // Relacionamentos
@@ -128,6 +132,11 @@ class Reserva extends Model
     public function checkIn()
     {
         return $this->hasOne(CheckIn::class);
+    }
+
+    public function checkOut()
+    {
+        return $this->hasOne(CheckOut::class);
     }
 
     public function pedidos()

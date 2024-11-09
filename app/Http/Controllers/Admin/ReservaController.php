@@ -7,15 +7,20 @@ use Dompdf\Options;
 use App\Models\Quarto;
 use App\Models\CheckIn;
 use App\Models\Cliente;
+use App\Models\Produto;
 use App\Models\Reserva;
 use App\Models\Usuario;
+use App\Models\Categoria;
 use App\Models\Pagamento;
+use App\Models\Bar\Pedido;
 use Termwind\Components\Dd;
 use Illuminate\Http\Request;
 use App\Services\ReservaService;
 use App\Services\PagamentoService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReservaRequest;
+use App\Models\Bar\ItemPedido;
+use App\Models\CheckOut;
 
 class ReservaController extends Controller
 {
@@ -157,16 +162,40 @@ class ReservaController extends Controller
 
 
         $totalCheckout = $reserva->total;
+        // var_dump($totalCheckout);
         $totalPedido = 0;
+        $totalTaxaServicoConsumo = 0;
         if($reserva->pedidos()->count() > 0) {
             foreach ($reserva->pedidos as $pedido) {
-                $totalPedido += floatval($pedido->total_com_taxa ?? $pedido->total);
+                $totalPedido += floatval($pedido->total);
+                $totalTaxaServicoConsumo += $pedido->remover_taxa == false ? floatval($pedido->taxa_servico) : 0;
             }
-            $totalCheckout = floatval( $totalCheckout + $totalPedido );
+            $totalCheckout = floatval( $totalCheckout + $totalPedido + $totalTaxaServicoConsumo );
             $totalCheckout = number_format($totalCheckout, 2, ',', '.');
         }
 
-        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores', 'metodosPagamento', 'totalCheckout'));
+        $totalConsumo = $totalPedido;
+        // dd($totalPedido, $totalTaxaServicoConsumo, $totalCheckout);
+        
+
+        $pedido = $reserva->pedidos()->where('pedido_apartamento', 1)->first();
+        // dd($pedido);
+        if($edit){
+            if (!$pedido) {
+                $pedido = Pedido::create([
+                    'reserva_id' => $reserva->id,
+                    'cliente_id' => $reserva->clienteResponsavel->id ?? $reserva->clienteSolicitante->id,
+                    'mesa_id' => null, // Assuming no mesa is associated
+                    'status' => 'aberto', // Set an appropriate status
+                    'total' => 0.00,
+                    'pedido_apartamento' => true,
+                ]);
+            }
+        }
+
+ 
+        return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores',
+         'metodosPagamento', 'totalCheckout', 'pedido', 'totalConsumo', 'totalTaxaServicoConsumo'));
     }
 
     public function save(ReservaRequest $request)
@@ -209,14 +238,22 @@ class ReservaController extends Controller
                     $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
                 }
             }
+            
 
-            $this->updateSituacaoReserva($reserva->id, $data['situacao_reserva']);
+            if($reserva->situacaoReserva != 'RESERVADO'){
+                $data['confirmCheckout'] = isset($data['confirmCheckout']) ? true : false;
+
+                $situacao_reserva = $data['confirmCheckout'] ? 'FINALIZADO' : 'HOSPEDADO';
+    
+                $this->updateSituacaoReserva($reserva->id, $situacao_reserva);
+            }
+
         } catch (\Exception $e) {
             dd($e->getMessage());
         }
         
         return redirect()
-                    ->back()
+                    ->route('admin.reservas.mapa')
                     ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
     }
 
@@ -238,10 +275,16 @@ class ReservaController extends Controller
             $reserva->situacao_reserva = $situacao_reserva;
             $reserva->save();
     
-            if ($situacao_reserva) {
+            if ($situacao_reserva && $situacao_reserva != 'FINALIZADO') {
                 CheckIn::updateOrCreate(
                     ['reserva_id' => $reserva->id],
                     ['checkin_at' => Carbon::now('America/Sao_Paulo')]
+                );
+            }
+            else if ($situacao_reserva == 'FINALIZADO') {
+                CheckOut::updateOrCreate(
+                    ['reserva_id' => $reserva->id],
+                    ['checkout_at' => Carbon::now('America/Sao_Paulo')]
                 );
             }
     
@@ -262,18 +305,35 @@ class ReservaController extends Controller
 
     public function gerarExtrato($id)
     {
-        $reserva = Reserva::with(['quarto', 'pedidos'])->findOrFail($id);
+        $reserva = Reserva::with(['quarto', 'pedidos' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }])->findOrFail($id);
 
-        $totalConsumoBar = $reserva->pedidos->sum('total');
-        $totalTaxaServicoConsumoBar = $reserva->pedidos->filter(function($pedido) {
+        $totalConsumo = $reserva->pedidos->sum('total');
+        $totalTaxaServicoConsumoConsumo = $reserva->pedidos->filter(function($pedido) {
             return $pedido->remover_taxa != 0;
         })->sum('taxa_servico');
+
+        $itensConsumidos = $reserva->pedidos->flatMap(function($pedido) {
+            return $pedido->itens->map(function($item) {
+                return [
+                    'produto' => $item->produto->descricao,
+                    'quantidade' => $item->quantidade,
+                    'valor_unitario' => $item->preco,
+                    'total' => $item->quantidade * $item->preco,
+                    'data_adicao' => $item->created_at,
+                    'pedido' => $item->pedido
+                ];
+            });
+        });
+
+        // dd($itensConsumidos);
 
         $pdfOptions = new Options();
         $pdfOptions->set('defaultFont', 'Courier');
         $dompdf = new Dompdf($pdfOptions);
 
-        $html = view('pdf.extrato_reserva', compact('reserva', 'totalConsumoBar', 'totalTaxaServicoConsumoBar'))->render();
+        $html = view('pdf.extrato_reserva', compact('reserva', 'totalConsumo', 'totalTaxaServicoConsumoConsumo', 'itensConsumidos'))->render();
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

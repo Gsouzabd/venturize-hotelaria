@@ -22,6 +22,7 @@ class Pedido extends Model
         'taxa_servico',
         'remover_taxa',
         'total_com_taxa',
+        'pedido_apartamento',
     ];
 
     public function mesa()

@@ -9,10 +9,14 @@
     'backRoute' => '',
 ])
 
+
 <form action="{{ route($saveRoute) }}" method="{{ $method }}"
       class="edit-form{{ $class ? ' ' . $class : '' }}"{!! ($filesEnctype ? ' enctype="multipart/form-data"' : '') . ($attributes ? ' ' . $attributes : '') !!}>
     @if($isEdit)
         @method('PUT')
+        @php $disabled = false; @endphp
+    @else
+        @php $disabled = true; @endphp
     @endif
     @if($method === 'post')
         @csrf
@@ -29,7 +33,7 @@
         <div class="col-md-12" id="cart-col" style="display: none">
             @include('admin.reservas.partials.cart-preview')
             <div class="text-right mt-3 d-flex justify-content-end">
-                <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled=true/>
+                <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled="$disabled"/>
                 @if($backRoute)
                     <x-admin.cancel-btn :back-route="$backRoute" />
                 @endif

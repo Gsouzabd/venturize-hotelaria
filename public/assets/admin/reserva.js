@@ -602,27 +602,28 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
             formatDate(urlParams.get('data_checkout')),
         );     
     });
+    $(document).ready(function() {
+        // Inicializa os datepickers
+        $('#data_entrada').datepicker({
+            dateFormat: 'dd/mm/yy',
+            minDate: 0, // Desabilita datas passadas
+            onSelect: function(selectedDate) {
+                // Define a data mínima da saída para um dia após a data de entrada
+                var minDate = $('#data_entrada').datepicker('getDate');
+                minDate.setDate(minDate.getDate() + 1);
+                $('#data_saida').datepicker('x.admin-option', 'minDate', minDate);
+            }
+        });
+    
+        $('#data_saida').datepicker({
+            dateFormat: 'dd/mm/yy',
+            minDate: 1, // Saída deve ser ao menos um dia após a entrada
+        });
+    });
 }
 
 
-$(document).ready(function() {
-    // Inicializa os datepickers
-    $('#data_entrada').datepicker({
-        dateFormat: 'dd/mm/yy',
-        minDate: 0, // Desabilita datas passadas
-        onSelect: function(selectedDate) {
-            // Define a data mínima da saída para um dia após a data de entrada
-            var minDate = $('#data_entrada').datepicker('getDate');
-            minDate.setDate(minDate.getDate() + 1);
-            $('#data_saida').datepicker('x.admin-option', 'minDate', minDate);
-        }
-    });
 
-    $('#data_saida').datepicker({
-        dateFormat: 'dd/mm/yy',
-        minDate: 1, // Saída deve ser ao menos um dia após a entrada
-    });
-});
 
 
 

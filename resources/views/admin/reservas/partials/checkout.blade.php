@@ -6,7 +6,18 @@
 @endphp
 
 <div class="tab-pane fade" id="checkout" role="tabpanel" aria-labelledby="checkout-tab">
-    <h3>Realizar Checkout</h3>
+    @if($reserva->situacao_reserva != 'FINALIZADO')
+
+        <h3>Realizar Checkout</h3>
+    @else
+        <div class="alert alert-info" style="background: #00a65a; color: white;">
+            O status da reserva já foi atualizado para: <strong>{{ $reserva->situacao_reserva }}.</strong>
+                <br/><br/>
+
+                <strong>Data da operação: </strong> {{$reserva->checkOut ? timestamp_br($reserva->checkOut->checkout_at) : '' }}</strong>
+            <input class="form-check-input" type="hidden" name="situacao_reserva" id="confirmarCheckin" value= {{ $reserva->situacao_reserva }}>
+        </div>
+    @endif
 
     <div class="row">
       
@@ -82,122 +93,129 @@
                             @endforeach
                         </tbody>
                     </table>
-                    <x-admin.field-group>
 
-                    <!-- Método de Pagamento -->
-                    <x-admin.field cols="12">
-                        <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
-                        <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
-                            @php
-                                $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
-                            @endphp
-                        
-                            @foreach($metodosPagamento as $key => $metodo)
-                                <div class="form-check metodo-pagamento">
-                                    <input class="form-check-input metodo-principal" type="radio" name="metodo_pagamento" id="metodo_pagamento_{{ $key }}" value="{{ $key }}"
-                                        {{ $key == $selectedMetodo ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="metodo_pagamento_{{ $key }}">
-                                        <i class="{{ $metodo['icon'] ?? '' }}"></i> {{ $metodo['label'] }}
-                                    </label>
+                    <x-admin.field-group>
+                        @if($reserva->situacao_reserva != 'FINALIZADO')
+                            <!-- Método de Pagamento -->
+                            <x-admin.field cols="12">
+                                <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
+                                <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
+                                    @php
+                                        $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
+                                    @endphp
+                                
+                                    @foreach($metodosPagamento as $key => $metodo)
+                                        <div class="form-check metodo-pagamento">
+                                            <input class="form-check-input metodo-principal" type="radio" name="metodo_pagamento" id="metodo_pagamento_{{ $key }}" value="{{ $key }}"
+                                                {{ $key == $selectedMetodo ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="metodo_pagamento_{{ $key }}">
+                                                <i class="{{ $metodo['icon'] ?? '' }}"></i> {{ $metodo['label'] }}
+                                            </label>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            @endforeach
-                        </div>
-                        
-                        @foreach($metodosPagamento as $key => $metodo)
-                            @if (!empty($metodo['submetodos']))
-                                <div class="submetodos-container" id="submetodos_container_{{ $key }}" style="display: none;">
-                                    <div class="submetodos" id="submetodos_{{ $key }}">
-                                        <h5><i class="fa-solid fa-2"></i> Modalidade</h5>
-                                        <select class="form-control" name="metodo_pagamento_{{ $key }}" id="metodo_pagamento_{{ $key }}">
-                                            @foreach($metodo['submetodos'] as $subkey => $submetodo)
-                                                <option value="{{ $subkey }}" {{ $subkey == $selectedMetodo ? 'selected' : '' }}>
-                                                    {{ $submetodo }}
-                                                </option>
-                                            @endforeach
+                                
+                                @foreach($metodosPagamento as $key => $metodo)
+                                    @if (!empty($metodo['submetodos']))
+                                        <div class="submetodos-container" id="submetodos_container_{{ $key }}" style="display: none;">
+                                            <div class="submetodos" id="submetodos_{{ $key }}">
+                                                <h5><i class="fa-solid fa-2"></i> Modalidade</h5>
+                                                <select class="form-control" name="metodo_pagamento_{{ $key }}" id="metodo_pagamento_{{ $key }}">
+                                                    @foreach($metodo['submetodos'] as $subkey => $submetodo)
+                                                        <option value="{{ $subkey }}" {{ $subkey == $selectedMetodo ? 'selected' : '' }}>
+                                                            {{ $submetodo }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                                
+                                @push('scripts')
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            const metodoPrincipalInputs = document.querySelectorAll('.metodo-principal');
+                                            metodoPrincipalInputs.forEach(input => {
+                                                input.addEventListener('change', function() {
+                                                    const selectedMetodo = this.value;
+                                                    document.querySelectorAll('.submetodos-container').forEach(submetodosContainer => {
+                                                        submetodosContainer.style.display = 'none';
+                                                    });
+                                                    const selectedSubmetodosContainer = document.getElementById('submetodos_container_' + selectedMetodo);
+                                                    if (selectedSubmetodosContainer) {
+                                                        selectedSubmetodosContainer.style.display = 'block';
+                                                    }
+                                                });
+                                
+                                                // Trigger change event on page load if the input is checked
+                                                if (input.checked) {
+                                                    input.dispatchEvent(new Event('change'));
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                @endpush
+                            </x-admin.field>
+                        @endif
+                    </x-admin.field-group>
+                
+                    @if($reserva->situacao_reserva != 'FINALIZADO')
+
+                        <x-admin.field-group class="d-flex justify-content-center">
+                            <div class="row">
+                                <!-- Valor Sinal -->
+                                <x-admin.field cols="12">
+                                    <x-admin.label label="Valor Recebido"/>
+                                    <div class="input-group mb-3 mt-2">
+                                        <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
+                                            value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
+                                        <div class="input-group-append w-100">
+                                            <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
+                                        </div>
+                                    </div>
+                                </x-admin.field>
+                                
+                                <x-admin.field cols="12" style="display: none;">
+                                    <x-admin.label label="Selecionar Quarto"/>
+                                    <div class="input-group mb-3 mt-2">
+                                        <select id="quarto-select" class="form-control">
+                                            <option value="{{$reserva->quarto->id}}"> {{$reserva->quarto->numero}} </option>
                                         </select>
                                     </div>
-                                </div>
-                            @endif
-                        @endforeach
-                        
-                        @push('scripts')
-                            <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    const metodoPrincipalInputs = document.querySelectorAll('.metodo-principal');
-                                    metodoPrincipalInputs.forEach(input => {
-                                        input.addEventListener('change', function() {
-                                            const selectedMetodo = this.value;
-                                            document.querySelectorAll('.submetodos-container').forEach(submetodosContainer => {
-                                                submetodosContainer.style.display = 'none';
-                                            });
-                                            const selectedSubmetodosContainer = document.getElementById('submetodos_container_' + selectedMetodo);
-                                            if (selectedSubmetodosContainer) {
-                                                selectedSubmetodosContainer.style.display = 'block';
-                                            }
-                                        });
-                        
-                                        // Trigger change event on page load if the input is checked
-                                        if (input.checked) {
-                                            input.dispatchEvent(new Event('change'));
-                                        }
-                                    });
-                                });
-                            </script>
-                        @endpush
-                    </x-admin.field>
-                </x-admin.field-group>
-            
-                <x-admin.field-group class="d-flex justify-content-center">
-                    <div class="row">
-                        <!-- Valor Sinal -->
-                        <x-admin.field cols="12">
-                            <x-admin.label label="Valor Recebido"/>
-                            <div class="input-group mb-3 mt-2">
-                                <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
-                                    value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
-                                <div class="input-group-append w-100">
-                                    <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
-                                </div>
+                                </x-admin.field>
                             </div>
-                        </x-admin.field>
-                        
-                        <x-admin.field cols="12" style="display: none;">
-                            <x-admin.label label="Selecionar Quarto"/>
-                            <div class="input-group mb-3 mt-2">
-                                <select id="quarto-select" class="form-control">
-                                    <option value="{{$reserva->quarto->id}}"> {{$reserva->quarto->numero}} </option>
-                                </select>
+                        </x-admin.field-group>
+                    
+                        <x-admin.field-group>
+                            <!-- Campos específicos de acordo com o método de pagamento -->
+                            <div id="pixDetails" class="d-none">
+                                <x-admin.field cols="12">
+                                    <x-admin.label label="Chave PIX"/>
+                                    <x-admin.text id="pix_key" name="pix_key" class="form-control"
+                                        value="{{ old('pix_key') }}" placeholder="Informe a chave PIX"/>
+                                </x-admin.field>
                             </div>
-                        </x-admin.field>
-                    </div>
-                </x-admin.field-group>
-            
-                <x-admin.field-group>
-                    <!-- Campos específicos de acordo com o método de pagamento -->
-                    <div id="pixDetails" class="d-none">
-                        <x-admin.field cols="12">
-                            <x-admin.label label="Chave PIX"/>
-                            <x-admin.text id="pix_key" name="pix_key" class="form-control"
-                                value="{{ old('pix_key') }}" placeholder="Informe a chave PIX"/>
-                        </x-admin.field>
-                    </div>
-            
-                    <div id="cartaoCreditoDetails" class="d-none">
-                        <x-admin.field cols="6">
-                            <x-admin.label label="Número do Cartão"/>
-                            <x-admin.text id="numero_cartao" name="numero_cartao" class="form-control"
-                                value="{{ old('numero_cartao') }}" placeholder="Informe o número do cartão de crédito"/>
-                        </x-admin.field>
-            
-                        <x-admin.field cols="6">
-                            <x-admin.label label="Nome no Cartão"/>
-                            <x-admin.text id="nome_cartao" name="nome_cartao" class="form-control"
-                                value="{{ old('nome_cartao') }}" placeholder="Informe o nome impresso no cartão"/>
-                        </x-admin.field>
-                    </div>
-                </x-admin.field-group>
-                        
-            </div>
+                    
+                            <div id="cartaoCreditoDetails" class="d-none">
+                                <x-admin.field cols="6">
+                                    <x-admin.label label="Número do Cartão"/>
+                                    <x-admin.text id="numero_cartao" name="numero_cartao" class="form-control"
+                                        value="{{ old('numero_cartao') }}" placeholder="Informe o número do cartão de crédito"/>
+                                </x-admin.field>
+                    
+                                <x-admin.field cols="6">
+                                    <x-admin.label label="Nome no Cartão"/>
+                                    <x-admin.text id="nome_cartao" name="nome_cartao" class="form-control"
+                                        value="{{ old('nome_cartao') }}" placeholder="Informe o nome impresso no cartão"/>
+                                </x-admin.field>
+                            </div>
+                        </x-admin.field-group>
+                    @else
+                        <button class="btn btn-primary" type="button" id="add-valor-recebido" style="display: none;">Incluir</button>
+                    @endif
+       
+                </div>
         </div>
         <div class="col-md-6">
             <h5><i class="fas fa-receipt"></i> Valores</h5>
@@ -212,13 +230,6 @@
                                 <th>Valor</th>
                             </tr>
                         </thead>
-                        @php
-                            $totalConsumoBar = $reserva->pedidos->sum('total');
-                            $totalTaxaServicoConsumoBar = $reserva->pedidos->filter(function($pedido) {
-                                return $pedido->remover_taxa != 0;
-                            })->sum('taxa_servico');
-                        @endphp
-
                         <tbody>
                             <tr style="d-flex justify-content-between">
                                 <td>Reserva - Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}</td>
@@ -226,14 +237,14 @@
                                 <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td>
                             </tr>
                             <tr>
-                                <td>Consumo Bar</td>
+                                <td>Consumo</td>
                                 <td></td>
-                                <td>R$ {{ number_format($totalConsumoBar, 2, ',', '.') }}</td>
+                                <td>R$ {{ number_format($totalConsumo, 2, ',', '.') }}</td>
                             </tr>
                             <tr>
-                                <td>Consumo Bar - Taxa de Serviço</td>
+                                <td>Consumo - Taxa de Serviço</td>
                                 <td></td>
-                                <td>R$ {{ number_format($totalTaxaServicoConsumoBar, 2, ',', '.') }}</td>
+                                <td>R$ {{ number_format($totalTaxaServicoConsumo, 2, ',', '.') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -273,9 +284,17 @@
                 </x-admin.field>
             </x-admin.field-group>
 
-            <div class="d-flex justify-content-center mt-3 w-100">
-                <button id="confirmButton" class="btn btn-success w-100">Confirmar Checkout</button>
-            </div>
+            <input type="hidden" name="confirmCheckout" id="confirmCheckout" value="">
+
+            @if($reserva->situacao_reserva != 'FINALIZADO')
+
+                <div class="d-flex justify-content-center mt-3 w-100">
+                    <button id="confirmButton" class="btn btn-success w-100" disabled data-toggle="tooltip" data-placement="top" title="O botão será habilitado quando o valor pendente estiver zerado">
+                        Confirmar Checkout
+                    </button>
+                </div>
+            @endif
+
         </div>
 
 
@@ -284,6 +303,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        
         const metodoPrincipalInputs = document.querySelectorAll('.metodo-principal');
         metodoPrincipalInputs.forEach(input => {
             input.addEventListener('change', function() {
@@ -303,6 +323,28 @@
             }
         });
 
+           // Initialize Bootstrap tooltips
+           $('[data-toggle="tooltip"]').tooltip();
+            
+            const confirmButton = document.getElementById('confirmButton');
+    
+            function checkPendingAmount() {
+                const valorPendente = parseFloat(valorPendenteInput.value.replace(',', '.')) || 0;
+                
+                if (valorPendente === 0) {
+                    confirmButton.removeAttribute('disabled');
+                    confirmButton.setAttribute('title', 'Clique para confirmar o checkout');
+                } else {
+                    confirmButton.setAttribute('disabled', 'disabled');
+                    confirmButton.setAttribute('title', 'O botão será habilitado quando o valor pendente estiver zerado');
+                }
+                // Refresh tooltip
+                $('[data-toggle="tooltip"]').tooltip('dispose').tooltip();
+            }
+    
+
+    
+
             const addValorRecebidoButton = document.getElementById('add-valor-recebido');
             const valorRecebidoInput = document.getElementById('valor_recebido');
             const valoresRecebidosTable = document.getElementById('valores-recebidos-table').querySelector('tbody');
@@ -316,8 +358,9 @@
                 document.querySelectorAll('input.valores_recebidos').forEach(function (input) {
                     totalPago += parseFloat(input.value.replace(',', '.'));
                 });
+                console.log(totalPago);
                 valorPagoInput.value = totalPago.toFixed(2).replace('.', ',');
-        
+                console.log(valorPagoInput.value);
                 const valorTotal = parseFloat(valorTotalInput.value.replace(',', '.')) || 0;
                 const valorPendente = valorTotal - totalPago;
                 valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
@@ -330,6 +373,9 @@
                 } else {
                     statusPagamentoSelect.value = 'PENDENTE';
                 }
+
+                // Atualizar botão de confirmação
+                checkPendingAmount();
             }
         
             addValorRecebidoButton.addEventListener('click', function () {
@@ -396,6 +442,14 @@
         });
 
         atualizarValores();
+
+        const confirmCheckoutInput = document.getElementById('confirmCheckout');
+        const checkoutForm = document.getElementById('checkoutForm');
+
+        // Set hidden input value and submit form when confirm button is clicked
+        confirmButton.addEventListener('click', function () {
+            confirmCheckoutInput.value = 'true';
+        });
     });
 </script>
 

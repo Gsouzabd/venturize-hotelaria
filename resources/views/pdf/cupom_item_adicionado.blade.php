@@ -53,14 +53,21 @@
 </head>
 <body>
     <div class="cupom">
-        <h3>Bar</h3>
+           @if ($pedido->pedido_apartamento)
+            <h3>Apartamento</h3>
+           @else
+               <h3>Bar</h3>
+        @endif  
         <h5>Item Adicionado</h5>
         <p style="text-align:center; font-size: 10px;">
             Data: {{ \Carbon\Carbon::now()->setTimezone('America/Sao_Paulo')->format('d/m/Y') }}
         </p>        
         <br/>
         <p><strong>N° Pedido:</strong> {{ $pedido->id }}</p>
-        <p><strong>N° Mesa:</strong> {{ $pedido->mesa->numero }}</p>
+        
+        @if (!$pedido->pedido_apartamento)
+            <p><strong>N° Mesa:</strong> {{ $pedido->mesa->numero }}</p>
+        @endif
         {{-- <p><strong>Status Mesa:</strong> {{ $pedido->status }}</p> --}}
         <p><strong>N° Reserva:</strong> {{ $pedido->reserva->id }}</p>
         <p><strong>N° Quarto:</strong> {{ $pedido->reserva->quarto->numero }}</p>

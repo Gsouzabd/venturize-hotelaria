@@ -38,7 +38,8 @@
         strong {
             font-weight: 500;
         }
-        td {
+        th, td {
+            min-width: 100px;
             text-align: center;
         }
         table {
@@ -49,6 +50,11 @@
             border: 1px solid #000;
             padding: 8px;
         }
+        th:last-child, td:last-child {
+            width:100px !important;
+            padding: 0px !important;
+        }
+
     </style>
 </head>
 <body>
@@ -68,33 +74,53 @@
             <thead>
                 <tr>
                     <th>Origem</th>
-                    <th></th>
-                    <th>Valor</th>
+
+                    <th>Descrição</th>
+                    <th>Valor Unitário</th>
+                    <th>Quantidade</th>
+                    <th>Total</th>
+                    <th>Data</th>
+
                 </tr>
             </thead>
             <tbody>
+                <h2>Hospedagem</h2>
+
                 <tr style="d-flex justify-content-between">
-                    <td>Reserva - Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}</td>
-                    <td></td>
+                    <TD>Reserva</TD>
+
+                    <td>Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}</td>
                     <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td>
+                    <td>1</td>
+                    <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td>
+                    <td >
+                        Checkin: {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') }} 
+                        <br/> 
+                        Checkout: {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') }}
+                    </td>
                 </tr>
-                <tr>
-                    <td>Consumo Bar</td>
+
+                <h2>Consumo</h2>
+
+                {{-- <tr>
+                    <td>R$ {{ number_format($totalConsumo, 2, ',', '.') }}</td>
+                    <td>R$ {{ number_format($totalTaxaServicoConsumo, 2, ',', '.') }}</td>
+                    <td>R$ {{ number_format($totalConsumo + $totalTaxaServicoConsumo, 2, ',', '.') }}</td>
                     <td></td>
-                    <td>R$ {{ number_format($totalConsumoBar, 2, ',', '.') }}</td>
-                </tr>
-                <tr>
-                    <td>Consumo Bar - Taxa de Serviço</td>
-                    <td></td>
-                    <td>R$ {{ number_format($totalTaxaServicoConsumoBar, 2, ',', '.') }}</td>
-                </tr>
-                @foreach ($reserva->pedidos as $pedido)
+                </tr> --}}
+                @foreach ($itensConsumidos as $item)
                     <tr>
-                        <td>Pedido #{{ $pedido->id }} - Mesa {{ $pedido->mesa->numero }}</td>
-                        <td></td>
-                        <td>R$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
+                        <td>{{ $item['pedido']->pedido_apartamento ? 'Apartamento' : 'Bar'}} <br/> Pedido #{{ $item['pedido']->id }} </td>
+                        <td>{{ $item['produto'] }}</td>
+                        <td>{{ $item['quantidade'] }}</td>
+                        <td>R$ {{ number_format($item['valor_unitario'], 2, ',', '.') }}</td>
+                        <td>R$ {{ number_format($item['total'], 2, ',', '.') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item['data_adicao'])->format('d/m/Y') }}</td>
                     </tr>
                 @endforeach
+              
+            
+
             </tbody>
         </table>
     </div>

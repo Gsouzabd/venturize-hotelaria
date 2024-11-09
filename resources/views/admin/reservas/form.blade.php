@@ -8,7 +8,7 @@
 @endsection
 
 @section('content')
-    <x-admin.reserva-form save-route="admin.reservas.save" back-route="admin.reservas.index" submit-title="Finalizar" class="reservarForm">
+    <x-admin.reserva-form save-route="admin.reservas.save" back-route="admin.reservas.index" submit-title="Finalizar" class="reservarForm" isEdit="{{$edit}}">
         <input type="hidden" name="reserva_id" value="{{$edit ? $reserva->id : ''}}">
         <input type="hidden" name="is_edit" value="{{$edit ?? ''}}">
 
@@ -19,7 +19,7 @@
                         <i class="fas fa-info-circle"></i> Informações Gerais
                     </a>
                 </li>
-                @if ($edit && $reserva->situacao_reserva != 'HOSPEDADO')
+                @if ($reserva->situacao_reserva != 'HOSPEDADO' && $reserva->situacao_reserva != 'FINALIZADO')
                     <li class="nav-item">
                         <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
                             <i class="fas fa-calendar-alt"></i> Disponibilidade
@@ -31,7 +31,7 @@
                         </a>
                     </li>
                 @endif
-                @if ($edit && $reserva->situacao_reserva != 'CANCELADA')
+                @if ($reserva->situacao_reserva != 'CANCELADA' && $reserva->situacao_reserva != 'FINALIZADO')
                     @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'CANCELADO']))
                         <li class="nav-item">
                             <a class="nav-link {{$edit ? '' : 'disabled'}} checkin-done" id="checkin-tab" data-toggle="tab" href="#checkin" role="tab" aria-controls="checkin" aria-selected="false">
@@ -47,21 +47,26 @@
                     @endif
                 @endif
                 
-                @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
-                <li class="nav-item">
-                    <a class="nav-link" id="checkout-tab" data-toggle="tab" href="#checkout" role="tab" aria-controls="checkout" aria-selected="false">
-                        <i class="fas fa-utensils"></i> Consumo 
-                    </a>
-                </li>
+                @if ($reserva->situacao_reserva == 'HOSPEDADO')
                     <li class="nav-item">
-                        <a class="nav-link" id="checkout-tab" data-toggle="tab" href="#checkout" role="tab" aria-controls="checkout" aria-selected="false">
+                        <a class="nav-link" id="consumo-tab" href="{{ route('admin.bar.pedidos.edit', ['id' => $pedido->id]) }}">
+                            <i class="fas fa-utensils"></i> Consumo 
+                        </a>
+                    </li>
+
+                @endif
+                @if ($reserva->situacao_reserva == 'HOSPEDADO' || $reserva->situacao_reserva == 'FINALIZADO')
+
+                    <li class="nav-item">
+                        <a class="nav-link {{$reserva->situacao_reserva == 'FINALIZADO' ? 'checkin-done' : ''}}" id="checkout-tab" data-toggle="tab" href="#checkout" role="tab" aria-controls="checkout" aria-selected="false">
                             <i class="fas fa-sign-out-alt"></i> Check-out
                         </a>
                     </li>
+
                 @endif
             </ul>
 
-            @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+            @if ($reserva->situacao_reserva == 'HOSPEDADO')
                 <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}" target="_blank">
                     <i class="fas fa-file-alt"></i> Gerar Ficha Nacional
                 </a>
@@ -77,15 +82,17 @@
                 <!-- Tab 2: Disponibilidade -->
                 @include('admin.reservas.partials.disponibilidade')
                 <!-- Tab 3: Pagamento -->
-                @if ($edit && $reserva->situacao_reserva != 'HOSPEDADO')
+                @if ($reserva->situacao_reserva != 'HOSPEDADO' && $reserva->situacao_reserva != 'FINALIZADO')
                     @include('admin.reservas.partials.pagamento')
                 @endif
-                @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+                @if ($reserva->situacao_reserva == 'HOSPEDADO' || $reserva->situacao_reserva == 'FINALIZADO')
                     <!-- Tab 5: Check-out -->
                     @include('admin.reservas.partials.checkout')
                 @endif
-                <!-- Tab 4: Check-in -->
-                @include('admin.reservas.partials.checkin')
+                @if ($reserva->situacao_reserva != 'FINALIZADO')
+                    <!-- Tab 4: Check-in -->
+                    @include('admin.reservas.partials.checkin')
+                @endif
 
             </div>
         </div>
@@ -105,11 +112,11 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="responsavelNome">Nome</label>
-                        <input type="text" class="form-control" id="responsavelNome" name="responsavelNome" required>
+                        <input type="text" class="form-control" id="responsavelNome" name="responsavelNome" >
                     </div>
                     <div class="form-group" id="cpfGroup">
                         <label for="responsavelCpf">CPF</label>
-                        <input type="text" class="form-control" id="responsavelCpf" name="responsavelCpf" required>
+                        <input type="text" class="form-control" id="responsavelCpf" name="responsavelCpf" >
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -132,18 +139,18 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="tipoReserva">Tipo de Reserva</label>
-                        <select class="form-control" id="tipoReserva" name="tipoReserva" required>
+                        <select class="form-control" id="tipoReserva" name="tipoReserva" >
                             <option value="pre-reserva">Pré-Reserva</option>
                             <option value="reserva">Reserva</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="responsavelNome">Nome</label>
-                        <input type="text" class="form-control" id="responsavelReservaNome" name="responsavelReservaNome" required>
+                        <input type="text" class="form-control" id="responsavelReservaNome" name="responsavelReservaNome" >
                     </div>
                     <div class="form-group" id="cpfGroup2" style="display: none;">
                         <label for="responsavelCpf">CPF</label>
-                        <input type="text" class="form-control" id="responsavelReservaCpf" name="responsavelReservaCpf" required>
+                        <input type="text" class="form-control" id="responsavelReservaCpf" name="responsavelReservaCpf">
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckboxModal">

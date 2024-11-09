@@ -3,6 +3,21 @@
 @section('title', ($edit ? 'Editando' : 'Inserindo') . ' Pedido')
 @section('content-header')
     <x-admin.page-header :title="view()->getSection('title')"/>
+
+    @if($pedido->pedido_apartamento)
+        <div class="d-flex justify-content-end">
+
+            <x-admin.edit-btn route="admin.reservas.edit" :noTarget="true" :route-params="['id' => $pedido->reserva->id]" :label="html_entity_decode('<i class=\'fas fa-arrow-left\'></i> Voltar para Reserva')"/>        </div>
+
+        <style>
+            div#layout-sidenav {
+                display: none;
+            }
+            li.nav-item.dropdown.show {
+                display: none;
+            }
+        </style>
+    @endif
 @endsection
 
 @section('content')
@@ -42,6 +57,7 @@
                 </div>
             </div>
         </div>
+        
 
         <!-- Blocos de Produtos -->
         <div class="col-md-8">
@@ -74,7 +90,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-success">
-                    <h2 class="card-title text-white">Mesa {{ $pedido->mesa->numero ?? 'N/A' }}</h2>
+                    <h2 class="card-title text-white">{{ $pedido->pedido_apartamento ? 'Consumo do apartamento'.' - Reserva '.$pedido->reserva->id  : 'Mesa '.$pedido->mesa->numero }} </h2>
                 </div>
                 <div class="card-body">
                     <!-- Exibir itens no carrinho -->
@@ -155,7 +171,12 @@
 
                         <!-- Botão para gerar o cupom parcial -->
                         <button type="button" class="btn btn-primary" id="gerarParcialBtn" style="float: right; margin-bottom: 2%">Gerar Cupom Parcial</button>
-
+                        @if($pedido->pedido_apartamento)
+                            <br/><br/><br/>
+                            <div class="d-flex justify-content-end">
+                                <x-admin.edit-btn route="admin.reservas.edit" :route-params="['id' => $pedido->reserva->id]" :label="html_entity_decode('<i class=\'fas fa-arrow-left\'></i> Voltar para Reserva')"/>        
+                            </div>
+                        @endif
                         <!-- Seção para Adicionar Itens ao Pedido -->
                         <x-admin.field-group style="margin-top: 2%">
                             <x-admin.field cols="12" style="text-align: center;">
@@ -175,14 +196,18 @@
                         @csrf
                         <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
                         <input type="hidden" name="action" value="fechar-pedido">
-                        @if( $pedido->status === 'aberto')
+                        @if( $pedido->status === 'aberto' && $pedido->pedido_apartamento == false)
                             <button type="button" class="btn btn-primary" id="fecharPedidoBtn" style="width: 100%; margin-top: 5%; padding: 1%">Fechar Mesa</button>
                         @else
-                            <div class="alert alert-info" style="background: #326dd7; color: white">
-                                A mesa foi <strong>FECHADA</strong> e o pedido atrelado à reserva <strong>{{ $pedido->reserva_id }}</strong>.
-                                <br/><br/>            
-                                <strong>Data da operação: </strong> {{$pedido->updated_at ? timestamp_br($pedido->updated_at) : '' }}
-                            </div>                       
+                            @if($pedido->pedido_apartamento == false)
+
+                                <div class="alert alert-info" style="background: #326dd7; color: white">
+                                    A mesa foi <strong>FECHADA</strong> e o pedido atrelado à reserva <strong>{{ $pedido->reserva_id }}</strong>.
+                                    <br/><br/>            
+                                    <strong>Data da operação: </strong> {{$pedido->updated_at ? timestamp_br($pedido->updated_at) : '' }}
+                                </div> 
+                            @endif
+                      
                         @endif
                     </form>
                 </div>
