@@ -2,21 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Usuario extends Authenticatable
 {
-    use Notifiable;
+    use Notifiable, HasApiTokens;
 
     protected $fillable = [
         'nome',
         'email',
-        'senha',
+        'password', // Use 'password' instead of 'senha' for default Laravel conventions
         'tipo',
         'grupo_usuario_id',
         'fl_ativo',
     ];
+
+    // Ensure the password is hashed when set
+    public function setPasswordAttribute($password)
+    {
+        $this->attributes['password'] = bcrypt($password);
+    }
 
     // Relação com Grupo de Usuário
     public function grupoUsuario()
@@ -27,7 +34,6 @@ class Usuario extends Authenticatable
     public function reservas()
     {
         return $this->hasMany(Reserva::class, 'cliente_id');
-   
     }
 
     // Verificar permissões
