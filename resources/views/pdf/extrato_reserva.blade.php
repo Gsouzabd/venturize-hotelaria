@@ -68,7 +68,7 @@
         <p><strong>N° Reserva:</strong> {{ $reserva->id }}</p>
         <p><strong>N° Quarto:</strong> {{ $reserva->quarto->numero }}</p>
         <p><strong>Classificação:</strong> {{ $reserva->quarto->classificacao }}</p>
-        <p><strong>Cliente:</strong> {{ $reserva->clienteSolicitante->nome }}</p>
+        <p><strong>Cliente:</strong> {{ $reserva->clienteResponsavel ? $reserva->clienteResponsavel->nome : $reserva->clienteSolicitante->nome }}</p>
         <hr>
         <table>
             <thead>

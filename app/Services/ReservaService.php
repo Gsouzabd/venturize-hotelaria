@@ -5,15 +5,16 @@ namespace App\Services;
 use Log;
 use Exception;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use App\Models\Quarto;
 use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\Acompanhante;
 use Illuminate\Support\Facades\Auth;
-use Dompdf\Dompdf;
-use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\View\Factory as ViewFactory;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 class ReservaService
 {
@@ -37,6 +38,12 @@ class ReservaService
     {
         $reservas = [];
         // dd($data);
+
+        $reserva_site = $data['reserva_site'] ?? false;
+        if($reserva_site) {
+            $data = $this->gerarCartSerializedReservaSite($data);
+        }
+
 
         // Verificar e processar CNPJ do solicitante
         if (!empty($data['cnpj_solicitante'])) {
@@ -78,6 +85,7 @@ class ReservaService
         if (!empty($data['data_nascimento'])) {
             $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
         }
+        // dd($data);
 
         // Buscar ou criar o cliente solicitante
         if (!empty($data['cpf']) && !empty($data['nome'])) {
@@ -102,16 +110,20 @@ class ReservaService
 
                 $cartSerialized = json_decode($data['cart_serialized'], true);
 
+                // Tratar o cart serialized para encontrar do quarto/reserva atual
+                // que iremos criar
                 $quartoCartSerialized = null;
                 foreach ($cartSerialized as $quarto) {
-                    // var_dump($quartoId);
                     // dd($quarto);
                     if ($quarto['quartoId'] == $quartoId) {
                         $quartoCartSerialized = json_encode($quarto);
                         break;
                     }
                 }
-                                // Buscar ou criar o cliente responsável pelo quarto
+
+                // dd($quartoCartSerialized);
+
+                // Buscar ou criar o cliente responsável pelo quarto
                 $clienteResponsavel = null;
         
                 if (!empty($quartoData['responsavel_cpf']) && !empty($quartoData['responsavel_nome'])) {
@@ -121,6 +133,8 @@ class ReservaService
                     );
                 }
         
+                // dd($quartoData);
+
                 // Preparar os dados da reserva
                 $reservaData = [
                     'tipo_reserva' => $data['tipo_reserva'] ?? null,
@@ -136,7 +150,7 @@ class ReservaService
                     'criancas_ate_7' => $quartoData['criancas_ate_7'],
                     'criancas_mais_7' => $quartoData['criancas_mais_7'],
                     'tipo_acomodacao' => $quartoData['tipo_acomodacao'] ?? null,
-                    'usuario_operador_id' => Auth::id(),
+                    'usuario_operador_id' => Auth::id() ?? 2,
                     'email_solicitante' => $data['email'],
                     'celular' => $data['celular'],
                     'email_faturamento' => $data['email_faturamento'] ?? null,
@@ -157,6 +171,7 @@ class ReservaService
                 }
 
         
+
                 // Extrair dados dos acompanhantes e associá-los à reserva
                 if (isset($quartoData['acompanhantes'])) {
                     // Obter a lista atual de acompanhantes da reserva
@@ -167,6 +182,9 @@ class ReservaService
         
                     foreach ($quartoData['acompanhantes'] as $tipo => $listaAcompanhantes) {
                         foreach ($listaAcompanhantes as $index => $acompanhanteData) {
+                            if (!empty($acompanhanteData['data_nascimento'])) {
+                                $acompanhanteData['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $acompanhanteData['data_nascimento'])->format('Y-m-d');
+                            }
                             $cliente = null;
                             if (strtolower($tipo) === 'adulto') {
                                 if (!empty($acompanhanteData['cpf']) && !empty($acompanhanteData['nome'])) {
@@ -269,6 +287,104 @@ class ReservaService
         }
 
         return $this->dompdf->stream('ficha_nacional.pdf');
+    }
+
+    protected function gerarCartSerializedReservaSite(array $data)
+    {
+        $cart = [];
+
+        foreach ($data['quartos'] as $quarto) {
+            $quartoDisponivel = $this->encontrarQuartoDisponível($quarto['data_checkin'], $quarto['data_checkout'], $quarto['tipo_quarto']);
+            if(!$quartoDisponivel) {
+                throw new \Exception('Quarto não disponível.');
+            };
+
+
+            $precosDiarios = $this->tratarPrecosDiariosSite($quarto['data_checkin'], $quarto['data_checkout'], $quarto['total']);
+
+            $dataQuarto = [
+                'quartoId' => $quartoDisponivel->id,
+                'quartoNumero' => $quartoDisponivel->numero,
+                'quartoAndar' => $quartoDisponivel->andar,
+                'quartoClassificacao' => $quartoDisponivel->classificacao,
+                'nome' => $quarto['responsavel_nome'] ?? '',
+                'cpf' => $quarto['responsavel_cpf'] ?? '',
+                'criancas_ate_7' => $quarto['criancas_ate_7'] ?? 0,
+                'criancas_mais_7' => $quarto['criancas_mais_7'] ?? 0,
+                'adultos' => $quarto['adultos'] ?? 1,
+                'data_checkin' => $quarto['data_checkin'] ?? '',
+                'data_checkout' => $quarto['data_checkout'] ?? '',
+                'precosDiarios' => $precosDiarios,
+                'total' => $quarto['total'] ?? 0,
+                'reservaId' => '',
+            ];
+            $cart[] = $dataQuarto;
+            $quartos[$quartoDisponivel->id] = $dataQuarto;
+        }
+        // dd($cart);
+        $data['cart_serialized'] = json_encode($cart);
+        $data['quartos'] = $quartos;
+
+        return $data;
+    }
+
+    public function encontrarQuartoDisponível($dataEntrada, $dataSaida, $tipoQuarto)
+    {
+        $quartosQuery = Quarto::query();
+        $dataEntrada = parseDateVenturize($dataEntrada);
+        $dataSaida = parseDateVenturize($dataSaida);
+        // var_dump($dataEntrada);
+        // var_dump($dataSaida);
+
+        $quarto = $quartosQuery->where('classificacao', $tipoQuarto)
+            ->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida) {
+                $query->where(function ($query) use ($dataEntrada, $dataSaida) {
+                    // Verifica se a reserva está dentro do intervalo
+                    $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida])
+                          ->orWhereBetween('data_checkout', [$dataEntrada, $dataSaida])
+                          // Verifica se a reserva cobre todo o período
+                          ->orWhere(function ($query) use ($dataEntrada, $dataSaida) {
+                              $query->where('data_checkin', '<', $dataEntrada)
+                                    ->where('data_checkout', '>', $dataSaida);
+                          })
+                          // Verifica se o check-out termina no $dataEntrada
+                          ->orWhere(function ($query) use ($dataEntrada) {
+                              $query->where('data_checkout', $dataEntrada);
+                          })
+                          // Verifica se o check-in começa no $dataSaida
+                          ->orWhere(function ($query) use ($dataSaida) {
+                              $query->where('data_checkin', $dataSaida);
+                          });
+                })
+                ->where('situacao_reserva', '!=', 'CANCELADA');
+            })
+            ->first();
+
+            // dd($quarto);
+
+        return $quarto;
+    }
+
+    public function tratarPrecosDiariosSite($dataEntrada, $dataSaida, $total)
+    {
+        $precosDiarios = [];
+        $dataEntrada = Carbon::createFromFormat('d/m/Y', $dataEntrada);
+        $dataSaida = Carbon::createFromFormat('d/m/Y', $dataSaida);
+    
+        $dias = $dataEntrada->diffInDays($dataSaida); 
+        $precoDiaria = $total / $dias; 
+        // formato 0.00
+        $precoDiaria = number_format($precoDiaria, 2, '.', '');
+
+    
+        for ($i = 0; $i < $dias; $i++) {
+            $precosDiarios[] = [
+                'data' => $dataEntrada->copy()->addDays($i)->format('d/m/Y'),
+                'preco' => $precoDiaria, // Replace with actual price logic if needed
+            ];
+        }
+    
+        return $precosDiarios;
     }
     
 }
