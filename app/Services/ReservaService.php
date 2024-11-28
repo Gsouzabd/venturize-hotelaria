@@ -40,7 +40,7 @@ class ReservaService
         // dd($data);
 
         $reserva_site = $data['reserva_site'] ?? false;
-        if($reserva_site) {
+        if($reserva_site && !isset($data['is_edit'])) {
             $data = $this->gerarCartSerializedReservaSite($data);
         }
 
@@ -106,7 +106,6 @@ class ReservaService
 
         try {
             foreach ($data['quartos'] as $quartoId => $quartoData) {
-                // dd($data['cart_serialized']);
 
                 $cartSerialized = json_decode($data['cart_serialized'], true);
 
@@ -121,6 +120,7 @@ class ReservaService
                     }
                 }
 
+                // dd($quartoData);
                 // dd($quartoCartSerialized);
 
                 // Buscar ou criar o cliente responsável pelo quarto
@@ -135,13 +135,15 @@ class ReservaService
         
                 // dd($quartoData);
 
+                $dataCheckin = isset($quartoData['data_checkin']) ? $quartoData['data_checkin'] : (isset($quartoData['dataCheckin']) ? $quartoData['dataCheckin'] : null);
+                $dataCheckout = isset($quartoData['data_checkout']) ? $quartoData['data_checkout'] : (isset($quartoData['dataCheckout']) ? $quartoData['dataCheckout'] : null);                
                 // Preparar os dados da reserva
                 $reservaData = [
                     'tipo_reserva' => $data['tipo_reserva'] ?? null,
                     'tipo_solicitante' => $data['tipo_solicitante'],
                     'situacao_reserva' => $data['situacao_reserva'] ?? 'PRÉ RESERVA',
-                    'data_checkin' => $this->formatCheckinDate($quartoData['data_checkin']),
-                    'data_checkout' => $this->formatCheckoutDate($quartoData['data_checkout']),
+                    'data_checkin' => $this->formatCheckinDate($dataCheckin),
+                    'data_checkout' => $this->formatCheckoutDate($dataCheckout),
                     'estrangeiro' => 'Não',
                     'cliente_solicitante_id' => $clienteSolicitante->id,
                     'cliente_responsavel_id' => $clienteResponsavel ? $clienteResponsavel->id : null,
@@ -160,7 +162,10 @@ class ReservaService
                     'observacoes_internas' => $data['observacoes_internas'],
                     'cart_serialized' => $quartoCartSerialized ?? null,
                     'total' => $quartoData['total'] ?? 0,
+                    'created_at' => Carbon::now('America/Sao_Paulo'),
+
                 ];
+
         
                 // Criar ou atualizar a reserva
                 if (isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '') {
@@ -170,7 +175,8 @@ class ReservaService
                     $reserva = Reserva::create($reservaData);
                 }
 
-        
+                // dd($reserva);
+
 
                 // Extrair dados dos acompanhantes e associá-los à reserva
                 if (isset($quartoData['acompanhantes'])) {
@@ -179,13 +185,17 @@ class ReservaService
                     $acompanhantesAtuaisMap = $acompanhantesAtuais->keyBy(function ($item) {
                         return $item->cpf . '-' . $item->tipo;
                     });
+
+                    // dd($acompanhantesAtuaisMap);
+
         
                     foreach ($quartoData['acompanhantes'] as $tipo => $listaAcompanhantes) {
                         foreach ($listaAcompanhantes as $index => $acompanhanteData) {
                             if (!empty($acompanhanteData['data_nascimento'])) {
-                                $acompanhanteData['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $acompanhanteData['data_nascimento'])->format('Y-m-d');
+                                $acompanhanteData['data_nascimento'] = parseDateVenturize($acompanhanteData['data_nascimento']);
                             }
                             $cliente = null;
+
                             if (strtolower($tipo) === 'adulto') {
                                 if (!empty($acompanhanteData['cpf']) && !empty($acompanhanteData['nome'])) {
                                     $cliente = Cliente::updateOrCreate(
@@ -214,6 +224,8 @@ class ReservaService
                                     'email' => $acompanhanteData['email'] ?? null,
                                 ]
                             );
+
+                            // dd($acompanhante);
         
                             // Remover o acompanhante atualizado da lista de acompanhantes atuais
                             $acompanhantesAtuaisMap->forget($acompanhanteData['cpf'] . '-' . $tipo);
@@ -294,32 +306,29 @@ class ReservaService
         $cart = [];
 
         foreach ($data['quartos'] as $quarto) {
-            $quartoDisponivel = $this->encontrarQuartoDisponível($quarto['data_checkin'], $quarto['data_checkout'], $quarto['tipo_quarto']);
-            if(!$quartoDisponivel) {
-                throw new \Exception('Quarto não disponível.');
-            };
+
 
 
             $precosDiarios = $this->tratarPrecosDiariosSite($quarto['data_checkin'], $quarto['data_checkout'], $quarto['total']);
 
             $dataQuarto = [
-                'quartoId' => $quartoDisponivel->id,
-                'quartoNumero' => $quartoDisponivel->numero,
-                'quartoAndar' => $quartoDisponivel->andar,
-                'quartoClassificacao' => $quartoDisponivel->classificacao,
+                'quartoId' => $quarto['quarto_id'],
+                'quartoNumero' => $quarto['numero'] ,
+                'quartoAndar' => $quarto['andar'] ,
+                'quartoClassificacao' => $quarto['classificacao'] ,
                 'nome' => $quarto['responsavel_nome'] ?? '',
                 'cpf' => $quarto['responsavel_cpf'] ?? '',
                 'criancas_ate_7' => $quarto['criancas_ate_7'] ?? 0,
                 'criancas_mais_7' => $quarto['criancas_mais_7'] ?? 0,
                 'adultos' => $quarto['adultos'] ?? 1,
-                'data_checkin' => $quarto['data_checkin'] ?? '',
-                'data_checkout' => $quarto['data_checkout'] ?? '',
+                'dataCheckin' => $quarto['data_checkin'] ?? '',
+                'dataCheckout' => $quarto['data_checkout'] ?? '',
                 'precosDiarios' => $precosDiarios,
                 'total' => $quarto['total'] ?? 0,
                 'reservaId' => '',
             ];
             $cart[] = $dataQuarto;
-            $quartos[$quartoDisponivel->id] = $dataQuarto;
+            $quartos[$quarto['quarto_id']] = $dataQuarto;
         }
         // dd($cart);
         $data['cart_serialized'] = json_encode($cart);
@@ -330,6 +339,7 @@ class ReservaService
 
     public function encontrarQuartoDisponível($dataEntrada, $dataSaida, $tipoQuarto)
     {
+        $tipoQuarto = strpos($tipoQuarto, 'Camará') !== false ? 'Camará' : 'Embaúba';
         $quartosQuery = Quarto::query();
         $dataEntrada = parseDateVenturize($dataEntrada);
         $dataSaida = parseDateVenturize($dataSaida);
@@ -340,21 +350,7 @@ class ReservaService
             ->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida) {
                 $query->where(function ($query) use ($dataEntrada, $dataSaida) {
                     // Verifica se a reserva está dentro do intervalo
-                    $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida])
-                          ->orWhereBetween('data_checkout', [$dataEntrada, $dataSaida])
-                          // Verifica se a reserva cobre todo o período
-                          ->orWhere(function ($query) use ($dataEntrada, $dataSaida) {
-                              $query->where('data_checkin', '<', $dataEntrada)
-                                    ->where('data_checkout', '>', $dataSaida);
-                          })
-                          // Verifica se o check-out termina no $dataEntrada
-                          ->orWhere(function ($query) use ($dataEntrada) {
-                              $query->where('data_checkout', $dataEntrada);
-                          })
-                          // Verifica se o check-in começa no $dataSaida
-                          ->orWhere(function ($query) use ($dataSaida) {
-                              $query->where('data_checkin', $dataSaida);
-                          });
+                    $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida]);
                 })
                 ->where('situacao_reserva', '!=', 'CANCELADA');
             })

@@ -199,7 +199,7 @@ function humanize_seconds($seconds)
 
 function parseDateVenturize($dateString)
 {
-    $formats = ['Y-m-d H:i:s', 'd/m/Y', 'd-m-Y'];
+    $formats = ['Y-m-d H:i:s', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y-m-d', 'Y/m/d'];
     foreach ($formats as $format) {
         try {
             return Carbon::createFromFormat($format, $dateString)->format('Y-m-d');

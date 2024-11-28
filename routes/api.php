@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ReservaController;
+use App\Http\Controllers\Api\DisponibilidadeController;
 
 Route::get('/up', function () {
     return response()->json(['status' => 'ok']);
@@ -20,3 +21,6 @@ Route::get('/reservas/{id}', [ReservaController::class, 'show']);
 Route::put('/reservas/{id}', [ReservaController::class, 'update']);
 Route::delete('/reservas/{id}', [ReservaController::class, 'destroy']);
 Route::put('/reservas/{id}/situacao/{situacao_reserva}', [ReservaController::class, 'updateSituacaoReserva']);
+
+Route::post('/disponibilidade/verificar', [DisponibilidadeController::class, 'verificar']);
+

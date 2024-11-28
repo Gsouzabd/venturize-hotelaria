@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Log;
 use Carbon\Carbon;
 use App\Models\Quarto;
 use App\Models\CheckIn;
@@ -98,11 +99,78 @@ class ReservaController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request);
         $data = $request->all();
-        $reservas = $this->reservaService->criarOuAtualizarReserva($data);
+        try {
+            if(isset($data['reserva_site']) && !isset($data['edit'])){
+                if($data['reserva_site'] == true){
+                    $quartosAtualizados = [];
+                    
+                    foreach ($data['quartos'] as $index => $quarto) {
+                        $quartoDisponivel = $this->reservaService->encontrarQuartoDisponível($quarto['data_checkin'], $quarto['data_checkout'], $quarto['tipo_quarto']);
+                        // log o tipo_quarto
+                        Log::warning($quarto['tipo_quarto']);
+                    
+                        if (!$quartoDisponivel) {
+                            throw new \Exception('Quarto não disponível.');
+                        }
+                    
+                        $quartosAtualizados[$quartoDisponivel->id] = $quarto;
+                        $quartosAtualizados[$quartoDisponivel->id]['quarto_id'] = $quartoDisponivel->id;
+                        $quartosAtualizados[$quartoDisponivel->id]['numero'] = $quartoDisponivel->numero;
+                        $quartosAtualizados[$quartoDisponivel->id]['andar'] = $quartoDisponivel->andar;
+                        $quartosAtualizados[$quartoDisponivel->id]['classificacao'] = $quartoDisponivel->classificacao;
+                    }
+                    
+                    $data['quartos'] = $quartosAtualizados;
+                }
+            }
+            $reservas = $this->reservaService->criarOuAtualizarReserva($data);
+            
+            // Salva os pagamentos de cada reserva
+            try {
+                foreach ($reservas as $reserva) {
+                    $quartoId = $reserva->quarto_id;
 
-        return response()->json($reservas, 201);
+                    // dd($data['quartos']);
+                    if (isset($data['quartos'][$quartoId])) {
+                        // dd($data['quartos'][$quartoId]);
+                        $quartoData = $data['quartos'][$quartoId];
+            
+                        $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
+                        $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
+                        $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
+            
+                        $pagamentos = [];
+                        $valorPago = 0;
+            
+                        foreach ($valoresRecebidos as $index => $valor) {
+                            $metodoPagamento = $metodosPagamento[$index] ?? null;
+                            $submetodoPagamento = $submetodosPagamento[$index] ?? null;
+                            $key = "{$metodoPagamento}-{$submetodoPagamento}";
+            
+                            if (!isset($pagamentos[$key])) {
+                                $pagamentos[$key] = 0;
+                            }
+            
+                            $pagamentos[$key] += $valor;
+                            $valorPago += $valor;
+                        }
+            
+                        $pagamentosJson = json_encode($pagamentos);
+
+                        // dd($pagamentosJson);
+            
+                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                    }
+                }
+                return response()->json($reservas, 201);
+
+            } catch (\Throwable $th) {
+                return response()->json(['error' => $th->getMessage()], 400);
+            }  
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 400);
+        }
     }
 
     public function update(Request $request, $id)
