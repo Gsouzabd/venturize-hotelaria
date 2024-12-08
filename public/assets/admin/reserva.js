@@ -578,12 +578,13 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
         // Preencher os campos nomeSolicitante e cpf
         var nome = '';
         var cpf = '';
+        var situacao_reserva = document.getElementById('tipoReserva').value;
         nome = document.getElementById('responsavelReservaNome').value;
         cpf = document.getElementById('responsavelReservaCpf').value;
         document.getElementById('nomeSolicitante').value = nome;
         document.getElementById('cpf').value = cpf;
         document.getElementById('solicitanteHospedeCheckbox').checked = solicitanteHospedeModal;
-
+        document.querySelector('select[name="situacao_reserva"]').value = situacao_reserva;
         if(!solicitanteHospedeModal){
             nome = '';
             cpf = '';

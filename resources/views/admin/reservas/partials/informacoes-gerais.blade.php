@@ -59,7 +59,7 @@
                 <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>            </x-admin.field>
 
             <x-admin.field cols="6">
-                <x-admin.label label="Telefone" required/>
+                <x-admin.label label="Celular" required/>
                 <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required/>
             </x-admin.field>
         </x-admin.field-group>
@@ -78,71 +78,13 @@
             </x-admin.field>
         
             <x-admin.field cols="6">
-                <x-admin.label label="Celular"/>
+                <x-admin.label label="Telefone"/>
                 <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
 
-                <h5 class="pf-hide"><i class="fa-solid fa-3"></i>Dados da Empresa de Faturamento</h5>
-        <x-admin.field-group class="pf-hide">
-            <x-admin.field cols="6">
-                <x-admin.label label="Empresa de Faturamento (<small>Nome Fantasia</small>)"/> 
-                <x-admin.text name="nome_fantasia_faturamento" id="nome_fantasia_faturamento" :value="old('nome_fantasia_faturamento', $reserva->empresaFaturamento->nome_fantasia ?? '')"/>
-                <input type="hidden" name="empresa_faturamento_id" id="empresa_faturamento_id" :value="old('empresa_faturamento_id', $reserva->empresa_faturamento_id ?? '')"/>
-            </x-admin.field>
         
-            <x-admin.field cols="6">
-                <x-admin.label label="CNPJ Faturamento"/>
-                <div class="input-group">
-                    <x-admin.text name="cnpj_faturamento" id="cnpj_faturamento" :value="old('cnpj_faturamento', $reserva->empresaFaturamento->cnpj ?? '')" />
-                    <div class="input-group-append">
-                        <button type="button" id="verificarCnpjFaturamento" class="btn btn-secondary">Buscar</button>
-                    </div>
-                </div>
-                <div id="cnpjFaturamentoError" class="text-danger mt-2" style="display: none;">Nenhuma empresa encontrada com o CNPJ informado.</div>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group class="pf-hide">
-            <x-admin.field cols="6">
-                <x-admin.label label="Razão Social"/>
-                <x-admin.text name="razao_social_faturamento" id="razao_social_faturamento" :value="old('razao_social_faturamento', $reserva->empresaFaturamento->razao_social ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="6">
-                <x-admin.label label="Inscrição Estadual"/>
-                <x-admin.text name="inscricao_estadual_faturamento" id="inscricao_estadual_faturamento" :value="old('inscricao_estadual_faturamento', $reserva->empresaFaturamento->inscricao_estadual ?? '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group class="pf-hide">
-            <x-admin.field cols="6">
-                <x-admin.label label="Email"/>
-                <x-admin.text name="email_empresa_faturamento" id="email_empresa_faturamento" :value="old('email_empresa_faturamento', $reserva->empresaFaturamento->email ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="6">
-                <x-admin.label label="Telefone"/>
-                <x-admin.text name="telefone_faturamento" id="telefone_faturamento" :value="old('telefone_faturamento', $reserva->empresaFaturamento->telefone ?? '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group class="pf-hide">
-            <x-admin.field cols="6">
-                <x-admin.label label="CEP"/>
-                <x-admin.text name="cep_faturamento" id="cep_faturamento" :value="old('cep_faturamento', $reserva->empresaFaturamento->cep ?? '')"/>
-            </x-admin.field>
-            <x-admin.field cols="6"  style="display: flex; align-items:end;">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="copy_faturamento_to_solicitante">
-                    <label class="form-check-label" for="copy_faturamento_to_solicitante">
-                        Empresa de Faturamento será a solicitante?
-                    </label>
-                </div>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <h5 class="pf-hide"><i class="fa-solid fa-4"></i>Dados da Empresa Solicitante</h5>
+        <h5 class="pf-hide"><i class="fa-solid fa-3"></i>Dados da Empresa Solicitante</h5>
         
         <x-admin.field-group class="pf-hide on-copy-hide">
             <x-admin.field cols="6">
@@ -192,8 +134,69 @@
                 <x-admin.label label="CEP"/>
                 <x-admin.text name="cep_solicitante" id="cep_solicitante" :value="old('cep_solicitante', $reserva->empresaSolicitante->cep ?? '')"/>
             </x-admin.field>
+            <x-admin.field cols="6"  style="display: flex; align-items:end;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="copy_faturamento_to_solicitante">
+                    <label class="form-check-label" for="copy_faturamento_to_solicitante">
+                        Empresa Solicitante será a Faturadora?
+                    </label>
+                </div>
+            </x-admin.field>
         </x-admin.field-group>
         
+
+
+        <h5 class="pf-hide"><i class="fa-solid fa-4"></i>Dados da Empresa de Faturamento</h5>
+        <x-admin.field-group class="pf-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="Empresa de Faturamento (<small>Nome Fantasia</small>)"/> 
+                <x-admin.text name="nome_fantasia_faturamento" id="nome_fantasia_faturamento" :value="old('nome_fantasia_faturamento', $reserva->empresaFaturamento->nome_fantasia ?? '')"/>
+                <input type="hidden" name="empresa_faturamento_id" id="empresa_faturamento_id" :value="old('empresa_faturamento_id', $reserva->empresa_faturamento_id ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="CNPJ Faturamento"/>
+                <div class="input-group">
+                    <x-admin.text name="cnpj_faturamento" id="cnpj_faturamento" :value="old('cnpj_faturamento', $reserva->empresaFaturamento->cnpj ?? '')" />
+                    <div class="input-group-append">
+                        <button type="button" id="verificarCnpjFaturamento" class="btn btn-secondary">Buscar</button>
+                    </div>
+                </div>
+                <div id="cnpjFaturamentoError" class="text-danger mt-2" style="display: none;">Nenhuma empresa encontrada com o CNPJ informado.</div>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group class="pf-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="Razão Social"/>
+                <x-admin.text name="razao_social_faturamento" id="razao_social_faturamento" :value="old('razao_social_faturamento', $reserva->empresaFaturamento->razao_social ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="Inscrição Estadual"/>
+                <x-admin.text name="inscricao_estadual_faturamento" id="inscricao_estadual_faturamento" :value="old('inscricao_estadual_faturamento', $reserva->empresaFaturamento->inscricao_estadual ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group class="pf-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="Email"/>
+                <x-admin.text name="email_empresa_faturamento" id="email_empresa_faturamento" :value="old('email_empresa_faturamento', $reserva->empresaFaturamento->email ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="6">
+                <x-admin.label label="Telefone"/>
+                <x-admin.text name="telefone_faturamento" id="telefone_faturamento" :value="old('telefone_faturamento', $reserva->empresaFaturamento->telefone ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group class="pf-hide">
+            <x-admin.field cols="6">
+                <x-admin.label label="CEP"/>
+                <x-admin.text name="cep_faturamento" id="cep_faturamento" :value="old('cep_faturamento', $reserva->empresaFaturamento->cep ?? '')"/>
+            </x-admin.field>
+            
+        </x-admin.field-group>
         <!-- Observações -->
         <x-admin.field-group>
             <x-admin.field cols="6">
@@ -409,13 +412,13 @@
 
         document.getElementById('copy_faturamento_to_solicitante').addEventListener('change', function() {
             if (this.checked) {
-                document.getElementById('nome_fantasia_solicitante').value = document.getElementById('nome_fantasia_faturamento').value;
-                document.getElementById('cnpj_solicitante').value = document.getElementById('cnpj_faturamento').value;
-                document.getElementById('razao_social_solicitante').value = document.getElementById('razao_social_faturamento').value;
-                document.getElementById('inscricao_estadual_solicitante').value = document.getElementById('inscricao_estadual_faturamento').value;
-                document.getElementById('email_solicitante').value = document.getElementById('email_empresa_faturamento').value;
-                document.getElementById('telefone_solicitante').value = document.getElementById('telefone_faturamento').value;
-                document.getElementById('cep_solicitante').value = document.getElementById('cep_faturamento').value;
+                document.getElementById('nome_fantasia_faturamento').value = document.getElementById('nome_fantasia_solicitante').value;
+                document.getElementById('cnpj_faturamento').value = document.getElementById('cnpj_solicitante').value;
+                document.getElementById('razao_social_faturamento').value = document.getElementById('razao_social_solicitante').value;
+                document.getElementById('inscricao_estadual_faturamento').value = document.getElementById('inscricao_estadual_solicitante').value;
+                document.getElementById('email_empresa_faturamento').value = document.getElementById('email_solicitante').value;
+                document.getElementById('telefone_faturamento').value = document.getElementById('telefone_solicitante').value;
+                document.getElementById('cep_faturamento').value = document.getElementById('cep_solicitante').value;
             }
         });
 

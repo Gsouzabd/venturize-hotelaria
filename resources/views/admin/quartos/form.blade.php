@@ -112,7 +112,8 @@
                 <x-admin.field cols="12">
                     <h4 style="text-align: center">
                         Planos de Preços
-                    </h4>                @if($quarto->planosPrecos == null || $quarto->planosPrecos->isEmpty())
+                    </h4> 
+                    @if($quarto->planosPrecos == null || $quarto->planosPrecos->isEmpty())
                         <div class="alert alert-info">
                             Não há planos de preços cadastrados para este quarto.
                         </div>
@@ -120,13 +121,13 @@
                     @else
                         <!-- Plano de Preço Padrão -->
                         <h6>
-                            <i class="fas fa-star"></i> Plano de Preço Padrão
+                            <i class="fas fa-star"></i> Plano de Preço
                         </h6>
                     
                         <table class="table table-bordered" class="planos-precos-periodo">
                             <thead>
                                 <tr>
-                                    {{-- <th>ID</th> --}}
+                                    <th>Tipo</th>
                                     <th>Segunda</th>
                                     <th>Terça</th>
                                     <th>Quarta</th>
@@ -138,9 +139,19 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($quarto->planosPrecos->where('is_default', 1) as $planoPreco)
+                                @foreach($quarto->planosPrecos->where('is_default', true) as $planoPreco)
                                     <tr>
-                                        {{-- <td>{{ $planoPreco->id }}</td> --}}
+                                        <td>
+                                            @if($planoPreco->is_individual)
+                                                Individual
+                                            @elseif($planoPreco->is_duplo)
+                                                Duplo
+                                            @elseif($planoPreco->is_triplo)
+                                                Triplo
+                                            @else
+                                                N/A
+                                            @endif
+                                        </td>          
                                         <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
                                         <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>
                                         <td>{{ 'R$ ' . $planoPreco->preco_quarta }}</td>
@@ -163,7 +174,7 @@
                         <table class="table table-bordered" class="planos-precos-periodo">
                             <thead>
                                 <tr>
-                                    {{-- <th>ID</th> --}}
+                                    <th>Tipo</th>
                                     <th>Data Início</th>
                                     <th>Data Fim</th>
                                     <th>Segunda</th>
@@ -179,8 +190,17 @@
                             <tbody>
                                 @foreach($quarto->planosPrecos->where('is_default', 0) as $planoPreco)
                                     <tr>
-                                        {{-- <td>{{ $planoPreco->id }}</td> --}}
-                                        <td>{{ $planoPreco->data_inicio ? \Carbon\Carbon::parse($planoPreco->data_inicio)->format('d/m/Y') : '' }}</td>
+                                        <td>
+                                            @if($planoPreco->is_individual)
+                                                Individual
+                                            @elseif($planoPreco->is_duplo)
+                                                Duplo
+                                            @elseif($planoPreco->is_triplo)
+                                                Triplo
+                                            @else
+                                                N/A
+                                            @endif
+                                        </td>                                         <td>{{ $planoPreco->data_inicio ? \Carbon\Carbon::parse($planoPreco->data_inicio)->format('d/m/Y') : '' }}</td>
                                         <td>{{ $planoPreco->data_fim ? \Carbon\Carbon::parse($planoPreco->data_fim)->format('d/m/Y') : '' }}</td>
                                         <td>{{ 'R$ ' . $planoPreco->preco_segunda }}</td>
                                         <td>{{ 'R$ ' . $planoPreco->preco_terca }}</td>

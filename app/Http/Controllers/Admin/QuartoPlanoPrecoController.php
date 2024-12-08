@@ -37,7 +37,7 @@ class QuartoPlanoPrecoController extends Controller
                 ->first();    
         }    
         
-        return view('admin.planos-preco.form', compact('planoPreco', 'edit', 'quartoId', 'possuiPadrao'));
+        return view('admin.planos-preco.form', compact('planoPreco', 'edit', 'quartoId', ));
     
     }
 
@@ -45,19 +45,25 @@ class QuartoPlanoPrecoController extends Controller
     {
         $id = $request->get('id');
 
+        // dd($request->all());
+
         $planoPreco = $id ? $this->model->findOrFail($id) : $this->model->newInstance();
-        $planoPreco->fill($request->all());        
+        $planoPreco->fill($request->all());
 
         // Convert dates to yyyy/mm/dd format before saving
-        $planoPreco->data_inicio = Carbon::createFromFormat('d/m/Y', $request->data_inicio)->format('Ymd');
-        $planoPreco->data_fim = Carbon::createFromFormat('d/m/Y', $request->data_fim)->format('Ymd');
+        $planoPreco->data_inicio = parseDateVenturize($request->data_inicio);
+        $planoPreco->data_fim = parseDateVenturize($request->data_fim);
+
+        // Handle radio button values
+        $tipoQuarto = $request->input('tipo_quarto');
+        $planoPreco->is_individual = ($tipoQuarto == 'individual');
+        $planoPreco->is_duplo = ($tipoQuarto == 'duplo');
+        $planoPreco->is_triplo = ($tipoQuarto == 'triplo');
 
         $planoPreco->save();
 
-        return redirect()->route('admin.quartos.edit', [ 'id' => $planoPreco->quarto_id] )
+        return redirect()->route('admin.quartos.edit', ['id' => $planoPreco->quarto_id])
             ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
-       
-    
     }
 
     public function delete($id)
