@@ -240,10 +240,11 @@ class ReservaController extends Controller
             }
             
 
-            if($reserva->situacaoReserva != 'RESERVADO'){
+            if($reserva->situacaoReserva != 'RESERVADO' && $reserva->created_at != $reserva->updated_at) {
                 $data['confirmCheckout'] = isset($data['confirmCheckout']) ? true : false;
 
-                $situacao_reserva = $data['confirmCheckout'] ? 'FINALIZADO' : 'HOSPEDADO';
+                // dd($data);
+                $situacao_reserva = $data['confirmCheckout'] ? 'FINALIZADO' : $data['situacao_reserva'];
     
                 $this->updateSituacaoReserva($reserva->id, $situacao_reserva);
             }

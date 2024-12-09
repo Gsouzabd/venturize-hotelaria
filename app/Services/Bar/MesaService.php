@@ -34,7 +34,7 @@ class MesaService {
             $pedido = Pedido::create([
                 'reserva_id' =>  $reserva->id,   
                 'mesa_id' => $mesa->id,
-                'cliente_id' => $reserva->clienteSolicitante ? $reserva->clienteSolicitante->id : $reserva->clienteResponsavel->id,
+                'cliente_id' => $reserva->clienteResponsavel ? $reserva->clienteResponsavel->id : $reserva->clienteSolicitante->id,
                 'status' => 'aberto', // Pedido está em andamento
                 'total' => 0, // Inicialmente o total é zero
                 'created_at' => Carbon::now('America/Sao_Paulo'),

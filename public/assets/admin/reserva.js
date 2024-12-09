@@ -3,7 +3,7 @@ async function adicionarQuartoAoCart(
     quartoId, quartoNumero, quartoAndar, 
     quartoClassificacao, tipoAcomodacao,
     nome, cpf, dataCheckin, dataCheckout, precosDiariosSelect, totalSelect,
-    criancas_ate_7 = null, criancas_mais_7 = null, adultos = null, acompanhantes = null) {
+    criancas_ate_7 = null, criancas_mais_7 = null, adultos = null, acompanhantes = null, quartoComposicao = null) {
 
     console.log('acompanhantes', acompanhantes);
 
@@ -14,6 +14,9 @@ async function adicionarQuartoAoCart(
     criancas_ate_7 = criancas_ate_7 !== '' ? parseInt(criancas_ate_7) : 0;
     criancas_mais_7 = criancas_mais_7 !== '' ? parseInt(criancas_mais_7) : 0;
     adultos = adultos !== '' ? parseInt(adultos) : 0;
+
+    if(!quartoComposicao){  quartoComposicao = document.querySelector('select[name="composicao_quarto"] ').value; }
+
 
     console.log('adicionarQuartoAoCart', quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout, precosDiariosSelect, totalSelect);
  
@@ -65,10 +68,10 @@ async function adicionarQuartoAoCart(
     }
 
 
-    console.log('adicionando ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total);
+    console.log('adicionando ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total,quartoComposicao);
     
     // Create a deep copy of the object to avoid reference issues
-    const itemToAdd = JSON.parse(JSON.stringify({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId }));
+    const itemToAdd = JSON.parse(JSON.stringify({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId , quartoComposicao}));
     
     cart.push(itemToAdd);
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -204,8 +207,10 @@ async function adicionarQuartoAoCart(
                 <div class="info">
                     <i class="icon fas fa-star"></i>
                     <strong>Tipo:</strong> 
-                    <span style="float:right;">${quartoClassificacao}</span>
+                    <span style="float:right;">${quartoClassificacao} (${quartoComposicao})</span>
                     <input type="hidden" name="quartos[${quartoId}][classificacao]" value="${quartoClassificacao}">
+                    <input type="hidden" name="quartos[${quartoId}][composicao]" value="${quartoComposicao}">
+
                 </div>
             </div>
         </div>
@@ -458,6 +463,16 @@ async function adicionarQuartoAoCart(
 
         // Chama a função para atualizar o total geral do carrinho
         atualizarValorTotalDoCart();
+
+        //verifique quantos quartos no cart do localstorage e altere o numero do span #numero-do-quarto
+        const numeroQuartos = cart.length + 1;
+        const quantidadeDeApartamentos = document.getElementById('apartamentos').value;
+        if(numeroQuartos > quantidadeDeApartamentos){
+            document.getElementById('avancarPagamento').removeAttribute('disabled');
+            document.getElementById('avancarPagamento').classList.remove('disabled');
+        }else{
+            document.getElementById('numero-do-quarto').textContent = numeroQuartos;
+        }
     }
 
     // Adiciona o evento de input para atualizar o valor total
@@ -542,6 +557,7 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
     // define as datas da url nos inputs
     document.querySelector('input[name="data_entrada"]').value = dataCheckin;
     document.querySelector('input[name="data_saida"]').value = dataCheckout;
+    document.querySelector('select[name="tipo_quarto"]').value = quartoClassificacao;
 
 
     disponibilidadeTabLink.classList.add('disabled');
@@ -578,29 +594,30 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
         // Preencher os campos nomeSolicitante e cpf
         var nome = '';
         var cpf = '';
+        var situacao_reserva = document.getElementById('tipoReserva').value;
         nome = document.getElementById('responsavelReservaNome').value;
         cpf = document.getElementById('responsavelReservaCpf').value;
         document.getElementById('nomeSolicitante').value = nome;
         document.getElementById('cpf').value = cpf;
         document.getElementById('solicitanteHospedeCheckbox').checked = solicitanteHospedeModal;
-
+        document.querySelector('select[name="situacao_reserva"]').value = situacao_reserva;
         if(!solicitanteHospedeModal){
             nome = '';
             cpf = '';
         }
 
-        responsaveis.push({ quartoId, nome, cpf });
-        adicionarQuartoAoCart(
-            quartoId, 
-            quartoNumero, 
-            quartoAndar, 
-            quartoClassificacao, 
-            '',
-            nome, 
-            cpf, 
-            formatDate(urlParams.get('data_checkin')), 
-            formatDate(urlParams.get('data_checkout')),
-        );     
+        // responsaveis.push({ quartoId, nome, cpf });
+        // adicionarQuartoAoCart(
+        //     quartoId, 
+        //     quartoNumero, 
+        //     quartoAndar, 
+        //     quartoClassificacao, 
+        //     '',
+        //     nome, 
+        //     cpf, 
+        //     formatDate(urlParams.get('data_checkin')), 
+        //     formatDate(urlParams.get('data_checkout')),
+        // );     
     });
     $(document).ready(function() {
         // Inicializa os datepickers
@@ -632,11 +649,13 @@ document.getElementById('verificarDisponibilidade').addEventListener('click', fu
     const dataEntrada = document.querySelector('input[name="data_entrada"] ').value;
     const dataSaida = document.querySelector('input[name="data_saida"] ').value;
     const tipoQuarto = document.querySelector('select[name="tipo_quarto"] ').value;
+    const quartoComposicao = document.querySelector('select[name="composicao_quarto"] ').value;
 
     const apartamentos = document.getElementById('apartamentos').value;
     const adultos = document.getElementById('adultos').value;
     const criancas_ate_7 = document.getElementById('criancas_ate_7').value;
     const criancas_mais_7 = document.getElementById('criancas_mais_7').value;
+
 
 
     const data = {
@@ -646,7 +665,8 @@ document.getElementById('verificarDisponibilidade').addEventListener('click', fu
         apartamentos,
         adultos,
         criancas_ate_7,
-        criancas_mais_7
+        criancas_mais_7,
+        quartoComposicao
     };
 
     mostrarQuartosDisponiveis(data)
@@ -675,6 +695,17 @@ function removerQuartoDoCart(quartoId, dataCheckin, dataCheckout) {
 
     // Atualizar o total geral após a remoção
     atualizarValorTotalDoCart();
+
+    const numeroQuartos = cart.length + 1;
+    const quantidadeDeApartamentos = document.getElementById('apartamentos').value;
+    if(numeroQuartos > quantidadeDeApartamentos){
+        document.getElementById('avancarPagamento').removeAttribute('disabled');
+        document.getElementById('avancarPagamento').classList.remove('disabled');
+    }else{
+        document.getElementById('avançarPagamento').setAttribute('disabled', 'disabled');
+        document.getElementById('numero-do-quarto').classList.add('disabled');
+        document.getElementById('numero-do-quarto').textContent = numeroQuartos;
+    }
 }
 
 // Função para atualizar o valor total do carrinho
@@ -728,10 +759,11 @@ function mostrarQuartosDisponiveis(data) {
             data_entrada: data.dataEntrada,
             data_saida: data.dataSaida,
             tipo_quarto: data.tipoQuarto,
-            apartamentos: data.apartamentos,
+            // apartamentos: data.apartamentos,
             adultos: data.adultos,
             criancas_ate_7: data.criancas_ate_7,
-            criancas_mais_7: data.criancas_mais_7
+            criancas_mais_7: data.criancas_mais_7,
+            composicao_quarto : data.quartoComposicao
         })
     })
     .then(response => response.json())
@@ -761,10 +793,13 @@ function mostrarQuartosDisponiveis(data) {
 
 async function montarOutputQuartosDisponiveis(quartos, dataEntrada, dataSaida) {
     console.log('datas no output', dataEntrada, dataSaida);
+    console.log('quartos disponíveis:', quartos);
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     let output = '<h3>Quartos Disponíveis</h3><div class="row">';
 
-    for (const quarto of quartos) {
+    const quartosArray = Object.values(quartos);
+    
+    for (const quarto of quartosArray) {
     const quartoNoCart = cart.some(item => item.quartoId === String(quarto.id));
     console.log(quartoNoCart);
     console.log(quarto.id);
@@ -1067,3 +1102,95 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
         });
     });
 
+
+        document.getElementById('buscarCepButton').addEventListener('click', function() {
+        var cep = document.getElementById('cep').value.replace(/\D/g, '');
+    
+        if (cep.length !== 8) {
+            alert('Por favor, insira um CEP válido.');
+            return;
+        }
+    
+        var url = `https://viacep.com.br/ws/${cep}/json/`;
+    
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.erro) {
+                    document.getElementById('cepError').style.display = 'block';
+                    clearAddressFields();
+                } else {
+                    document.getElementById('cepError').style.display = 'none';
+                    document.getElementById('endereco').value = data.logradouro;
+                    document.getElementById('bairro').value = data.bairro;
+                    document.getElementById('cidade').value = data.localidade;
+                    document.getElementById('estado').value = data.uf;
+                    document.getElementById('pais').value = 'Brasil'; // Assuming the country is Brazil
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching address:', error);
+                document.getElementById('cepError').style.display = 'block';
+                clearAddressFields();
+            });
+    });
+    
+    function clearAddressFields() {
+        document.getElementById('endereco').value = '';
+        document.getElementById('bairro').value = '';
+        document.getElementById('cidade').value = '';
+        document.getElementById('estado').value = '';
+        document.getElementById('pais').value = '';
+    }
+
+    document.getElementById('validarCpfButton').addEventListener('click', function() {
+        var cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+    
+        if (validateCPF(cpf)) {
+            document.getElementById('cpfValidateError').style.display = 'none';
+            alert('CPF válido.');
+        } else {
+            document.getElementById('cpfValidateError').style.display = 'block';
+        }
+    });
+    
+    function validateCPF(cpf) {
+        if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+            return false;
+        }
+    
+        var sum = 0;
+        var remainder;
+    
+        for (var i = 1; i <= 9; i++) {
+            sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+        }
+    
+        remainder = (sum * 10) % 11;
+    
+        if (remainder === 10 || remainder === 11) {
+            remainder = 0;
+        }
+    
+        if (remainder !== parseInt(cpf.substring(9, 10))) {
+            return false;
+        }
+    
+        sum = 0;
+    
+        for (var i = 1; i <= 10; i++) {
+            sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+        }
+    
+        remainder = (sum * 10) % 11;
+    
+        if (remainder === 10 || remainder === 11) {
+            remainder = 0;
+        }
+    
+        if (remainder !== parseInt(cpf.substring(10, 11))) {
+            return false;
+        }
+    
+        return true;
+    }

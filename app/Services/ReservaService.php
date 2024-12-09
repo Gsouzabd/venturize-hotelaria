@@ -5,15 +5,16 @@ namespace App\Services;
 use Log;
 use Exception;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use App\Models\Quarto;
 use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\Acompanhante;
 use Illuminate\Support\Facades\Auth;
-use Dompdf\Dompdf;
-use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\View\Factory as ViewFactory;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 class ReservaService
 {
@@ -36,6 +37,13 @@ class ReservaService
     public function criarOuAtualizarReserva(array $data): Array
     {
         $reservas = [];
+        // dd($data);
+
+        $reserva_site = $data['reserva_site'] ?? false;
+        if($reserva_site && !isset($data['is_edit'])) {
+            $data = $this->gerarCartSerializedReservaSite($data);
+        }
+
         // dd($data);
 
         // Verificar e processar CNPJ do solicitante
@@ -78,6 +86,7 @@ class ReservaService
         if (!empty($data['data_nascimento'])) {
             $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
         }
+        // dd($data);
 
         // Buscar ou criar o cliente solicitante
         if (!empty($data['cpf']) && !empty($data['nome'])) {
@@ -90,7 +99,14 @@ class ReservaService
                     'celular' => $data['celular'],
                     'data_nascimento' => $data['data_nascimento'],
                     'rg' => $data['rg'],
-                    'estrangeiro' => 'Não' // ou outro valor apropriado
+                    'estrangeiro' => 'Não', // ou outro valor apropriado
+                    'cep' => $data['cep'],
+                    'endereco' => $data['endereco'],
+                    'cidade' => $data['cidade'],
+                    'estado' => $data['estado'],
+                    'pais' => $data['pais'],
+                    'numero' => $data['numero'],
+                    'bairro' => $data['bairro'],
                 ]
             );
         }
@@ -98,36 +114,51 @@ class ReservaService
 
         try {
             foreach ($data['quartos'] as $quartoId => $quartoData) {
-                // dd($data['cart_serialized']);
 
                 $cartSerialized = json_decode($data['cart_serialized'], true);
 
+                // Tratar o cart serialized para encontrar do quarto/reserva atual
+                // que iremos criar
                 $quartoCartSerialized = null;
                 foreach ($cartSerialized as $quarto) {
-                    // var_dump($quartoId);
                     // dd($quarto);
                     if ($quarto['quartoId'] == $quartoId) {
                         $quartoCartSerialized = json_encode($quarto);
                         break;
                     }
                 }
-                                // Buscar ou criar o cliente responsável pelo quarto
+
+                // dd($quartoData);
+                // dd($quartoCartSerialized);
+
+                // Buscar ou criar o cliente responsável pelo quarto
                 $clienteResponsavel = null;
         
                 if (!empty($quartoData['responsavel_cpf']) && !empty($quartoData['responsavel_nome'])) {
                     $clienteResponsavel = Cliente::firstOrCreate(
                         ['cpf' => $quartoData['responsavel_cpf']],
-                        ['nome' => $quartoData['responsavel_nome']]
+                        ['nome' => $quartoData['responsavel_nome']],
+                        ['cep' => $quartoData['cep_responsavel'] ?? null],
+                        ['endereco' => $quartoData['endereco_responsavel'] ?? null],
+                        ['cidade' => $quartoData['cidade_responsavel'] ?? null],
+                        ['estado' => $quartoData['estado_responsavel'] ?? null],
+                        ['pais' => $quartoData['pais_responsavel'] ?? null],
+                        ['numero' => $quartoData['numero_responsavel'] ?? null],
+                        ['bairro' => $quartoData['bairro_responsavel'] ?? null],
                     );
                 }
         
+                // dd($quartoData);
+
+                $dataCheckin = isset($quartoData['data_checkin']) ? $quartoData['data_checkin'] : (isset($quartoData['dataCheckin']) ? $quartoData['dataCheckin'] : null);
+                $dataCheckout = isset($quartoData['data_checkout']) ? $quartoData['data_checkout'] : (isset($quartoData['dataCheckout']) ? $quartoData['dataCheckout'] : null);                
                 // Preparar os dados da reserva
                 $reservaData = [
                     'tipo_reserva' => $data['tipo_reserva'] ?? null,
                     'tipo_solicitante' => $data['tipo_solicitante'],
                     'situacao_reserva' => $data['situacao_reserva'] ?? 'PRÉ RESERVA',
-                    'data_checkin' => $this->formatCheckinDate($quartoData['data_checkin']),
-                    'data_checkout' => $this->formatCheckoutDate($quartoData['data_checkout']),
+                    'data_checkin' => $this->formatCheckinDate($dataCheckin),
+                    'data_checkout' => $this->formatCheckoutDate($dataCheckout),
                     'estrangeiro' => 'Não',
                     'cliente_solicitante_id' => $clienteSolicitante->id,
                     'cliente_responsavel_id' => $clienteResponsavel ? $clienteResponsavel->id : null,
@@ -136,7 +167,7 @@ class ReservaService
                     'criancas_ate_7' => $quartoData['criancas_ate_7'],
                     'criancas_mais_7' => $quartoData['criancas_mais_7'],
                     'tipo_acomodacao' => $quartoData['tipo_acomodacao'] ?? null,
-                    'usuario_operador_id' => Auth::id(),
+                    'usuario_operador_id' => Auth::id() ?? 2,
                     'email_solicitante' => $data['email'],
                     'celular' => $data['celular'],
                     'email_faturamento' => $data['email_faturamento'] ?? null,
@@ -146,7 +177,12 @@ class ReservaService
                     'observacoes_internas' => $data['observacoes_internas'],
                     'cart_serialized' => $quartoCartSerialized ?? null,
                     'total' => $quartoData['total'] ?? 0,
+                    'created_at' => Carbon::now('America/Sao_Paulo'),
+
                 ];
+
+
+                // dd($reservaData);
         
                 // Criar ou atualizar a reserva
                 if (isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '') {
@@ -156,7 +192,9 @@ class ReservaService
                     $reserva = Reserva::create($reservaData);
                 }
 
-        
+                // dd($reserva);
+
+
                 // Extrair dados dos acompanhantes e associá-los à reserva
                 if (isset($quartoData['acompanhantes'])) {
                     // Obter a lista atual de acompanhantes da reserva
@@ -164,10 +202,17 @@ class ReservaService
                     $acompanhantesAtuaisMap = $acompanhantesAtuais->keyBy(function ($item) {
                         return $item->cpf . '-' . $item->tipo;
                     });
+
+                    // dd($acompanhantesAtuaisMap);
+
         
                     foreach ($quartoData['acompanhantes'] as $tipo => $listaAcompanhantes) {
                         foreach ($listaAcompanhantes as $index => $acompanhanteData) {
+                            if (!empty($acompanhanteData['data_nascimento'])) {
+                                $acompanhanteData['data_nascimento'] = parseDateVenturize($acompanhanteData['data_nascimento']);
+                            }
                             $cliente = null;
+
                             if (strtolower($tipo) === 'adulto') {
                                 if (!empty($acompanhanteData['cpf']) && !empty($acompanhanteData['nome'])) {
                                     $cliente = Cliente::updateOrCreate(
@@ -196,6 +241,8 @@ class ReservaService
                                     'email' => $acompanhanteData['email'] ?? null,
                                 ]
                             );
+
+                            // dd($acompanhante);
         
                             // Remover o acompanhante atualizado da lista de acompanhantes atuais
                             $acompanhantesAtuaisMap->forget($acompanhanteData['cpf'] . '-' . $tipo);
@@ -269,6 +316,88 @@ class ReservaService
         }
 
         return $this->dompdf->stream('ficha_nacional.pdf');
+    }
+
+    protected function gerarCartSerializedReservaSite(array $data)
+    {
+        $cart = [];
+
+        foreach ($data['quartos'] as $quarto) {
+
+
+
+            $precosDiarios = $this->tratarPrecosDiariosSite($quarto['data_checkin'], $quarto['data_checkout'], $quarto['total']);
+
+            $dataQuarto = [
+                'quartoId' => $quarto['quarto_id'],
+                'quartoNumero' => $quarto['numero'] ,
+                'quartoAndar' => $quarto['andar'] ,
+                'quartoClassificacao' => $quarto['classificacao'] ,
+                'nome' => $quarto['responsavel_nome'] ?? '',
+                'cpf' => $quarto['responsavel_cpf'] ?? '',
+                'criancas_ate_7' => $quarto['criancas_ate_7'] ?? 0,
+                'criancas_mais_7' => $quarto['criancas_mais_7'] ?? 0,
+                'adultos' => $quarto['adultos'] ?? 1,
+                'dataCheckin' => $quarto['data_checkin'] ?? '',
+                'dataCheckout' => $quarto['data_checkout'] ?? '',
+                'precosDiarios' => $precosDiarios,
+                'total' => $quarto['total'] ?? 0,
+                'reservaId' => '',
+            ];
+            $cart[] = $dataQuarto;
+            $quartos[$quarto['quarto_id']] = $dataQuarto;
+        }
+        // dd($cart);
+        $data['cart_serialized'] = json_encode($cart);
+        $data['quartos'] = $quartos;
+
+        return $data;
+    }
+
+    public function encontrarQuartoDisponível($dataEntrada, $dataSaida, $tipoQuarto)
+    {
+        $tipoQuarto = strpos($tipoQuarto, 'Camará') !== false ? 'Camará' : 'Embaúba';
+        $quartosQuery = Quarto::query();
+        $dataEntrada = parseDateVenturize($dataEntrada);
+        $dataSaida = parseDateVenturize($dataSaida);
+        // var_dump($dataEntrada);
+        // var_dump($dataSaida);
+
+        $quarto = $quartosQuery->where('classificacao', $tipoQuarto)
+            ->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida) {
+                $query->where(function ($query) use ($dataEntrada, $dataSaida) {
+                    // Verifica se a reserva está dentro do intervalo
+                    $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida]);
+                })
+                ->where('situacao_reserva', '!=', 'CANCELADA');
+            })
+            ->first();
+
+            // dd($quarto);
+
+        return $quarto;
+    }
+
+    public function tratarPrecosDiariosSite($dataEntrada, $dataSaida, $total)
+    {
+        $precosDiarios = [];
+        $dataEntrada = Carbon::createFromFormat('d/m/Y', $dataEntrada);
+        $dataSaida = Carbon::createFromFormat('d/m/Y', $dataSaida);
+    
+        $dias = $dataEntrada->diffInDays($dataSaida); 
+        $precoDiaria = $total / $dias; 
+        // formato 0.00
+        $precoDiaria = number_format($precoDiaria, 2, '.', '');
+
+    
+        for ($i = 0; $i < $dias; $i++) {
+            $precosDiarios[] = [
+                'data' => $dataEntrada->copy()->addDays($i)->format('d/m/Y'),
+                'preco' => $precoDiaria, // Replace with actual price logic if needed
+            ];
+        }
+    
+        return $precosDiarios;
     }
     
 }

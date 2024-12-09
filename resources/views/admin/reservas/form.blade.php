@@ -140,8 +140,8 @@
                     <div class="form-group">
                         <label for="tipoReserva">Tipo de Reserva</label>
                         <select class="form-control" id="tipoReserva" name="tipoReserva" >
-                            <option value="pre-reserva">Pré-Reserva</option>
-                            <option value="reserva">Reserva</option>
+                            <option value="PRÉ RESERVA">Pré-Reserva</option>
+                            <option value="RESERVADO">Reserva</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -199,6 +199,8 @@
                         "{{ $reserva->criancas_mais_7 ?? '' }}",
                         "{{ $reserva->adultos ?? 1 }}",
                         {!! json_encode($acompanhantes ?? '') !!},
+                        "{{ $item['quartoComposicao'] ?? '' }}",
+
                     );
             @endif
         });

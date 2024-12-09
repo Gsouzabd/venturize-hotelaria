@@ -20,11 +20,32 @@
     <x-admin.form save-route="admin.quartos.planos-preco.save" back-route="admin.quartos.index">
         @csrf
         @if($edit)
-         <input type="hidden" name="id" value="{{ $planoPreco->id }}">
-         <input type="hidden" name="quarto_id" value="{{ $planoPreco->quarto_id }}">
+            <input type="hidden" name="id" value="{{ $planoPreco->id }}">
+            <input type="hidden" name="quarto_id" value="{{ $planoPreco->quarto_id }}">
         @else
-         <input type="hidden" name="quarto_id" value="{{ $quartoId }}">
+            <input type="hidden" name="quarto_id" value="{{ $quartoId }}">
         @endif
+
+        <x-admin.field-group>
+            <!-- Is Individual -->
+            <x-admin.field cols="4">
+                <x-admin.label label="Individual"/>
+                <input type="radio" name="tipo_quarto" id="is_individual" value="individual" {{ old('tipo_quarto', $planoPreco->is_individual ?? false) ? 'checked' : '' }}>
+            </x-admin.field>
+            <!-- Is Duplo -->
+            <x-admin.field cols="4">
+                <x-admin.label label="Duplo"/>
+                <input type="radio" name="tipo_quarto" id="is_duplo" value="duplo" {{ old('tipo_quarto', $planoPreco->is_duplo ?? false) ? 'checked' : '' }}>
+            </x-admin.field>
+            
+            <!-- Is Triplo -->
+            <x-admin.field cols="4">
+                <x-admin.label label="Triplo"/>
+                <input type="radio" name="tipo_quarto" id="is_triplo" value="triplo" {{ old('tipo_quarto', $planoPreco->is_triplo ?? false) ? 'checked' : '' }}>
+            </x-admin.field>
+            
+
+        </x-admin.field-group>
         
         <!-- Agrupamento de campos em linhas de 2 colunas -->
         <x-admin.field-group>
@@ -93,15 +114,14 @@
             <!-- Plano Padrão -->
             <x-admin.field cols="6">
                 <x-admin.label label="Plano Padrão"/>
-                <select name="is_default" id="is_default" class="form-control" {{$possuiPadrao ? 'disabled' : ''}}>
+                <select name="is_default" id="is_default" class="form-control">
                     <option value="0" {{ old('is_default', $planoPreco->is_default ?? '') == '0' ? 'selected' : '' }}>Não</option>
-
                     <option value="1" {{ old('is_default', $planoPreco->is_default ?? '') == '1' ? 'selected' : '' }}>Sim</option>
                 </select>
-                <small> {{$possuiPadrao ? 'Esse quarto já possui um plano padrão.' : ''}} </small>
-           
             </x-admin.field>
         </x-admin.field-group>
+
+
     </x-admin.form>
 </div>
 @endsection

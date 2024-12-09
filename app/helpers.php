@@ -194,3 +194,18 @@ function humanize_seconds($seconds)
 
     return "$hours:$minutes:$seconds";
 }
+
+
+
+function parseDateVenturize($dateString)
+{
+    $formats = ['Y-m-d H:i:s', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y-m-d', 'Y/m/d'];
+    foreach ($formats as $format) {
+        try {
+            return Carbon::createFromFormat($format, $dateString)->format('Y-m-d');
+        } catch (\Exception $e) {
+            // Continua tentando o próximo formato
+        }
+    }
+    throw new \Exception("Formato de data inválido: $dateString");
+}

@@ -39,7 +39,7 @@
             @forelse($pedidos as $pedido)
                 <tr>
                     <td>{{ $pedido->id }}</td>
-                    <td>{{ $pedido->mesa->numero }}</td>
+                    <td>{{ $pedido->mesa->numero ?? '' }}</td>
                     <td>{{ $pedido->reserva->id }}</td>
                     <td>{{ $pedido->cliente->nome }}</td>
                     <td>{{ $pedido->status }}</td>
