@@ -199,6 +199,8 @@
                         "{{ $reserva->criancas_mais_7 ?? '' }}",
                         "{{ $reserva->adultos ?? 1 }}",
                         {!! json_encode($acompanhantes ?? '') !!},
+                        "{{ $item['quartoComposicao'] ?? '' }}",
+
                     );
             @endif
         });

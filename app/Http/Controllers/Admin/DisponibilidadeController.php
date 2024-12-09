@@ -18,9 +18,10 @@ class DisponibilidadeController extends Controller
         $dataEntrada = Carbon::createFromFormat('d/m/Y', $validated['data_entrada'])->format('Y-m-d');
         $dataSaida = Carbon::createFromFormat('d/m/Y', $validated['data_saida'])->format('Y-m-d');
         $tipoQuarto = $request['tipo_quarto'] ?? null;
-        $apartamentosNecessarios = $validated['apartamentos'];
+        // $apartamentosNecessarios = $validated['apartamentos'];
         $criancasAte7 = $validated['criancas_ate_7'];
         $criancasMais7 = $validated['criancas_mais_7'];
+        $composicaoQuarto = $request['composicao_quarto'] ?? 'Individual';
 
         // Busca os quartos disponíveis com base no tipo de quarto, se fornecido
         $quartosQuery = Quarto::where('inativo', 0); // Apenas quartos que não estão inativos
@@ -58,9 +59,15 @@ class DisponibilidadeController extends Controller
         $quartosDisponiveis = $quartosDisponiveis->filter(function ($quarto) {
             return ($quarto->planosPrecos !== null && $quarto->planosPrecos->count() > 0);
         });
+
         // Filtrar os planos de preços para cada quarto
-        $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida) {
-            $quarto->planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida);
+        $quartosDisponiveis->each(function ($quarto) use ($dataEntrada, $dataSaida, $composicaoQuarto) {
+            $quarto->planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida, $composicaoQuarto);
+        });
+
+
+        $quartosDisponiveis = $quartosDisponiveis->filter(function ($quarto) {
+            return ($quarto->planoPreco !== null && $quarto->planoPreco->count() > 0);
         });
 
         // Adicionar preços diários com base no dia da semana e opções extras de crianças
@@ -69,7 +76,7 @@ class DisponibilidadeController extends Controller
         });
 
         // Verifica se há quartos suficientes disponíveis
-        if ($quartosDisponiveis->count() < $apartamentosNecessarios) {
+        if ($quartosDisponiveis->count() < 1) {
             return response()->json([
                 'success' => false,
                 'message' => 'Não há quartos disponíveis suficientes para as datas selecionadas.'
@@ -89,12 +96,13 @@ class DisponibilidadeController extends Controller
         try {
             $dataEntrada = $this->parseDate($request->input('data_entrada'));
             $dataSaida = $this->parseDate($request->input('data_saida'));
+            $composicaoQuarto = $request->input('composicao_quarto');
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
         $quarto = Quarto::with('planosPrecos')->findOrFail($quartoId);
-        $planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida);
+        $planoPreco = $this->obterPlanoPreco($quarto, $dataEntrada, $dataSaida, $composicaoQuarto);
         $precosDiarios = $this->calcularPrecosDiarios($planoPreco, $dataEntrada, $dataSaida, $request->input('criancas_ate_7'), $request->input('criancas_mais_7'));
 
         return response()->json([
@@ -104,15 +112,27 @@ class DisponibilidadeController extends Controller
         ]);
     }
 
-    private function obterPlanoPreco($quarto, $dataEntrada, $dataSaida, $criancasAte7 = 0, $criancasMais7 = 0)
+    private function obterPlanoPreco($quarto, $dataEntrada, $dataSaida, $composicaoQuarto, $criancasAte7 = 0, $criancasMais7 = 0,)
     {
+        // var_dump($composicaoQuarto);
         $planoPreco = $quarto->planosPrecos->filter(function ($plano) use ($dataEntrada, $dataSaida) {
             return $plano->data_inicio <= $dataEntrada && $plano->data_fim >= $dataSaida && $plano->is_default == 0;
         })->first();
 
-        if (!$planoPreco) {
-            $planoPreco = $quarto->planosPrecos->where('is_default', 1)->first();
+        if( $composicaoQuarto == "Individual" ){
+            $planoPreco = $quarto->planosPrecos->where('is_default', 1)->where('is_individual', 1)->first();
         }
+        if( $composicaoQuarto == "Duplo" ){
+            $planoPreco = $quarto->planosPrecos->where('is_default', 1)->where('is_duplo', 1)->first();
+        }
+        if( $composicaoQuarto == "Triplo" ){
+            $planoPreco = $quarto->planosPrecos->where('is_default', 1)->where('is_triplo', 1)->first();
+        }
+        // if (!$planoPreco) {
+        //     $planoPreco = $quarto->planosPrecos->where('is_default', 1)->first();
+        // }
+
+        // dd($planoPreco);
 
         return $planoPreco;
     }

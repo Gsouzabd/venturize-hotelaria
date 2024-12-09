@@ -44,6 +44,7 @@ class ReservaService
             $data = $this->gerarCartSerializedReservaSite($data);
         }
 
+        // dd($data);
 
         // Verificar e processar CNPJ do solicitante
         if (!empty($data['cnpj_solicitante'])) {
@@ -98,7 +99,14 @@ class ReservaService
                     'celular' => $data['celular'],
                     'data_nascimento' => $data['data_nascimento'],
                     'rg' => $data['rg'],
-                    'estrangeiro' => 'Não' // ou outro valor apropriado
+                    'estrangeiro' => 'Não', // ou outro valor apropriado
+                    'cep' => $data['cep'],
+                    'endereco' => $data['endereco'],
+                    'cidade' => $data['cidade'],
+                    'estado' => $data['estado'],
+                    'pais' => $data['pais'],
+                    'numero' => $data['numero'],
+                    'bairro' => $data['bairro'],
                 ]
             );
         }
@@ -129,7 +137,14 @@ class ReservaService
                 if (!empty($quartoData['responsavel_cpf']) && !empty($quartoData['responsavel_nome'])) {
                     $clienteResponsavel = Cliente::firstOrCreate(
                         ['cpf' => $quartoData['responsavel_cpf']],
-                        ['nome' => $quartoData['responsavel_nome']]
+                        ['nome' => $quartoData['responsavel_nome']],
+                        ['cep' => $quartoData['cep_responsavel'] ?? null],
+                        ['endereco' => $quartoData['endereco_responsavel'] ?? null],
+                        ['cidade' => $quartoData['cidade_responsavel'] ?? null],
+                        ['estado' => $quartoData['estado_responsavel'] ?? null],
+                        ['pais' => $quartoData['pais_responsavel'] ?? null],
+                        ['numero' => $quartoData['numero_responsavel'] ?? null],
+                        ['bairro' => $quartoData['bairro_responsavel'] ?? null],
                     );
                 }
         
@@ -166,6 +181,8 @@ class ReservaService
 
                 ];
 
+
+                // dd($reservaData);
         
                 // Criar ou atualizar a reserva
                 if (isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '') {

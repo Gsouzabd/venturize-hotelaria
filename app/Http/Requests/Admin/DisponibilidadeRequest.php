@@ -17,7 +17,6 @@ class DisponibilidadeRequest extends FormRequest
         return [
             'data_entrada' => 'required|date_format:d/m/Y',
             'data_saida' => 'required|date_format:d/m/Y|after:data_entrada',
-            'apartamentos' => 'required|integer|min:1',
             'adultos' => 'required|integer|min:1',
             'criancas_ate_7' => 'nullable|integer|min:0',
             'criancas_mais_7' => 'nullable|integer|min:0',

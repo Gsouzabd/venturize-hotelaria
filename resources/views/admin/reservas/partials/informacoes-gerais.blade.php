@@ -34,7 +34,7 @@
         <!-- Campos Comuns -->
         <x-admin.field-group>
             <x-admin.field cols="6">
-                <x-admin.label label="Solicitante" required/>
+                <x-admin.label label="Nome do Solicitante" required/>
                 <x-admin.text name="nome" id="nomeSolicitante" :value="old('nome', $reserva->clienteSolicitante->nome ?? '')" required/>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
@@ -47,27 +47,78 @@
             <x-admin.field cols="6">
                 <x-admin.label label="CPF" required/>
                 <x-admin.text name="cpf" id="cpf" :value="old('cpf', $reserva->clienteSolicitante->cpf ?? '')" required placeholder="Digite o CPF"/>
-                <button type="button" id="buscarCpfButton" class="btn btn-secondary mt-2">Buscar</button>
-                <small>Buscar CPF na base de clientes.</small>
-                <div id="cpfError" class="text-danger mt-2" style="display: none;">Nenhum cliente encontrado com o CPF informado.</div>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group>
-            <x-admin.field cols="6">
-                <x-admin.label label="Data de Nascimento" required/>
-                <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>            </x-admin.field>
+                <div class="d-flex">
+                    <div class="col">
+                        <button type="button" id="buscarCpfButton" class="btn btn-secondary mt-2">Buscar</button>
+                        <small>Buscar na base de clientes.</small>
+                        <div id="cpfError" class="text-danger mt-2" style="display: none;">Nenhum cliente encontrado com o CPF informado.</div> 
+                    </div>
+                    <div class="col">
+                        <button type="button" id="validarCpfButton" class="btn btn-secondary mt-2">Validar</button>
+                        <small>Validar CPF.</small>
+                        <div id="cpfValidateError" class="text-danger mt-2" style="display: none;">CPF inválido.</div>
+                    </div>
+                </div>
 
-            <x-admin.field cols="6">
-                <x-admin.label label="Celular" required/>
-                <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required/>
             </x-admin.field>
         </x-admin.field-group>
         
         <x-admin.field-group>
-            <x-admin.field cols="6">
+            <x-admin.field cols="4">
+                <x-admin.label label="Data de Nascimento" required/>
+                <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>                        
+            </x-admin.field>
+
+            <x-admin.field cols="4">
                 <x-admin.label label="Email" required/>
                 <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
+            </x-admin.field>
+
+            <x-admin.field cols="4">
+                <x-admin.label label="Celular" required/>
+                <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required class="phone-mask"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group>
+            <x-admin.field cols="2">
+                <x-admin.label label="CEP"/>
+                <x-admin.text name="cep" id="cep" :value="old('cep', $reserva->clienteSolicitante->cep ?? '')"/>
+                <button type="button" id="buscarCepButton" class="btn btn-secondary mt-2">Buscar</button>
+                <small>Buscar endereço.</small>
+                <div id="cepError" class="text-danger mt-2" style="display: none;">Nenhum endereço encontrado com o CEP informado.</div>
+            </x-admin.field>
+        
+            <x-admin.field cols="4">
+                <x-admin.label label="Endereço"/>
+                <x-admin.text name="endereco" id="endereco" :value="old('endereco', $reserva->clienteSolicitante->endereco ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="2">
+                <x-admin.label label="Número"/>
+                <x-admin.text name="numero" id="numero" :value="old('numero', $reserva->clienteSolicitante->numero ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="4">
+                <x-admin.label label="Bairro"/>
+                <x-admin.text name="bairro" id="bairro" :value="old('bairro', $reserva->clienteSolicitante->bairro ?? '')"/>
+            </x-admin.field>
+        </x-admin.field-group>
+        
+        <x-admin.field-group>
+            <x-admin.field cols="4">
+                <x-admin.label label="Cidade"/>
+                <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="4">
+                <x-admin.label label="Estado"/>
+                <x-admin.text name="estado" id="estado" :value="old('estado', $reserva->clienteSolicitante->estado ?? '')"/>
+            </x-admin.field>
+        
+            <x-admin.field cols="4">
+                <x-admin.label label="País"/>
+                <x-admin.text name="pais" id="pais" :value="old('pais', $reserva->clienteSolicitante->pais ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
         
