@@ -54,9 +54,10 @@
                         <div id="cpfError" class="text-danger mt-2" style="display: none;">Nenhum cliente encontrado com o CPF informado.</div> 
                     </div>
                     <div class="col">
-                        <button type="button" id="validarCpfButton" class="btn btn-secondary mt-2">Validar</button>
-                        <small>Validar CPF.</small>
-                        <div id="cpfValidateError" class="text-danger mt-2" style="display: none;">CPF inválido.</div>
+                        {{-- <button type="button" id="validarCpfButton" class="btn btn-secondary mt-2">Validar</button>
+                        <small>Validar CPF.</small> --}}
+                        <div id="cpfValidateError" class="text-danger mt-2" style="display: none;">CPF Inválido.</div>
+                        <div id="cpfvalidateRight" class="text-success mt-2" style="display: none;">CPF Válido</div>
                     </div>
                 </div>
 

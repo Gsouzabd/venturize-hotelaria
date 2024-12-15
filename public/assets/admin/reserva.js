@@ -540,7 +540,7 @@ let responsaveis = [];
 
 
 if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataCheckin && dataCheckout) {
-    $('#responsavelReservaModal').modal('show');
+    // $('#responsavelReservaModal').modal('show');
 
     mostrarQuartosDisponiveis({
         quartos: [{
@@ -1144,14 +1144,21 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
         document.getElementById('pais').value = '';
     }
 
-    document.getElementById('validarCpfButton').addEventListener('click', function() {
+    document.getElementById('cpf').addEventListener('input', function() {
         var cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+        var cpfField = document.getElementById('cpf');
     
         if (validateCPF(cpf)) {
             document.getElementById('cpfValidateError').style.display = 'none';
-            alert('CPF válido.');
+            document.getElementById('cpfvalidateRight').style.display = 'block';
+            cpfField.style.backgroundColor = 'rgb(220 255 221)';
         } else {
             document.getElementById('cpfValidateError').style.display = 'block';
+            cpfField.reportValidity(); // Exibe a mensagem de erro nativa do navegador
+            cpfField.focus(); // Foca no campo inválido
+            cpfField.style.backgroundColor = '#f8d7da';
+            document.getElementById('cpfvalidateRight').style.display = 'none';
+
         }
     });
     
