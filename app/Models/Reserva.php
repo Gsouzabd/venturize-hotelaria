@@ -38,6 +38,8 @@ class Reserva extends Model
         'criancas_mais_7',
         'cart_serialized', // Novo campo
         'total', // Novo campo
+        'remover_taxa_servico', // Nova coluna
+
     ];
 
     const TIPOSRESERVA = [

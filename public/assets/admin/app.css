@@ -818,3 +818,11 @@ button.btn.btn-link.produto-to-add {
     font-size: 18px;
     color: #2e0f12;
 }
+
+a#removerTaxaServico {
+    background: orange;
+    color: white;
+    padding: 2%;
+    border-radius: 5px;
+    font-weight: 500;
+}

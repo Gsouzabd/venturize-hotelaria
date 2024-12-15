@@ -75,6 +75,7 @@ async function adicionarQuartoAoCart(
     
     cart.push(itemToAdd);
     localStorage.setItem('cart', JSON.stringify(cart));
+    console.log('cart depois da adição', cart)
     // Atualizar o total geral
     atualizarValorTotalDoCart();
     if (!Array.isArray(precosDiarios)) {

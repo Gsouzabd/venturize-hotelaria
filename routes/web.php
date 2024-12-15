@@ -19,8 +19,7 @@ use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
 // SEMPRE RODAR O COMANDO:
-//php artisan cache:clear
-//php artisan route:cache
+//php artisan cache:clear; php artisan route:cache;
 include 'bar/routes.php';
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
@@ -94,7 +93,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 
         Route::get('/reservas/{id}/gerar-ficha-nacional', [ReservaController::class, 'gerarFichaNacional'])->name('reserva.gerarFichaNacional');
-    
+        Route::get('/reservas/{id}/remover-taxa-servico', [ReservaController::class, 'removerTaxaServico'])->name('reserva.removerTaxaServico');
 
         Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
 

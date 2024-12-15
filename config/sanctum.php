@@ -1,19 +1,10 @@
 <?php
 
-<<<<<<< HEAD
-=======
-use Laravel\Sanctum\Sanctum;
-
->>>>>>> novo-fluxo-endereco
 return [
 
     /*
     |--------------------------------------------------------------------------
-<<<<<<< HEAD
     | Statefull Domains
-=======
-    | Stateful Domains
->>>>>>> novo-fluxo-endereco
     |--------------------------------------------------------------------------
     |
     | Requests from the following domains / hosts will receive stateful API

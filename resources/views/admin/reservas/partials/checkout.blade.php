@@ -243,9 +243,20 @@
                             </tr>
                             <tr>
                                 <td>Consumo - Taxa de Serviço</td>
-                                <td></td>
-                                <td>R$ {{ number_format($totalTaxaServicoConsumo, 2, ',', '.') }}</td>
+                                <td>
+                                    @if ($reserva->remover_taxa_servico == 1)
+                                       <strong> Cliente optou por não pagar a taxa de serviço</strong>
+                                    @else
+                                        <a href="{{ route('admin.reserva.removerTaxaServico', ['id' => $reserva->id]) }}" style="display:inline;" id="removerTaxaServico">
+                                            Remover Taxa de Serviço
+                                        </a>
+                                    @endif
+                                </td>         
+                               <td>
+
+                                        R$ {{ number_format($totalTaxaServicoConsumo, 2, ',', '.') }}</td>
                             </tr>
+                            
                         </tbody>
                     </table>
 

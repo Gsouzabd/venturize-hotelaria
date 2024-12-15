@@ -170,6 +170,9 @@ class ReservaController extends Controller
                 $totalPedido += floatval($pedido->total);
                 $totalTaxaServicoConsumo += $pedido->remover_taxa == false ? floatval($pedido->taxa_servico) : 0;
             }
+            if($reserva->remover_taxa_servico == 1){
+                $totalTaxaServicoConsumo = 0;
+            }
             $totalCheckout = floatval( $totalCheckout + $totalPedido + $totalTaxaServicoConsumo );
             $totalCheckout = number_format($totalCheckout, 2, ',', '.');
         }
@@ -315,6 +318,10 @@ class ReservaController extends Controller
             return $pedido->remover_taxa != 0;
         })->sum('taxa_servico');
 
+        if($reserva->remover_taxa_servico = 1){
+            $totalTaxaServicoConsumoConsumo = 'Cliente optou por remover';
+        }
+
         $itensConsumidos = $reserva->pedidos->flatMap(function($pedido) {
             return $pedido->itens->map(function($item) {
                 return [
@@ -340,6 +347,17 @@ class ReservaController extends Controller
         $dompdf->render();
 
         return $dompdf->stream('extrato_reserva.pdf');
+    }
+
+
+    public function removerTaxaServico($id)
+    {
+        $reserva = Reserva::findOrFail($id);
+        $reserva->remover_taxa_servico = 1;
+        $reserva->save();
+    
+        return redirect()->back() ->with('notice', 'Taxa de Servico removido com suceeso.');
+        ;
     }
 }
 

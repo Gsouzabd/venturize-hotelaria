@@ -7,25 +7,35 @@ return [
         'passwords' => 'users',
     ],
 
-    'guards' => [
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
-
-        'api' => [
-            'driver' => 'passport',
-            'provider' => 'users',
-            'hash' => false,
-        ],
+'guards' => [
+    'web' => [
+        'driver' => 'session',
+        'provider' => 'users',
     ],
-
-    'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Usuario::class,
-        ],
+    'admin' => [
+        'driver' => 'session',
+        'provider' => 'admins',
     ],
+    'api' => [
+        'driver' => 'passport',
+        'provider' => 'users',
+        'hash' => false,
+    ],
+],
+
+
+'providers' => [
+    'users' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Usuario::class,
+    ],
+    'admins' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Admin::class,
+    ],
+],
+
+
 
     'passwords' => [
         'users' => [
