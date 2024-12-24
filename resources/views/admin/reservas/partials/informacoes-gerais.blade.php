@@ -17,7 +17,7 @@
                 <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
                                 :items="['RESERVADO' => 'Reservado', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
                                 
-                                selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? '') }}">
+                                selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? 'PRÉ RESERVA') }}">
                 </x-admin.select>
             </x-admin.field>
 
@@ -25,7 +25,7 @@
                 <x-admin.label label="Tipo de Solicitante" required/>
                 <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
                                 :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
-                                selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? '') }}"/>   
+                                selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? 'PF') }}"/>   
             </x-admin.field>
         </x-admin.field-group>
             
@@ -63,77 +63,82 @@
 
             </x-admin.field>
         </x-admin.field-group>
-        
-        <x-admin.field-group>
-            <x-admin.field cols="4">
-                <x-admin.label label="Data de Nascimento" required/>
-                <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>                        
-            </x-admin.field>
 
-            <x-admin.field cols="4">
-                <x-admin.label label="Email" required/>
-                <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
-            </x-admin.field>
+        <div id="pre-reserva-hide">
 
-            <x-admin.field cols="4">
-                <x-admin.label label="Celular" required/>
-                <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required class="phone-mask"/>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group>
-            <x-admin.field cols="2">
-                <x-admin.label label="CEP"/>
-                <x-admin.text name="cep" id="cep" :value="old('cep', $reserva->clienteSolicitante->cep ?? '')"/>
-                <button type="button" id="buscarCepButton" class="btn btn-secondary mt-2">Buscar</button>
-                <small>Buscar endereço.</small>
-                <div id="cepError" class="text-danger mt-2" style="display: none;">Nenhum endereço encontrado com o CEP informado.</div>
-            </x-admin.field>
-        
-            <x-admin.field cols="4">
-                <x-admin.label label="Endereço"/>
-                <x-admin.text name="endereco" id="endereco" :value="old('endereco', $reserva->clienteSolicitante->endereco ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="2">
-                <x-admin.label label="Número"/>
-                <x-admin.text name="numero" id="numero" :value="old('numero', $reserva->clienteSolicitante->numero ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="4">
-                <x-admin.label label="Bairro"/>
-                <x-admin.text name="bairro" id="bairro" :value="old('bairro', $reserva->clienteSolicitante->bairro ?? '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group>
-            <x-admin.field cols="4">
-                <x-admin.label label="Cidade"/>
-                <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="4">
-                <x-admin.label label="Estado"/>
-                <x-admin.text name="estado" id="estado" :value="old('estado', $reserva->clienteSolicitante->estado ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="4">
-                <x-admin.label label="País"/>
-                <x-admin.text name="pais" id="pais" :value="old('pais', $reserva->clienteSolicitante->pais ?? '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
-        
-        <x-admin.field-group class="pj-hide">
-            <x-admin.field cols="6">
-                <x-admin.label label="RG"/>
-                <x-admin.text name="rg" id="rg" :value="old('rg', $reserva->clienteSolicitante->rg ?? '')"/>
-            </x-admin.field>
-        
-            <x-admin.field cols="6">
-                <x-admin.label label="Telefone"/>
-                <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')"/>
-            </x-admin.field>
-        </x-admin.field-group>
+    
+            
+            <x-admin.field-group>
+                <x-admin.field cols="4">
+                    <x-admin.label label="Data de Nascimento" required/>
+                    <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>                        
+                </x-admin.field>
+
+                <x-admin.field cols="4">
+                    <x-admin.label label="Email" required/>
+                    <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
+                </x-admin.field>
+
+                <x-admin.field cols="4">
+                    <x-admin.label label="Celular" required/>
+                    <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required class="phone-mask"/>
+                </x-admin.field>
+            </x-admin.field-group>
+            
+            <x-admin.field-group>
+                <x-admin.field cols="2">
+                    <x-admin.label label="CEP"/>
+                    <x-admin.text name="cep" id="cep" :value="old('cep', $reserva->clienteSolicitante->cep ?? '')"/>
+                    <button type="button" id="buscarCepButton" class="btn btn-secondary mt-2">Buscar</button>
+                    <small>Buscar endereço.</small>
+                    <div id="cepError" class="text-danger mt-2" style="display: none;">Nenhum endereço encontrado com o CEP informado.</div>
+                </x-admin.field>
+            
+                <x-admin.field cols="4">
+                    <x-admin.label label="Endereço"/>
+                    <x-admin.text name="endereco" id="endereco" :value="old('endereco', $reserva->clienteSolicitante->endereco ?? '')"/>
+                </x-admin.field>
+            
+                <x-admin.field cols="2">
+                    <x-admin.label label="Número"/>
+                    <x-admin.text name="numero" id="numero" :value="old('numero', $reserva->clienteSolicitante->numero ?? '')"/>
+                </x-admin.field>
+            
+                <x-admin.field cols="4">
+                    <x-admin.label label="Bairro"/>
+                    <x-admin.text name="bairro" id="bairro" :value="old('bairro', $reserva->clienteSolicitante->bairro ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+            
+            <x-admin.field-group>
+                <x-admin.field cols="4">
+                    <x-admin.label label="Cidade"/>
+                    <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
+                </x-admin.field>
+            
+                <x-admin.field cols="4">
+                    <x-admin.label label="Estado"/>
+                    <x-admin.text name="estado" id="estado" :value="old('estado', $reserva->clienteSolicitante->estado ?? '')"/>
+                </x-admin.field>
+            
+                <x-admin.field cols="4">
+                    <x-admin.label label="País"/>
+                    <x-admin.text name="pais" id="pais" :value="old('pais', $reserva->clienteSolicitante->pais ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+            
+            <x-admin.field-group class="pj-hide">
+                <x-admin.field cols="6">
+                    <x-admin.label label="RG"/>
+                    <x-admin.text name="rg" id="rg" :value="old('rg', $reserva->clienteSolicitante->rg ?? '')"/>
+                </x-admin.field>
+            
+                <x-admin.field cols="6">
+                    <x-admin.label label="Telefone"/>
+                    <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+        </div>
 
         
         <h5 class="pf-hide"><i class="fa-solid fa-3"></i>Dados da Empresa Solicitante</h5>
@@ -271,6 +276,25 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tipoSolicitanteSelect = document.querySelector('select[name="tipo_solicitante"]');
+        const situacaoReservaSelect = document.querySelector('select[name="situacao_reserva"]');
+
+        const preReservaHide = document.getElementById('pre-reserva-hide');
+        const preReservaHideRequired = preReservaHide.querySelectorAll('input, select, textarea');
+
+
+        function esconderPreReserva() {
+            if (situacaoReservaSelect.value === 'PRÉ RESERVA') {
+                preReservaHide.style.display = 'none';
+                preReservaHideRequired.forEach(field => field.removeAttribute('required'));
+            } else {
+                preReservaHide.style.display = 'block';
+                preReservaHideRequired.forEach(field => field.setAttribute('required', ''));
+            }
+        }
+        esconderPreReserva();
+
+        situacaoReservaSelect.addEventListener('change', esconderPreReserva);
+
         const pjHideFields = document.querySelectorAll('.pj-hide');
         const pfHideFields = document.querySelectorAll('.pf-hide');
     
