@@ -5,12 +5,11 @@
 
     <!-- Apartamentos -->
     <x-admin.field-group style="display: flex; align-items:end;">
-
-        <x-admin.field cols="3" >
+        <x-admin.field cols="3">
             <x-admin.label label="Quantidade de Apartamentos"/>
             <div class="input-group">
                 <button type="button" class="btn btn-outline-secondary" onclick="decrementValue('apartamentos')">-</button>
-                <input type="text" id="apartamentos" name="apartamentos" class="form-control text-center" :value="old('apartamentos', $reserva->apartamentos ?? 1)" min="1">
+                <input type="text" id="apartamentos" name="apartamentos" class="form-control text-center" value="1" min="1">
                 <button type="button" class="btn btn-outline-primary" onclick="incrementValue('apartamentos')">+</button>
             </div>
         </x-admin.field>

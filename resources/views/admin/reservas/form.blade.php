@@ -66,7 +66,7 @@
                 @endif
             </ul>
 
-            @if ($reserva->situacao_reserva == 'HOSPEDADO')
+            @if ($reserva->situacao_reserva == 'HOSPEDADO' || $reserva->situacao_reserva == 'FINALIZADO')
                 <a class="btn btn-primary float-right" href="{{ route('admin.reserva.gerarFichaNacional', ['id' => $reserva->id]) }}" target="_blank">
                     <i class="fas fa-file-alt"></i> Gerar Ficha Nacional
                 </a>
