@@ -50,6 +50,7 @@ class ClienteController extends Controller
     {
         $data = $request->all();
 
+        $data['data_nascimento']  = parseDateVenturize($data['data_nascimento']);
         if ($id = $request->get('id')) {
             $this->model->findOrFail($id)->update($data);
         } else {

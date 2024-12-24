@@ -14,6 +14,7 @@ class Pagamento extends Model
         'status_pagamento', // Pago, Parcialmente Pago, Pendente
         'data_pagamento',
         'valores_recebidos', // Campo para armazenar valores recebidos como JSON
+        'observacoes',      // Novo campo para observações
     ];
 
     const METODOS_PAGAMENTO = [

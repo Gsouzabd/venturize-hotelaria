@@ -52,7 +52,7 @@ class PedidoController extends Controller
         $mesas = Mesa::all();
         $clientes = Cliente::all();
         // Obter os IDs das categorias "Bebidas" e "Alimentos"
-        $categoriaIds = Categoria::whereNotIn('nome', ['Materiais de Serviços'])->pluck('id');
+        $categoriaIds = Categoria::whereIn('nome', ['Alimentos', 'Bebidas', 'Drinks', 'Gelo'])->pluck('id');
         
         // Obter os produtos que pertencem às categorias "Bebidas" e "Alimentos"
         $produtos = Produto::whereIn('categoria_produto', $categoriaIds)->get();

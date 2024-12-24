@@ -76,6 +76,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Route::get('/reservas/{id}/status/{status}', [ReservaController::class, 'updateSituacaoReserva'])->name('reservas.updateSituacaoReserva');
 
+        Route::get('/clientes/{id}/edit', [ClienteController::class, 'edit'])->name('clientes.edit');
         Route::get('/clientes/{id}', [ClienteController::class, 'findById'])->name('admin.clientes.findById');
         Route::get('/clientes/cpf/{cpf}', [ClienteController::class, 'findByCpf'])->name('admin.clientes.findByCpf');
 

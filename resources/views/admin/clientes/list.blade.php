@@ -44,7 +44,7 @@
                     <td>{{ timestamp_br($cliente->created_at) }}</td>
                     <td>{{ timestamp_br($cliente->updated_at) }}</td>
                     <td class="cell-nowrap">
-                        {{-- <x-admin.edit-btn route="admin.clientes.edit" :route-params="['id' => $cliente->id]"/> --}}
+                        <x-admin.edit-btn route="admin.clientes.edit" :route-params="['id' => $cliente->id]"/>
                         <x-admin.delete-btn route="admin.clientes.destroy" :route-params="['id' => $cliente->id]"/>
                     </td>
                 </tr>

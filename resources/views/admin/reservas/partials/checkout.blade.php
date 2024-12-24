@@ -65,6 +65,7 @@
                                 <th>Valor</th>
                                 <th>Método de Pagamento</th>
                                 <th>Quarto</th>
+                                <TH>Observações</TH>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -72,22 +73,35 @@
                             @foreach($valoresRecebidos as $metodo => $valor)
                                 @php
                                     // Verifica se o método possui um submétodo
-                                    if (strpos($metodo, '-') !== false) {
-                                        list($metodoPrincipal, $submetodo) = explode('-', $metodo, 2);
+                                    if (preg_match('/^([^-]+)-([^-]+)-(.+)$/', $metodo, $matches)) {
+                                        $metodoPrincipal = $matches[1];
+                                        $submetodo = $matches[2];
+                                        $observacao = $matches[3];
+                                    } elseif (preg_match('/^([^-]+)--(.+)$/', $metodo, $matches)) {
+                                        $metodoPrincipal = $matches[1];
+                                        $observacao = $matches[2];
+                                        $submetodo = '';
+                                    } elseif (preg_match('/^([^-]+)-(.+)$/', $metodo, $matches)) {
+                                        $metodoPrincipal = $matches[1];
+                                        $observacao = $matches[2];
+                                        $submetodo = '';
                                     } else {
                                         $metodoPrincipal = $metodo;
                                         $submetodo = '';
+                                        $observacao = '';
                                     }
                                 @endphp
                                 <tr>
                                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
                                     <td>Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}
+                                    <td>{{ $observacao }}</td>
                                     <td>
                                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
                                         <input type="hidden" class="valores_recebidos" name="quartos[{{$reserva->quarto_id}}][valores_recebidos][]" value="{{ $valor }}">
                                         <input type="hidden" name="quartos[{{$reserva->quarto_id}}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
-                                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][submetodos_pagamento][]" value="{{ $submetodo }}">
+                                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][observacoes_pagamento][]" value="{{ $submetodo }}">
+
                                     </td>
                                 </tr>
                             @endforeach
@@ -165,7 +179,7 @@
                         <x-admin.field-group class="d-flex justify-content-center">
                             <div class="row">
                                 <!-- Valor Sinal -->
-                                <x-admin.field cols="12">
+                                <x-admin.field cols="6">
                                     <x-admin.label label="Valor Recebido"/>
                                     <div class="input-group mb-3 mt-2">
                                         <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
@@ -173,6 +187,13 @@
                                         <div class="input-group-append w-100">
                                             <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
                                         </div>
+                                    </div>
+                                </x-admin.field>
+                                <x-admin.field cols="6">
+                                    <x-admin.label label="Observações"/>
+                                    <div class="input-group mb-3 mt-2">
+                                        <x-admin.text id="observacoes_pagamento" name="observacoes_pagamento" class="form-control"
+                                            value="" placeholder="Observações"/>
                                     </div>
                                 </x-admin.field>
                                 
@@ -399,7 +420,7 @@
                 const submetodoPagamentoSelect = document.querySelector(`#submetodos_container_${metodoPagamento} select`);
                 const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
                 const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
-            
+                const observacoes_pagamento = document.getElementById('observacoes_pagamento').value;
                 const quartoSelect = document.getElementById('quarto-select');
                 const quartoId = quartoSelect.value;
                 const quartoLabel = quartoSelect.options[quartoSelect.selectedIndex].text;
@@ -415,11 +436,13 @@
                         <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
                         <td>${metodoPagamento} ${submetodoPagamento ? ' - ' + submetodoPagamentoLabel : ''}</td>
                         <td>${quartoLabel}</td>
+                        <td>${observacoes_pagamento}</td>
                         <td>
                             <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
                             <input type="hidden" class="valores_recebidos" name="quartos[${quartoId}][valores_recebidos][]" value="${valor.toFixed(2)}">
                             <input type="hidden" name="quartos[${quartoId}][metodos_pagamento][]" value="${metodoPagamento}">
                             <input type="hidden" name="quartos[${quartoId}][submetodos_pagamento][]" value="${submetodoPagamento}">
+                            <input type="hidden" name="quartos[${quartoId}][observacoes_pagamento][]" value="${observacoes_pagamento}">
                         </td>
                     `;
                     valoresRecebidosTable.appendChild(row);

@@ -211,6 +211,7 @@ class ReservaController extends Controller
         
         // Salva os pagamentos de cada reserva
         try {
+            // dd($reservas);
             foreach ($reservas as $reserva) {
                 $quartoId = $reserva->quarto_id;
                 if (isset($data['quartos'][$quartoId])) {
@@ -219,6 +220,8 @@ class ReservaController extends Controller
                     $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
                     $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
                     $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
+                    $observacoesPagamento = $quartoData['observacoes_pagamento'] ?? [];
+                    // dd($valoresRecebidos, $metodosPagamento, $submetodosPagamento, $observacoesPagamento);
         
                     $pagamentos = [];
                     $valorPago = 0;
@@ -226,7 +229,8 @@ class ReservaController extends Controller
                     foreach ($valoresRecebidos as $index => $valor) {
                         $metodoPagamento = $metodosPagamento[$index] ?? null;
                         $submetodoPagamento = $submetodosPagamento[$index] ?? null;
-                        $key = "{$metodoPagamento}-{$submetodoPagamento}";
+                        $observacaoPagamento = $observacoesPagamento[$index] ?? null;
+                        $key = "{$metodoPagamento}-{$submetodoPagamento}-{$observacaoPagamento}";
         
                         if (!isset($pagamentos[$key])) {
                             $pagamentos[$key] = 0;
@@ -237,6 +241,8 @@ class ReservaController extends Controller
                     }
         
                     $pagamentosJson = json_encode($pagamentos);
+
+                    // dd($pagamentosJson);
         
                     $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
                 }
