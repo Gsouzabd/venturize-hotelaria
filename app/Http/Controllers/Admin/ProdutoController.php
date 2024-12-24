@@ -30,7 +30,7 @@ class ProdutoController extends Controller
         $query = $this->model->newQuery();
     
         if ($filters['nome']) {
-            $query->where('nome', 'like', '%' . $filters['nome'] . '%');
+            $query->where('descricao', 'like', '%' . $filters['nome'] . '%');
         }
     
         if ($filters['categoria_id']) {

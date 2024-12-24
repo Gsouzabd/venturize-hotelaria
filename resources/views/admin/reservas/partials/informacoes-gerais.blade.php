@@ -70,18 +70,18 @@
             
             <x-admin.field-group>
                 <x-admin.field cols="4">
-                    <x-admin.label label="Data de Nascimento" required/>
+                    <x-admin.label label="Data de Nascimento" />
                     <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>                        
                 </x-admin.field>
 
                 <x-admin.field cols="4">
-                    <x-admin.label label="Email" required/>
-                    <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" required/>
+                    <x-admin.label label="Email" />
+                    <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" />
                 </x-admin.field>
 
                 <x-admin.field cols="4">
-                    <x-admin.label label="Celular" required/>
-                    <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" required class="phone-mask"/>
+                    <x-admin.label label="Celular" />
+                    <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')"  class="phone-mask"/>
                 </x-admin.field>
             </x-admin.field-group>
             
@@ -285,10 +285,10 @@
         function esconderPreReserva() {
             if (situacaoReservaSelect.value === 'PRÉ RESERVA') {
                 preReservaHide.style.display = 'none';
-                preReservaHideRequired.forEach(field => field.removeAttribute('required'));
+                // preReservaHideRequired.forEach(field => field.removeAttribute('required'));
             } else {
                 preReservaHide.style.display = 'block';
-                preReservaHideRequired.forEach(field => field.setAttribute('required', ''));
+                // preReservaHideRequired.forEach(field => field.setAttribute('required', ''));1
             }
         }
         esconderPreReserva();
