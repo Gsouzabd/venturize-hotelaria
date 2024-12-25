@@ -23,6 +23,8 @@ class Pedido extends Model
         'remover_taxa',
         'total_com_taxa',
         'pedido_apartamento',
+        'observacoes', // Novo campo para observações
+
     ];
 
     public function mesa()

@@ -72,6 +72,14 @@ class PedidoController extends Controller
         // dd($data);
         if (isset($data['pedido_id'])) {
             if (isset($data['action'])) {
+                if ($data['action'] == "add-obs") {
+                    $pedido = $this->model->findOrFail($data['pedido_id']);
+                    $pedido->observacoes = $data['observacoes'];
+                    $pedido->save();
+                    return redirect()
+                        ->route('admin.bar.pedidos.edit', ['id' => $pedido->id])
+                        ->with('notice', 'Observações salvas com sucesso.');
+                }
                 if ($data['action'] == "add-itens") {
                     $itens = $this->mesaService->adicionarItemPedido($data);
         

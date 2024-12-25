@@ -117,6 +117,22 @@
                             </div>
                         @endforeach
                     </div>
+                    <x-admin.form save-route="admin.bar.pedidos.save" submitTitle='<i class="fas fa-note"></i> Salvar Observação'>
+                        @csrf
+                        @if($edit)
+                            <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
+                            <input type="hidden" name="action" value="add-obs">
+
+
+                        @endif
+                        <x-admin.field-group>
+                            <x-admin.field cols="12">
+                                <x-admin.label label="Observações"/>
+                                <x-admin.textarea name="observacoes" id="observacoes" :value="old('observacoes', $pedido->observacoes)" rows="3"/>
+                            </x-admin.field>
+                        </x-admin.field-group>
+                    </x-admin.form>
+                    <br/>
                     <x-admin.form save-route="admin.bar.pedidos.save" back-route="admin.bar.pedidos.index" submitTitle='<i class="fas fa-check"></i> Confirmar Itens' id="add-items-form">
                         @csrf
                         @if($edit)
@@ -152,6 +168,9 @@
                             </x-admin.field>
                         </x-admin.field-group>
 
+
+
+
                         <x-admin.field-group>
                             <x-admin.field cols="4">
                                 <x-admin.label label="Total" required/>
@@ -168,6 +187,8 @@
                                 <x-admin.text name="total_with_service_fee" id="total_with_service_fee" :value="old('total_with_service_fee', '0.00')" readonly/>
                             </x-admin.field>
                         </x-admin.field-group>
+
+
 
                         <!-- Botão para gerar o cupom parcial -->
                         <button type="button" class="btn btn-primary" id="gerarParcialBtn" style="float: right; margin-bottom: 2%">Gerar Cupom Parcial</button>

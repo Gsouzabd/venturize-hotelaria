@@ -206,6 +206,18 @@
                                     suggestionsBox.appendChild(suggestionItem);
                                 });
                                 suggestionsBox.style.display = 'block';
+                                if (data.length === 0) {
+                                    suggestionsBox.style.display = 'none';
+                                    const descricaoInput = event.target;
+                                    const row = descricaoInput.closest('tr'); // Encontra a linha correspondente
+                                    const produtoIdInput = row.querySelector('.produto-id'); // Campo hidden produto_id
+
+                                    // Verifica se o campo produto_id está vazio
+                                    if (!produtoIdInput.value) {
+                                        descricaoInput.value = ''; // Limpa o campo descrição
+                                        alert('O produto digitado nao foi encontrado. Por favor, selecione um produto da lista de sugestões.');
+                                    }
+                                }
                             })
                             .catch(error => {
                                 console.error('Fetch error:', error);
@@ -215,6 +227,7 @@
         
                 suggestionsBox.addEventListener('click', function (event) {
                     if (event.target.classList.contains('dropdown-item')) {
+       
                         const produtoId = event.target.dataset.id;
                         const produtoDescricao = event.target.dataset.descricao;
                         const produtoUnidade = event.target.dataset.unidade;
@@ -239,6 +252,7 @@
                     }
                 });
         
+
                 composicoesTableBody.addEventListener('click', function (event) {
                     if (event.target.classList.contains('remove-composicao-btn')) {
                         const row = event.target.closest('tr');

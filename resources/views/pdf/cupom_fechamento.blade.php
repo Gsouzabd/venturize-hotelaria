@@ -116,8 +116,8 @@
         @endphp
         <p><strong>Total:</strong> R$ {{ number_format($total, 2, ',', '.') }}</p>
         @if($removeServiceFee)
-            <p class="strikethrough"><strong>Taxa de Serviço (10%):</strong><br/> R$ {{ number_format($serviceFee, 2, ',', '.') }} (cliente optou por remover)</p>
-            <p><strong>Total com Taxa de Serviço:</strong> R$ {{ number_format($total, 2, ',', '.') }}</p>
+            {{-- <p class="strikethrough"><strong>Taxa de Serviço (10%):</strong><br/> R$ {{ number_format($serviceFee, 2, ',', '.') }} (cliente optou por remover)</p>
+            <p><strong>Total com Taxa de Serviço:</strong> R$ {{ number_format($total, 2, ',', '.') }}</p> --}}
         @else
             <p><strong>Taxa de Serviço (10%):</strong><br/> R$ {{ number_format($serviceFee, 2, ',', '.') }}</p>
             <p><strong>Total com Taxa de Serviço:</strong> R$ {{ number_format($totalWithServiceFee, 2, ',', '.') }}</p>
