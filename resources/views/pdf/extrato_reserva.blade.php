@@ -102,12 +102,7 @@
 
                 <h2>Consumo</h2>
 
-                {{-- <tr>
-                    <td>R$ {{ number_format($totalConsumo, 2, ',', '.') }}</td>
-                    <td>R$ {{ number_format($totalTaxaServicoConsumo, 2, ',', '.') }}</td>
-                    <td>R$ {{ number_format($totalConsumo + $totalTaxaServicoConsumo, 2, ',', '.') }}</td>
-                    <td></td>
-                </tr> --}}
+
                 @foreach ($itensConsumidos as $item)
                     <tr>
                         <td>{{ $item['pedido']->pedido_apartamento ? 'Apartamento' : 'Bar'}} <br/> Pedido #{{ $item['pedido']->id }} </td>
@@ -119,7 +114,53 @@
                     </tr>
                 @endforeach
               
-            
+                <h2>Total</h2>
+                <tr>
+                    <td>Consumo</td>
+                    <td>R$ {{ number_format($totalConsumo, 2, ',', '.') }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>  
+
+                </tr>
+                <tr>
+                    <td>Taxa de Serviço</td>
+                    <td>
+                        @if (is_string($totalTaxaServicoConsumoConsumo))
+                            {{ $totalTaxaServicoConsumoConsumo }}
+                        @else
+                        R$ {{ number_format( $totalTaxaServicoConsumoConsumo, 2, ',', '.') }}
+
+                        @endif
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>  
+
+                <tr>
+                    <td>Reserva</td>
+                    <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td> 
+                    <td></td>
+                    <td></td>
+                    <td></td>  
+                    <td></td>  
+
+                </tr>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td>
+                        <strong>
+                            R$ {{ number_format($totalConsumo + (!is_string($totalTaxaServicoConsumoConsumo) ?? 0) + $reserva->total, 2, ',', '.') }}
+                        </strong>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>  
+
+                </tr>
 
             </tbody>
         </table>
