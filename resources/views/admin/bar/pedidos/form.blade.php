@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-end">
 
             <x-admin.edit-btn route="admin.reservas.edit" :noTarget="true" :route-params="['id' => $pedido->reserva->id]" :label="html_entity_decode('<i class=\'fas fa-arrow-left\'></i> Voltar para Reserva')"/>        </div>
-
+            
         <style>
             div#layout-sidenav {
                 display: none;
@@ -191,7 +191,13 @@
 
 
                         <!-- Botão para gerar o cupom parcial -->
-                        <button type="button" class="btn btn-primary" id="gerarParcialBtn" style="float: right; margin-bottom: 2%">Gerar Cupom Parcial</button>
+                        <div style="display: grid;width: 100%;justify-content: end;">
+                            <button type="button" class="btn btn-primary" id="gerarParcialBtn" style="float: right; margin-bottom: 2%">Gerar Cupom Parcial</button>
+                        
+                            <button type="button" class="btn btn-primary" id="gerarExtratoBtn" style="float: right; margin-bottom: 2%">Gerar Extrato Interno Parcial</button>
+    
+                        </div>
+
                         @if($pedido->pedido_apartamento)
                             <br/><br/><br/>
                             <div class="d-flex justify-content-end">
@@ -269,16 +275,28 @@
 <!--! Script para fechar o pedido !-->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const fecharPedidoBtn = document.getElementById('fecharPedidoBtn');
         const confirmCloseBtn = document.getElementById('confirmCloseBtn');
         const fecharPedidoForm = document.getElementById('fecharPedidoForm');
         const removeServiceFeeCheckbox = document.getElementById('removeServiceFee');
 
 
-        fecharPedidoBtn.addEventListener('click', function () {
-            $('#confirmCloseModal').modal('show');
-        });
-
+        @php
+            if (!$pedido->pedido_apartamento) {
+        @endphp
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const fecharPedidoBtn = document.getElementById('fecharPedidoBtn');
+        
+                        if (fecharPedidoBtn) {
+                            fecharPedidoBtn.addEventListener('click', function () {
+                                $('#confirmCloseModal').modal('show');
+                            });
+                        }
+                    });
+                </script>
+        @php
+            }
+        @endphp
         confirmCloseBtn.addEventListener('click', function () {
             const formData = new FormData(fecharPedidoForm);
             formData.append('removeServiceFee', removeServiceFeeCheckbox.checked);
@@ -313,6 +331,25 @@
         gerarParcialBtn.addEventListener('click', function () {
             const pedidoId = {{ $pedido->id }};
             fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        const gerarExtratoBtn = document.getElementById('gerarExtratoBtn');
+        gerarExtratoBtn.addEventListener('click', function () {
+            const pedidoId = {{ $pedido->id }};
+            fetch(`/admin/bar/pedidos/${pedidoId}/extrato-parcial`, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -501,11 +538,17 @@
             const serviceFeeInput = document.getElementById('service_fee');
             const totalWithServiceFeeInput = document.getElementById('total_with_service_fee');
             const total = parseFloat(totalInput.value) || 0;
-            const serviceFee = total * 0.10;
+            var serviceFee = total * 0.10;
+            @if($pedido->pedido_apartamento)
+                serviceFee = 0;
+            @endif
             const totalWithServiceFee = total + serviceFee;
 
+
             serviceFeeInput.value = serviceFee.toFixed(2);
+
             totalWithServiceFeeInput.value = totalWithServiceFee.toFixed(2);
+
         }
 
         // Função para enviar o formulário de adicionar itens e abrir o PDF em uma nova aba

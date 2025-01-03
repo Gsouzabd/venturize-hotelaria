@@ -144,8 +144,11 @@ class MesaService {
     
             // Atualizar o total do pedido
             $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
+            $taxaServico = $pedido->pedido_apartamento ? 0 : $total * 0.1;
+
             $pedido->update([
                 'total' => $total,
+                'total_com_taxa' => $total + $taxaServico
             ]);
     
             return $itensCancelados; // Retorna os itens cancelados
@@ -210,6 +213,7 @@ class MesaService {
                         'produto_id' => $item['produto_id'],
                         'quantidade' => $item['quantidade'],
                         'preco' => Produto::find($item['produto_id'])->preco_venda, // Obtenha o preço do produto
+                        'operador_id' => auth()->user()->id, // Adicionar o operador ao item
                     ]);
                     $itens[] = $novoItem;
                 }
@@ -238,10 +242,12 @@ class MesaService {
     
             // Atualizar o total do pedido
             $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
+            $taxaServico = $pedido->pedido_apartamento ? 0 : $total * 0.1;
             $pedido->update([
                 'total' => $total,
-                'taxa_servico' => $total * 0.1,
-                'total_com_taxa' => $total + ($total * 0.1),
+                'taxa_servico' => $taxaServico,
+                'removar_taxa' => $pedido->pedido_apartamento ? 1 : $pedido->remover_taxa,
+                'total_com_taxa' => $total + $taxaServico
             ]);
     
             // Adicionar a descrição do produto aos itens
@@ -268,6 +274,9 @@ class MesaService {
             // Atualizar o status do pedido para 'fechado'
             $pedido->status = 'fechado';
             $pedido->remover_taxa = $removerTaxaServico != "false" ? 1 : 0;
+            if($pedido->pedido_apartamento) {
+                $pedido->remover_taxa = 1;
+            }
             $pedido->save();
 
             // Atualizar o status da mesa para 'disponível'
@@ -377,5 +386,31 @@ class MesaService {
 
         // Enviar o PDF para o navegador
         return $dompdf->output();
+    }
+
+    public function gerarExtratoParcial($idPedido)
+    {
+        // Encontrar o pedido pelo ID
+        $pedido = Pedido::with('itens.produto')->find($idPedido);
+        $reserva = $pedido->reserva;
+        if ($pedido instanceof \Illuminate\Support\Collection) {
+            $pedido = $pedido->first();
+        }
+
+        // Configurar Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Courier');
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf = new Dompdf($options);
+
+
+        // Dados do pedido e itens
+        $html = view('pdf.extrato_parcial', compact('pedido', 'reserva'))->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->stream('extrato_reserva.pdf');
     }
 }

@@ -170,4 +170,10 @@ class PedidoController extends Controller
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
         return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
     }
+
+    public function showExtratoParcial($idPedido)
+    {
+        $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
+        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
+    }
 }

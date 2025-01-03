@@ -385,30 +385,58 @@
             const valorPendenteInput = document.getElementById('valor_pendente');
             const statusPagamentoSelect = document.querySelector('select[name="status_pagamento"]');
         
-            function atualizarValores() {
-                let totalPago = 0;
-                document.querySelectorAll('input.valores_recebidos').forEach(function (input) {
-                    totalPago += parseFloat(input.value.replace(',', '.'));
-                });
-                console.log(totalPago);
-                valorPagoInput.value = totalPago.toFixed(2).replace('.', ',');
-                console.log(valorPagoInput.value);
-                const valorTotal = parseFloat(valorTotalInput.value.replace(',', '.')) || 0;
-                const valorPendente = valorTotal - totalPago;
-                valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
-        
-                // Atualizar status de pagamento
-                if (totalPago >= valorTotal) {
-                    statusPagamentoSelect.value = 'PAGO';
-                } else if (totalPago > 0) {
-                    statusPagamentoSelect.value = 'PARCIAL';
-                } else {
-                    statusPagamentoSelect.value = 'PENDENTE';
-                }
+function atualizarValores() {
+    let totalPago = 0;
 
-                // Atualizar botão de confirmação
-                checkPendingAmount();
-            }
+    document.querySelectorAll('input.valores_recebidos').forEach(function (input) {
+        const rawValue = input.value.trim();
+        console.log('Valor bruto:', rawValue);
+
+        // Corrigir separadores:
+        // 1. Remover separadores de milhar (pontos não precedidos por vírgulas ou decimais)
+        // 2. Substituir vírgula por ponto para transformar no formato numérico
+        const valor = parseFloat(
+            rawValue
+                .replace(/\.(?=\d{3}(,|$))/g, '') // Remove separadores de milhar
+                .replace(',', '.') // Substitui vírgula por ponto
+        );
+        console.log('Valor convertido:', valor);
+
+        if (!isNaN(valor)) {
+            totalPago += valor;
+        }
+    });
+
+    console.log('Total Pago:', totalPago);
+
+    // Atualizar o campo de valor pago
+    valorPagoInput.value = totalPago.toFixed(2).replace('.', ',');
+
+    // Corrigir a conversão do valor total
+    const valorTotal = parseFloat(
+        valorTotalInput.value.replace(/\.(?=\d{3}(,|$))/g, '').replace(',', '.')
+    ) || 0;
+    console.log('Valor Total:', valorTotal);
+
+    // Calcular e atualizar valor pendente
+    const valorPendente = Math.max(0, valorTotal - totalPago); // Evitar valores negativos
+    valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
+
+    console.log('Valor Pendente:', valorPendente);
+
+    // Atualizar status de pagamento
+    if (totalPago >= valorTotal) {
+        statusPagamentoSelect.value = 'PAGO';
+    } else if (totalPago > 0) {
+        statusPagamentoSelect.value = 'PARCIAL';
+    } else {
+        statusPagamentoSelect.value = 'PENDENTE';
+    }
+
+    // Atualizar botão de confirmação
+    checkPendingAmount();
+}
+
         
             addValorRecebidoButton.addEventListener('click', function () {
                 const valor = parseFloat(valorRecebidoInput.value.replace(',', '.'));

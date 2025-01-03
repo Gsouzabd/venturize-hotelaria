@@ -108,8 +108,13 @@
         <hr>
         @php
             $total = $pedido->total;
+
             $serviceFee = $total * 0.10;
+            if($pedido->pedido_apartamento) {
+                $serviceFee = 0;
+            }
             $totalWithServiceFee = $total + $serviceFee;
+
         @endphp
         <p><strong>Total Consumo:</strong> R$ {{ number_format($total, 2, ',', '.') }}</p>
         <p><strong>Taxa Serviço (10%):</strong> R$ {{ number_format($serviceFee, 2, ',', '.') }}</p>

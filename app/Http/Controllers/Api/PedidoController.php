@@ -129,4 +129,6 @@ class PedidoController extends Controller
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
         return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
     }
+
+
 }
