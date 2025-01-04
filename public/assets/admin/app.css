@@ -712,7 +712,7 @@ input.preco-diario {
     font-weight: 500;
 }
 
-input.form-control.missing-to-checkin {
+.form-control.missing-to-checkin {
     background-color: #f358586b;
 }
 

@@ -270,7 +270,20 @@
     </div>
 </div>
 </div>
+@if (!$pedido->pedido_apartamento) {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fecharPedidoBtn = document.getElementById('fecharPedidoBtn');
 
+            if (fecharPedidoBtn) {
+                fecharPedidoBtn.addEventListener('click', function () {
+                    $('#confirmCloseModal').modal('show');
+                });
+            }
+        });
+    </script>
+}
+@endif
 
 <!--! Script para fechar o pedido !-->
 <script>
@@ -280,23 +293,7 @@
         const removeServiceFeeCheckbox = document.getElementById('removeServiceFee');
 
 
-        @php
-            if (!$pedido->pedido_apartamento) {
-        @endphp
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const fecharPedidoBtn = document.getElementById('fecharPedidoBtn');
-        
-                        if (fecharPedidoBtn) {
-                            fecharPedidoBtn.addEventListener('click', function () {
-                                $('#confirmCloseModal').modal('show');
-                            });
-                        }
-                    });
-                </script>
-        @php
-            }
-        @endphp
+
         confirmCloseBtn.addEventListener('click', function () {
             const formData = new FormData(fecharPedidoForm);
             formData.append('removeServiceFee', removeServiceFeeCheckbox.checked);

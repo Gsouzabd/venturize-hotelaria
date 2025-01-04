@@ -31,7 +31,7 @@
                     </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="situacao_reserva" id="cancelado" value="cancelado" {{ $reserva->situacao_reserva == 'cancelado' ? 'checked' : '' }}>
+                    <input class="form-check-input" type="radio" name="situacao_reserva" id="cancelado" value="cancelada" {{ $reserva->situacao_reserva == 'cancelada' ? 'checked' : '' }}>
                     <label class="form-check-label btn btn-danger w-100" for="cancelado">
                         <i class="fas fa-ban"></i> Cancelado
                     </label>

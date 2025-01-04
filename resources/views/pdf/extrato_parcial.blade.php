@@ -106,8 +106,7 @@
                 <tr>
                     @php 
                         $totalConsumo = $pedido->total;
-                        $totalTaxaServicoConsumoConsumo = $pedido->taxa_servico;
-                        @endphp
+                    @endphp
                     <td>Consumo</td>
                     <td>R$ {{ number_format($totalConsumo, 2, ',', '.') }}</td>
                     <td></td>

@@ -324,10 +324,11 @@ class ReservaController extends Controller
             return $pedido->remover_taxa != 0;
         })->sum('taxa_servico');
 
-        if($reserva->remover_taxa_servico = 1){
+        if($reserva->remover_taxa_servico == 1){
             $totalTaxaServicoConsumoConsumo = 'Cliente optou por remover';
         }
 
+        // dd($reserva->remover_taxa);
         $itensConsumidos = $reserva->pedidos->flatMap(function($pedido) {
             return $pedido->itens->map(function($item) {
                 return [

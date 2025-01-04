@@ -495,31 +495,30 @@ async function adicionarQuartoAoCart(
 const saveInfoButton = document.getElementById('saveInfoButton');
 const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
 const formFields = document.querySelectorAll('#informacoes-gerais input, #informacoes-gerais textarea, #informacoes-gerais select');
+const situacao_reserva = document.querySelector('select[name="situacao_reserva"]');
 
 saveInfoButton.addEventListener('click', function () {
-    let formIsValid = true;
+    if(situacao_reserva.value == 'RESERVADO'){
+        validateInformacoesGerais();
+    } 
+});
 
-    formFields.forEach(function (field) {
-        console.log(field.value); // Log do valor do campo para depuração
-        if ((field.hasAttribute('required') || field.tagName.toLowerCase() === 'select') && field.value.trim() === '') {
-            formIsValid = false;
-            field.setCustomValidity('Este campo é obrigatório.');
-            field.reportValidity(); // Exibe a mensagem de erro nativa do navegador
-            field.focus(); // Foca no campo inválido
+function validateInformacoesGerais() {
+    let isValid = true;
+    formFields.forEach(field => {
+        if (!field.checkValidity()) {
+            isValid = false;
+            field.classList.add('is-invalid');
         } else {
-            field.setCustomValidity(''); // Limpa a mensagem de erro personalizada
+            field.classList.remove('is-invalid');
         }
     });
-
-    if (formIsValid) {
-        // Habilita a tab de Disponibilidade
-        disponibilidadeTabLink.classList.remove('disabled');
-        disponibilidadeTabLink.click(); // Alterna para a tab de Disponibilidade
-    } else {
-        // Exibe uma mensagem de erro genérica se o formulário não for válido
-        alert('Por favor, preencha todos os campos obrigatórios.');
+    if (!isValid) {
+        alert('Por favor, preencha todos os campos obrigatórios corretamente.');
     }
-});
+
+    return isValid;
+}
 
 // Verificar os parâmetros da URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -564,6 +563,7 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
     disponibilidadeTabLink.classList.add('disabled');
     infoGeraisTabLink.click(); // Alterna para a tab de Disponibilidade
 
+
     const tipoReservaSelect = document.getElementById('tipoReserva');
 
     // Função para atualizar a visibilidade dos campos
@@ -578,6 +578,7 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
             cpfGroup.style.display = 'block';
             document.getElementById('responsavelReservaCpf').setAttribute('required', 'required');
         }
+  
     }
 
     // Atualiza os campos ao carregar a página
@@ -1012,6 +1013,22 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
 
 // ---> CHECKIN  <--- //
     document.addEventListener('DOMContentLoaded', function () {
+        const situacao_reserva = document.querySelector('select[name="situacao_reserva"]');
+        function definirRequireds(){
+            console.log('situacao_reserva.value', situacao_reserva.value);
+            if (situacao_reserva.value == 'RESERVADO') {
+                console.log('irei definir os campos como required');
+                const camposReservado = document.querySelectorAll('#pre-reserva-hide input, #pre-reserva-hide select');
+                camposReservado.forEach(campo => {
+                    campo.setAttribute('required', 'required');
+                    console.log('campo definido como required', campo);
+                });  
+            }     
+        }  
+    
+        definirRequireds();
+        situacao_reserva.addEventListener('change', definirRequireds);
+        
         const checkinTab = document.querySelector('a#checkin-tab');
         if (!checkinTab) {
             console.error('Elemento com ID checkin-tab não encontrado no DOM');
@@ -1022,6 +1039,17 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
             const cartItems = cartItemsContainer.querySelectorAll('.cart-item');
             const messages = [];
             let firstInvalidField = null;
+            const situacaoReserva = document.querySelector('select[name="situacao_reserva"]');
+
+            if(situacaoReserva.value == 'PRÉ RESERVA'){
+                alert('Para finalizar a reserva, é necessário passar a situação de reserva para "RESERVADO".');
+                document.querySelector('select[name="situacao_reserva"]').focus();
+                document.querySelector('select[name="situacao_reserva"]').classList.add('missing-to-checkin', 'zoom-in');
+                document.querySelector('select[name="situacao_reserva"]').addEventListener('input', removeMissingClass);
+
+                return false;
+            }
+
     
             cartItems.forEach((cartItem, index) => {
                 const quartoId = cartItem.querySelector('input[name^="quartos["]').name.match(/\d+/)[0];
@@ -1096,10 +1124,11 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
         }
     
         checkinTab.addEventListener('click', function (e) {
-            if (!validateCartItems()) {
+            if (!validateCartItems() || !validateInformacoesGerais()) {
                 e.preventDefault(); // Previne a navegação
                 e.stopPropagation(); // Previne que a biblioteca ou outro manipulador processe o evento
             }
+
         });
     });
 

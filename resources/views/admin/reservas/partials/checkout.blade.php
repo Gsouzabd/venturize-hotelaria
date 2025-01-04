@@ -268,9 +268,11 @@
                                     @if ($reserva->remover_taxa_servico == 1)
                                        <strong> Cliente optou por não pagar a taxa de serviço</strong>
                                     @else
-                                        <a href="{{ route('admin.reserva.removerTaxaServico', ['id' => $reserva->id]) }}" style="display:inline;" id="removerTaxaServico">
-                                            Remover Taxa de Serviço
-                                        </a>
+                                        @if ($reserva->situacao_reserva != 'FINALIZADO')
+                                            <a href="{{ route('admin.reserva.removerTaxaServico', ['id' => $reserva->id]) }}" style="display:inline;" id="removerTaxaServico">
+                                                Remover Taxa de Serviço
+                                            </a>
+                                        @endif
                                     @endif
                                 </td>         
                                <td>
