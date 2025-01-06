@@ -320,9 +320,12 @@ class ReservaController extends Controller
         }])->findOrFail($id);
 
         $totalConsumo = $reserva->pedidos->sum('total');
+        // dd($reserva->pedidos);
         $totalTaxaServicoConsumoConsumo = $reserva->pedidos->filter(function($pedido) {
-            return $pedido->remover_taxa != 0;
+            return $pedido->remover_taxa == 0;
         })->sum('taxa_servico');
+
+        // dd($totalTaxaServicoConsumoConsumo);
 
         if($reserva->remover_taxa_servico == 1){
             $totalTaxaServicoConsumoConsumo = 'Cliente optou por remover';

@@ -31,7 +31,7 @@ class PedidoController extends Controller
         $query = $this->model->newQuery();
 
         if ($filters['numero']) {
-            $query->where('numero', 'like', '%' . $filters['numero'] . '%');
+            $query->where('id', 'like', '%' . $filters['numero'] . '%');
         }
 
         if ($filters['status']) {

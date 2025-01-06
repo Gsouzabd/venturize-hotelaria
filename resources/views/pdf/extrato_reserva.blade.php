@@ -152,7 +152,7 @@
                     <td><strong>Total</strong></td>
                     <td>
                         <strong>
-                            R$ {{ number_format($totalConsumo + (!is_string($totalTaxaServicoConsumoConsumo) ?? 0) + $reserva->total, 2, ',', '.') }}
+                            R$ {{ number_format($totalConsumo + (!is_string($totalTaxaServicoConsumoConsumo) ? $totalTaxaServicoConsumoConsumo : 0) + $reserva->total, 2, ',', '.') }}
                         </strong>
                     </td>
                     <td></td>

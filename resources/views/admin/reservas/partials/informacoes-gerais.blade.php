@@ -342,13 +342,21 @@
                             var formattedDataNascimento= isFormattedDate(data.data_nascimento) ? data.data_nascimento : formatDate(data.data_nascimento);
                          }
 
-                        // Preenche os campos do cliente se encontrado
-                        document.getElementById('nomeSolicitante').value = data.nome ?? '';
-                        document.getElementById('cpf').value = data.cpf ?? '';
-                        document.querySelector('input[name="data_nascimento"]').value = formattedDataNascimento ?? '';
-                        document.getElementById('rg').value = data.rg ?? '';
-                        document.getElementById('modal_email').value = data.email ?? '';
-                        document.getElementById('modal_telefone').value = data.telefone ?? '';
+                    // Preenche os campos do cliente se encontrado
+                    document.getElementById('nomeSolicitante').value = data.nome ?? '';
+                    document.getElementById('cpf').value = data.cpf ?? '';
+                    document.querySelector('input[name="data_nascimento"]').value = formattedDataNascimento ?? '';
+                    document.getElementById('rg').value = data.rg ?? '';
+                    document.getElementById('cep').value = data.cep ?? '';
+                    document.getElementById('cidade').value = data.cidade ?? '';
+                    document.getElementById('endereco').value = data.endereco ?? '';
+                    document.getElementById('numero').value = data.numero ?? '';
+                    document.getElementById('bairro').value = data.bairro ?? '';
+                    document.getElementById('pais').value = data.pais ?? '';
+                    document.getElementById('modal_email').value = data.email ?? '';
+                    document.getElementById('celular').value = data.telefone ?? '';
+                    document.getElementById('modal_telefone').value = data.telefone ?? '';
+                
                     }
                 })
                 .catch(error => {
