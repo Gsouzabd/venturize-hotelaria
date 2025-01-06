@@ -217,13 +217,14 @@ class MesaService {
                     ]);
                     $itens[] = $novoItem;
                 }
+                // dd($item);
 
                 if($produto->composicoes()->exists()){
                     foreach ($produto->composicoes as $composicao) {
                         $this->movimentacaoEstoqueService->registrarSaida([
                             'produto_id' => $composicao->insumo_id,
                             'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
-                            'quantidade' => $composicao->quantidade,
+                            'quantidade' =>  $item['quantidade'],
                             'valor_unitario_venda' => Produto::find($composicao->insumo_id)->preco_venda,
                             'justificativa' => 'Venda de produto no bar',
                         ]);
