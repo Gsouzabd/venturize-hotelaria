@@ -500,7 +500,11 @@ const situacao_reserva = document.querySelector('select[name="situacao_reserva"]
 saveInfoButton.addEventListener('click', function () {
     if(situacao_reserva.value == 'RESERVADO'){
         validateInformacoesGerais();
-    } 
+    } else {
+        console.log('entrou no else');
+        disponibilidadeTabLink.classList.remove('disabled');
+        disponibilidadeTabLink.click(); // Alterna para a tab de Disponibilidade
+    }
 });
 
 function validateInformacoesGerais() {
@@ -510,10 +514,17 @@ function validateInformacoesGerais() {
             isValid = false;
             field.classList.add('is-invalid');
         } else {
+            field.setCustomValidity(''); // Limpa a mensagem de erro personalizada
             field.classList.remove('is-invalid');
         }
     });
-    if (!isValid) {
+
+    if (isValid) {
+        // Habilita a tab de Disponibilidade
+        disponibilidadeTabLink.classList.remove('disabled');
+        disponibilidadeTabLink.click(); // Alterna para a tab de Disponibilidade
+    } else {
+        // Exibe uma mensagem de erro genérica se o formulário não for válido
         alert('Por favor, preencha todos os campos obrigatórios corretamente.');
     }
 
