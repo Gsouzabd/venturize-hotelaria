@@ -114,7 +114,7 @@
                     <x-admin.field cols="4">
                         <x-admin.label label="Sexo"/>
                         <x-admin.select name="sexo"
-                                        :items="['Masculino' => 'Masculino', 'Feminino' => 'Feminino']"
+                                        :items="['M' => 'Masculino', 'F' => 'Feminino']"
                                         :selected-item="old('sexo', $cliente->sexo)"/>
                     </x-admin.field>
 

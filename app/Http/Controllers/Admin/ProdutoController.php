@@ -34,7 +34,7 @@ class ProdutoController extends Controller
         }
     
         if ($filters['categoria_id']) {
-            $query->where('categoria_id', $filters['categoria_id']);
+            $query->where('categoria_produto', $filters['categoria_id']);
         }
 
         if ($filters['id']) {

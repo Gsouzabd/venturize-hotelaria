@@ -31,10 +31,11 @@ use App\Models\Produto;
     
         <x-admin.filter cols="2">
             <x-admin.label label="Categoria"/>
-            <x-admin.select name="categoria_id"
-                            :items="$categorias"
-                            :selected-item="$filters['categoria_id']"
-                            placeholder="Todas"/>
+            <select name="categoria_id" class="form-control">
+                @foreach($categorias as $categoria)
+                    <option value="{{ $categoria['id'] }}">{{ $categoria['nome'] }}</option>
+                @endforeach
+            </select>
         </x-admin.filter>
         
         <!-- Filtro de Data de Criação -->
