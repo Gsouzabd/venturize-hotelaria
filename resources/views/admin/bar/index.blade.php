@@ -135,6 +135,31 @@ $contadores = collect($statusMesaNoDia)->countBy('status');
   </div>
 </div>
 
+@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/echo.js'])<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script>
+  // Enable Pusher logging - don't include this in production
+  Pusher.logToConsole = true;
+
+  // Configure Pusher
+  var pusher = new Pusher('3dd459043e651c75511f', {
+      cluster: 'sa1'
+  });
+
+  // Subscribe to channel
+  var channel = pusher.subscribe('itens');
+
+  // Bind to event
+  channel.bind('item.adicionado', function(data) {
+    if (data.pdf_url) {
+        const printWindow = window.open(data.pdf_url, '_blank');
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+    }
+  });
+</script>
+
+
 <script>
     $(document).ready(function(){
         $('[data-toggle="tooltip"]').tooltip(); 

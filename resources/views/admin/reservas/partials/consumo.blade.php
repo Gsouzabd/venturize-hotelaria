@@ -457,7 +457,7 @@
                     if (data.pdf_url) {
                         const printWindow = window.open(data.pdf_url, '_blank');
                         printWindow.onload = function() {
-                            printWindow.print();
+                            // printWindow.print();
                         };
                     }
                     if (data.success) {

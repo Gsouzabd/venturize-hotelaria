@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin\Bar;
 
 use Carbon\Carbon;
-use App\Models\Cliente;
-use App\Models\Usuario;
-use App\Services\Bar\MesaService;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\Quarto;
+use App\Events\MyEvent;
+use App\Models\Cliente;
 use App\Models\Reserva;
+use App\Models\Usuario;
+use Illuminate\Http\Request;
+use App\Services\Bar\MesaService;
+use App\Http\Controllers\Controller;
 
 class BarHomeController extends Controller
 {
@@ -22,6 +23,8 @@ class BarHomeController extends Controller
 
     public function index(Request $request)
     {
+        // event(new MyEvent('hello world'));
+
         $totalUsuarios = Usuario::count();
         $totalClientes = Cliente::count();
 

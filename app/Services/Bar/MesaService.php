@@ -2,6 +2,7 @@
 
 namespace App\Services\Bar;
 
+use Exception;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -9,9 +10,12 @@ use App\Models\Produto;
 use App\Models\Reserva;
 use App\Models\Bar\Mesa;
 use App\Models\Bar\Pedido;
+use Mike42\Escpos\Printer;
 use App\Models\LocalEstoque;
 use Illuminate\Support\Facades\DB;
 use App\Services\MovimentacaoEstoqueService;
+use Illuminate\Container\Attributes\Log;
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 
 class MesaService {
 
@@ -414,4 +418,34 @@ class MesaService {
 
         return $dompdf->stream('extrato_reserva.pdf');
     }
-}
+
+
+
+    public function imprimirCupom($conteudo) {
+            try {
+                // Nome da impressora (configure o nome da impressora no sistema operacional)
+                $nomeImpressora = "ELGIN_I9"; // Substitua pelo nome configurado no sistema
+
+                // Conexão com a impressora
+                $connector = new WindowsPrintConnector($nomeImpressora);
+                $printer = new Printer($connector);
+
+                // Adicionar conteúdo ao cupom
+                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->text("=== CUPOM ===\n\n");
+                $printer->setJustification(Printer::JUSTIFY_LEFT);
+                $printer->text($conteudo . "\n\n");
+                $printer->text("Obrigado por sua compra!\n");
+
+                Log::info("Impressão realizada com sucesso.");
+
+                // Cortar papel e finalizar
+                $printer->cut();
+                $printer->close();
+            } catch (Exception $e) {
+                // Tratamento de erro
+                error_log("Erro ao imprimir: " . $e->getMessage());
+            }
+        }
+
+    }

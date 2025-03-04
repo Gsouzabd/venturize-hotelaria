@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin\Bar;
 
+use App\Events\MyEvent;
 use App\Models\Cliente;
 use App\Models\Produto;
 use App\Models\Bar\Mesa;
 use App\Models\Categoria;
 use App\Models\Bar\Pedido;
 use Illuminate\Http\Request;
+use App\Events\ItemAdicionado;
 use App\Services\Bar\MesaService;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class PedidoController extends Controller
@@ -80,19 +83,31 @@ class PedidoController extends Controller
                         ->route('admin.bar.pedidos.edit', ['id' => $pedido->id])
                         ->with('notice', 'Observações salvas com sucesso.');
                 }
-                if ($data['action'] == "add-itens") {
+                if ($data['action'] === 'add-itens') {
+                    // Adicionar itens ao pedido
                     $itens = $this->mesaService->adicionarItemPedido($data);
-        
+                
+                    // Gerar conteúdo do PDF para o cupom
                     $pdfContent = $this->mesaService->gerarCupomItemAdicionado($data['pedido_id'], $itens);
-        
-                    // Salvar o PDF em um arquivo temporário
                     $pdfPath = storage_path("app/public/cupom_pedido_{$data['pedido_id']}.pdf");
                     file_put_contents($pdfPath, $pdfContent);
-        
-                    // Retornar uma resposta que abre o PDF em uma nova aba
+                    $pdfUrl = asset("storage/cupom_pedido_{$data['pedido_id']}.pdf");
+                
+                    // Disparar o evento
+                    event(new ItemAdicionado($data, $itens, $pdfUrl));
+                
+                    $conteudoCupom = "Pedido ID: " . $data['pedido_id'] . "\n";
+                    foreach ($itens as $item) {
+                        $conteudoCupom .= "{$item['nome']} - R$ {$item['preco']}\n";
+                    }
+                
+                    // Acionar a impressão
+                    $this->mesaService->imprimirCupom($conteudoCupom);
+                
+                    // Retornar resposta com o URL do PDF
                     return response()->json([
                         'success' => 'Itens adicionados ao pedido com sucesso.',
-                        'pdf_url' => asset("storage/cupom_pedido_{$data['pedido_id']}.pdf")
+                        'pdf_url' => $pdfUrl,
                     ]);
                 } elseif ($data['action'] == "remove-item") {
                     $itensCancelados = $this->mesaService->cancelarItemPedido($data);
