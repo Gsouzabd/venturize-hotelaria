@@ -13,16 +13,16 @@ class Usuario extends Authenticatable
     protected $fillable = [
         'nome',
         'email',
-        'password', // Use 'password' instead of 'senha' for default Laravel conventions
+        'senha', // Campo correto na tabela é 'senha'
         'tipo',
         'grupo_usuario_id',
         'fl_ativo',
     ];
 
     // Ensure the password is hashed when set
-    public function setPasswordAttribute($password)
+    public function setSenhaAttribute($senha)
     {
-        $this->attributes['password'] = bcrypt($password);
+        $this->attributes['senha'] = bcrypt($senha);
     }
 
     // Relação com Grupo de Usuário

@@ -11,6 +11,7 @@ use App\Models\Bar\Pedido;
 use Illuminate\Http\Request;
 use App\Events\ItemAdicionado;
 use App\Services\Bar\MesaService;
+use App\Services\PrinterService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
@@ -18,11 +19,13 @@ class PedidoController extends Controller
 {
     private Pedido $model;
     private MesaService $mesaService;
+    private PrinterService $printerService;
 
-    public function __construct(Pedido $model, MesaService $mesaService)
+    public function __construct(Pedido $model, MesaService $mesaService, PrinterService $printerService)
     {
         $this->model = $model;
         $this->mesaService = $mesaService;
+        $this->printerService = $printerService;
     }
 
     public function index(Request $request)
@@ -183,12 +186,50 @@ class PedidoController extends Controller
     public function showCupomParcial($idPedido)
     {
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
-        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
+        
+        // Imprimir automaticamente em todas as impressoras configuradas usando HTML original
+        try {
+            // Usar o novo método que mantém o layout original do template
+            $printResults = $this->printerService->printHtmlToAllPrinters($idPedido);
+            
+            // Log dos resultados da impressão
+            foreach ($printResults as $result) {
+                if ($result['success']) {
+                    Log::info("Cupom parcial impresso com sucesso na {$result['printer']} ({$result['ip']})");
+                } else {
+                    Log::warning("Falha ao imprimir cupom parcial na {$result['printer']} ({$result['ip']}): {$result['message']}");
+                }
+            }
+            
+            // Adicionar informações de impressão na resposta
+            $printStatus = collect($printResults)->map(function($result) {
+                return [
+                    'printer' => $result['printer'],
+                    'success' => $result['success'],
+                    'message' => $result['message']
+                ];
+            })->toArray();
+            
+            // Retornar o PDF com headers adicionais sobre o status da impressão
+             return response($pdfOutput, 200, [
+                 'Content-Type' => 'application/pdf',
+                 'X-Print-Status' => json_encode($printStatus)
+             ]);
+                 
+         } catch (\Exception $e) {
+             Log::error("Erro ao imprimir cupom parcial: {$e->getMessage()}");
+             
+             // Mesmo com erro na impressão, retornar o PDF
+             return response($pdfOutput, 200, [
+                 'Content-Type' => 'application/pdf',
+                 'X-Print-Error' => $e->getMessage()
+             ]);
+        }
     }
 
     public function showExtratoParcial($idPedido)
     {
         $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
-        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
+        return response($pdfOutput, 200, ['Content-Type' => 'application/pdf']);
     }
 }
