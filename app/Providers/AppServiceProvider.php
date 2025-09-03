@@ -6,6 +6,7 @@ use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\URL;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -24,7 +25,15 @@ class AppServiceProvider extends ServiceProvider
 
      public function boot()
      {
+         // Forçar HTTPS em produção (Render.com)
+         if (config('app.env') === 'production') {
+             URL::forceScheme('https');
+         }
 
+         // Configurar trusted proxies para Render.com
+         if (config('app.env') === 'production') {
+             $this->app['request']->server->set('HTTPS', 'on');
+         }
      }
     
 }

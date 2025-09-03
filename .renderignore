@@ -1,0 +1,83 @@
+# Arquivos e diretórios ignorados no deploy do Render.com
+
+# Documentação
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Arquivos de desenvolvimento
+.env.local
+.env.development
+.env.test
+.phpunit.result.cache
+phpunit.xml
+.phpunit.cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Logs
+logs/
+*.log
+storage/logs/*.log
+
+# Cache
+.cache/
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+
+# Uploads temporários
+storage/app/temp/*
+storage/app/uploads/temp/*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Heroku (arquivos antigos)
+Procfile
+app.json
+.user.ini
+HEROKU_DEPLOY.md
+
+# Testes
+tests/
+phpunit.xml
+.phpunit.result.cache
+coverage/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Dependências de desenvolvimento
+composer.lock
+package-lock.json
+yarn.lock
