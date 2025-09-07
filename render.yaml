@@ -4,7 +4,6 @@ services:
     runtime: docker
     plan: starter
     buildCommand: ./build.sh
-    startCommand: ./start.sh
     healthCheckPath: /
     envVars:
       - key: APP_NAME
@@ -41,7 +40,6 @@ services:
     runtime: docker
     plan: starter
     buildCommand: ./build.sh
-    startCommand: php artisan queue:work --verbose --tries=3 --timeout=90
     envVars:
       - key: DATABASE_URL
         fromService:
