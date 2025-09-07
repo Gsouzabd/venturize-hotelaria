@@ -1,20 +1,20 @@
 services:
   - type: web
     name: venturize-hotelaria
-    runtime: php
+    env: php
     plan: starter
     buildCommand: ./build.sh
     startCommand: ./start.sh
     healthCheckPath: /
     envVars:
       - key: APP_NAME
-        value: "Venturize Hotelaria"
+        value: Venturize Hotelaria
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: false
       - key: APP_TIMEZONE
-        value: "America/Sao_Paulo"
+        value: America/Sao_Paulo
       - key: APP_LOCALE
         value: pt_BR
       - key: APP_FALLBACK_LOCALE
@@ -38,10 +38,9 @@ services:
     
   - type: worker
     name: venturize-hotelaria-worker
-    runtime: php
+    env: php
     plan: starter
-    buildCommand: |
-      composer install --no-dev --optimize-autoloader
+    buildCommand: composer install --no-dev --optimize-autoloader
     startCommand: php artisan queue:work --verbose --tries=3 --timeout=90
     envVars:
       - fromService:
@@ -54,8 +53,3 @@ databases:
     plan: starter
     databaseName: venturize_hotelaria
     user: venturize_user
-    
-# Opcional: Redis para cache e sessões
-# - type: redis
-#   name: venturize-hotelaria-redis
-#   plan: starter
