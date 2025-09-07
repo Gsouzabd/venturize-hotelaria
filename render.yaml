@@ -1,7 +1,6 @@
 services:
   - type: web
     name: venturize-hotelaria
-    environment: php
     plan: starter
     buildCommand: ./build.sh
     startCommand: ./start.sh
@@ -38,7 +37,6 @@ services:
     
   - type: worker
     name: venturize-hotelaria-worker
-    environment: php
     plan: starter
     buildCommand: ./build.sh
     startCommand: php artisan queue:work --verbose --tries=3 --timeout=90
