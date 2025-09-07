@@ -1,7 +1,7 @@
 services:
   - type: web
     name: venturize-hotelaria
-    env: php
+    environment: php
     plan: starter
     buildCommand: ./build.sh
     startCommand: ./start.sh
@@ -38,12 +38,13 @@ services:
     
   - type: worker
     name: venturize-hotelaria-worker
-    env: php
+    environment: php
     plan: starter
-    buildCommand: composer install --no-dev --optimize-autoloader
+    buildCommand: ./build.sh
     startCommand: php artisan queue:work --verbose --tries=3 --timeout=90
     envVars:
-      - fromService:
+      - key: DATABASE_URL
+        fromService:
           type: web
           name: venturize-hotelaria
           envVarKey: DATABASE_URL
