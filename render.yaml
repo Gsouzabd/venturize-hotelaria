@@ -1,6 +1,7 @@
 services:
   - type: web
     name: venturize-hotelaria
+    runtime: docker
     plan: starter
     buildCommand: ./build.sh
     startCommand: ./start.sh
@@ -37,6 +38,7 @@ services:
     
   - type: worker
     name: venturize-hotelaria-worker
+    runtime: docker
     plan: starter
     buildCommand: ./build.sh
     startCommand: php artisan queue:work --verbose --tries=3 --timeout=90
