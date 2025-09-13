@@ -327,6 +327,44 @@
 
         gerarParcialBtn.addEventListener('click', function () {
             const pedidoId = {{ $pedido->id }};
+            
+            // Primeiro, chama a API de impressão para disponibilizar os dados para o agente
+            fetch(`/api/print/pedido/${pedidoId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Dados disponibilizados para o agente de impressão:', data.data);
+                    
+                    // Opcional: Mostrar notificação de sucesso
+                    const notification = document.createElement('div');
+                    notification.className = 'alert alert-success alert-dismissible fade show';
+                    notification.innerHTML = `
+                        <strong>Sucesso!</strong> Dados enviados para o agente de impressão.
+                        <button type="button" class="close" data-dismiss="alert">
+                            <span>&times;</span>
+                        </button>
+                    `;
+                    document.querySelector('.container-fluid').prepend(notification);
+                    
+                    // Remove a notificação após 5 segundos
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 5000);
+                } else {
+                    console.error('Erro na API de impressão:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao chamar API de impressão:', error);
+            });
+            
+            // Em seguida, gera o PDF como antes (funcionalidade original mantida)
             fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
                 method: 'GET',
                 headers: {
@@ -341,7 +379,7 @@
                 window.URL.revokeObjectURL(url);
             })
             .catch(error => console.error('Error:', error));
-        });
+         });
 
         const gerarExtratoBtn = document.getElementById('gerarExtratoBtn');
         gerarExtratoBtn.addEventListener('click', function () {
