@@ -41,4 +41,10 @@ class Usuario extends Authenticatable
     {
         return $this->grupoUsuario->permissoes->contains('nome', $permissao);
     }
+
+    // Configurar o campo de senha para autenticação
+    public function getAuthPassword()
+    {
+        return $this->senha;
+    }
 }
