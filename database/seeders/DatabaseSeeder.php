@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             ProdutoSeeder::class,
             LocaisEstoqueTableSeeder::class,
             EstoqueTableSeeder::class,
+            MesaSeeder::class,
         ]);
 
     }
