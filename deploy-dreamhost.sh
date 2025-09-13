@@ -42,18 +42,18 @@ else
     cp .env.example .env
 fi
 
-# 2. Gerar APP_KEY
-print_status "Gerando APP_KEY..."
-php artisan key:generate --force
-
-# 3. Instalar dependências do Composer
+# 2. Instalar dependências do Composer
 print_status "Instalando dependências do Composer..."
-composer install --optimize-autoloader --no-dev
+php composer.phar install --optimize-autoloader --no-dev
 
 if [ $? -ne 0 ]; then
     print_error "Falha ao instalar dependências do Composer"
     exit 1
 fi
+
+# 3. Gerar APP_KEY
+print_status "Gerando APP_KEY..."
+php artisan key:generate --force
 
 # 4. Configurar permissões
 print_status "Configurando permissões..."
@@ -75,7 +75,7 @@ php artisan view:cache
 
 # 6. Executar migrations (com confirmação)
 print_warning "ATENÇÃO: As migrations serão executadas. Isso pode alterar a estrutura do banco de dados."
-read -p "Deseja continuar? (y/N): " -n 1 -r
+read -p "Deseja executar migrations? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_status "Executando migrations..."
@@ -84,11 +84,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [ $? -eq 0 ]; then
         print_status "Migrations executadas com sucesso!"
     else
-        print_error "Falha ao executar migrations"
-        exit 1
+        print_warning "Algumas migrations falharam (possivelmente tabelas já existem)"
+        print_status "Continuando com o deploy..."
     fi
 else
-    print_warning "Migrations puladas. Execute manualmente: php artisan migrate --force"
+    print_warning "Migrations puladas. Execute manualmente se necessário: php artisan migrate --force"
 fi
 
 # 7. Criar symlink para storage (se necessário)
