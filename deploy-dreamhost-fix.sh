@@ -36,13 +36,13 @@ print_status "Verificando estrutura do projeto..."
 print_status "Verificando instalação do Composer..."
 if ! command -v composer &> /dev/null; then
     print_warning "Composer não encontrado. Instalando..."
-    
+
     # Baixar e instalar Composer
     curl -sS https://getcomposer.org/installer | php
-    
+
     if [ $? -eq 0 ]; then
         print_status "Composer instalado com sucesso!"
-        
+
         # Verificar se funciona
         if php composer.phar --version &> /dev/null; then
             print_status "Composer funcionando corretamente"
@@ -107,22 +107,22 @@ php artisan route:cache
 php artisan view:cache
 
 # 7. Executar migrations (com confirmação)
-print_warning "ATENÇÃO: As migrations serão executadas. Isso pode alterar a estrutura do banco de dados."
-read -p "Deseja continuar? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Executando migrations..."
-    php artisan migrate --force
-    
-    if [ $? -eq 0 ]; then
-        print_status "Migrations executadas com sucesso!"
-    else
-        print_error "Falha ao executar migrations. Verifique as configurações do banco de dados no .env"
-        print_warning "Você pode executar as migrations manualmente depois: php artisan migrate --force"
-    fi
-else
-    print_warning "Migrations puladas. Execute manualmente: php artisan migrate --force"
-fi
+# print_warning "ATENÇÃO: As migrations serão executadas. Isso pode alterar a estrutura do banco de dados."
+# read -p "Deseja continuar? (y/N): " -n 1 -r
+# echo
+# if [[ $REPLY =~ ^[Yy]$ ]]; then
+#     print_status "Executando migrations..."
+#     php artisan migrate --force
+
+#     if [ $? -eq 0 ]; then
+#         print_status "Migrations executadas com sucesso!"
+#     else
+#         print_error "Falha ao executar migrations. Verifique as configurações do banco de dados no .env"
+#         print_warning "Você pode executar as migrations manualmente depois: php artisan migrate --force"
+#     fi
+# else
+#     print_warning "Migrations puladas. Execute manualmente: php artisan migrate --force"
+# fi
 
 # 8. Criar symlink para storage (se necessário)
 if [ ! -L "public/storage" ]; then
