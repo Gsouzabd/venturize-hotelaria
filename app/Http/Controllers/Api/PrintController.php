@@ -7,6 +7,7 @@ use App\Models\Bar\ImpressaoPedido;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class PrintController extends Controller
 {
@@ -108,7 +109,17 @@ class PrintController extends Controller
             
             // Gerenciar registro de impressão: atualizar específico, pendente existente ou criar novo
              $impressaoAtual = null;
-              if ($impressaoId) {
+             
+             // Debug: log das condições
+             Log::info('Debug impressão', [
+                 'pedido_id' => $pedidoId,
+                 'impressao_id' => $impressaoId,
+                 'tem_pendente' => $temPendente,
+                 'foi_impresso' => $foiImpresso,
+                 'forcar_impressao' => $forcarImpressao
+             ]);
+             
+               if ($impressaoId) {
                   // Atualizar impressão específica pelo ID fornecido
                   $impressaoEspecifica = $pedido->impressoes()->find($impressaoId);
                   if ($impressaoEspecifica) {
