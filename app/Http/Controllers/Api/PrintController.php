@@ -11,12 +11,56 @@ use Illuminate\Http\JsonResponse;
 class PrintController extends Controller
 {
     /**
-     * Gera dados do pedido em formato JSON para o agente de impressão
+     * Verifica o status de impressão de um pedido
      *
      * @param int $pedidoId
      * @return JsonResponse
      */
-    public function getPedidoForPrint(int $pedidoId): JsonResponse
+    public function verificarStatusImpressao(int $pedidoId): JsonResponse
+    {
+        try {
+            $pedido = Pedido::with(['impressoes'])->findOrFail($pedidoId);
+            
+            $foiImpresso = $pedido->foiImpresso();
+             $temPendente = $pedido->temImpressaoPendente();
+             $ultimaImpressao = $pedido->ultimaImpressao;
+             
+             return response()->json([
+                 'success' => true,
+                 'data' => [
+                     'pedido_id' => $pedidoId,
+                     'foi_impresso' => $foiImpresso,
+                     'tem_impressao_pendente' => $temPendente,
+                     'pode_imprimir_diretamente' => !$foiImpresso && !$temPendente,
+                     'requer_confirmacao' => $foiImpresso || $temPendente,
+                     'ultima_impressao' => $ultimaImpressao ? [
+                         'id' => $ultimaImpressao->id,
+                         'status' => $ultimaImpressao->status_impressao,
+                         'agente' => $ultimaImpressao->agente_impressao,
+                         'data' => $ultimaImpressao->created_at->format('d/m/Y H:i:s')
+                     ] : null,
+                     'total_impressoes' => $pedido->totalImpressoes()
+                 ],
+                 'message' => 'Status de impressão verificado com sucesso'
+             ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao verificar status de impressão: ' . $e->getMessage(),
+                'error_code' => 'CHECK_PRINT_STATUS_ERROR'
+            ], 500);
+        }
+    }
+
+    /**
+     * Gera dados do pedido em formato JSON para o agente de impressão
+     *
+     * @param int $pedidoId
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getPedidoForPrint(int $pedidoId, Request $request): JsonResponse
     {
         try {
             // Buscar o pedido com todos os relacionamentos necessários
@@ -25,8 +69,58 @@ class PrintController extends Controller
                 'cliente',
                 'reserva.quarto',
                 'itens.produto.categoria',
-                'itens.operador'
+                'itens.operador',
+                'impressoes'
             ])->findOrFail($pedidoId);
+            
+            // Verificar status de impressão
+             $foiImpresso = $pedido->foiImpresso();
+             $temPendente = $pedido->temImpressaoPendente();
+             $forcarImpressao = $request->input('forcar_impressao', false);
+            
+            // Se já foi impresso ou tem pendente e não está forçando, retornar aviso
+             if (($foiImpresso || $temPendente) && !$forcarImpressao) {
+                 $ultimaImpressao = $pedido->ultimaImpressao;
+                 
+                 return response()->json([
+                     'success' => false,
+                     'requires_confirmation' => true,
+                     'data' => [
+                         'pedido_id' => $pedidoId,
+                         'foi_impresso' => $foiImpresso,
+                         'tem_impressao_pendente' => $temPendente,
+                         'ultima_impressao' => $ultimaImpressao ? [
+                             'status' => $ultimaImpressao->status_impressao,
+                             'agente' => $ultimaImpressao->agente_impressao,
+                             'data' => $ultimaImpressao->created_at->format('d/m/Y H:i:s')
+                         ] : null,
+                         'total_impressoes' => $pedido->totalImpressoes()
+                     ],
+                     'message' => $foiImpresso 
+                         ? 'Este pedido já foi impresso anteriormente. Deseja imprimir novamente?' 
+                         : 'Este pedido possui uma impressão pendente. Deseja criar uma nova solicitação de impressão?',
+                     'error_code' => $foiImpresso ? 'ALREADY_PRINTED' : 'PENDING_PRINT'
+                 ], 409); // 409 Conflict
+             }
+            
+            // Se tem impressão pendente e está forçando, não criar novo registro
+            if ($temPendente && $forcarImpressao) {
+                // Apenas retornar os dados sem criar novo registro na tabela impressoes_pedidos
+            } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
+                // Criar registro de impressão pendente apenas se não existir um pendente
+                 if (!$temPendente) {
+                     $pedido->impressoes()->create([
+                         'agente_impressao' => $request->input('agente', 'sistema_web'),
+                         'ip_origem' => $request->ip(),
+                         'status_impressao' => 'pendente',
+                         'dados_impressao' => [
+                             'user_agent' => $request->userAgent(),
+                             'timestamp_solicitacao' => now()->toISOString(),
+                             'tipo_solicitacao' => 'cupom_parcial'
+                         ]
+                     ]);
+                 }
+            }
 
             // Estruturar os dados para impressão
             $dadosImpressao = [

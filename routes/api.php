@@ -14,6 +14,9 @@ Route::post('/login', [LoginController::class, 'login']);
 
 // Rotas da API de Impressão
 Route::prefix('print')->name('api.print.')->group(function () {
+    // Verificar status de impressão de um pedido
+    Route::get('/pedido/{pedidoId}/status', [PrintController::class, 'verificarStatusImpressao'])->name('verificar-status');
+    
     // Obter dados do pedido para impressão
     Route::get('/pedido/{pedidoId}', [PrintController::class, 'getPedidoForPrint'])->name('pedido');
     
