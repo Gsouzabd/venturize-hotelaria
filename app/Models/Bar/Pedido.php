@@ -86,14 +86,6 @@ class Pedido extends Model
     }
 
     /**
-     * Verifica se tem impressão em processamento
-     */
-    public function temImpressaoProcessando()
-    {
-        return $this->impressoes()->where('status_impressao', 'processando')->exists();
-    }
-
-    /**
      * Conta total de impressões bem-sucedidas
      */
     public function totalImpressoes()

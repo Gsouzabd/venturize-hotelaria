@@ -127,7 +127,6 @@ class PrintController extends Controller
                         'updated_at' => $pedido->updated_at->format('d/m/Y H:i:s'),
                         'itens_count' => $pedido->itens->count(),
                         'tem_impressao_pendente' => $pedido->temImpressaoPendente(),
-                        'tem_impressao_processando' => $pedido->temImpressaoProcessando(),
                         'ultima_tentativa_impressao' => $pedido->ultimaImpressao ? 
                             $pedido->ultimaImpressao->created_at->format('d/m/Y H:i:s') : null
                     ];

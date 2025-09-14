@@ -73,14 +73,6 @@ class ImpressaoPedido extends Model
     }
 
     /**
-     * Marcar como processando
-     */
-    public function marcarComoProcessando()
-    {
-        $this->update(['status_impressao' => 'processando']);
-    }
-
-    /**
      * Marcar como sucesso
      */
     public function marcarComoSucesso($dadosExtras = [])

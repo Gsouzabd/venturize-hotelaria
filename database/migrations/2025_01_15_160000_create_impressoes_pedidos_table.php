@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('pedido_id')->constrained('pedidos')->onDelete('cascade');
             $table->string('agente_impressao')->default('sistema'); // sistema, agente_externo, manual
             $table->string('ip_origem')->nullable();
-            $table->enum('status_impressao', ['pendente', 'processando', 'sucesso', 'erro'])->default('pendente');
+            $table->enum('status_impressao', ['pendente', 'sucesso', 'erro'])->default('pendente');
             $table->text('detalhes_erro')->nullable();
             $table->json('dados_impressao')->nullable(); // dados extras como impressora usada, etc.
             $table->timestamps();
