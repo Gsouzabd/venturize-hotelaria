@@ -203,11 +203,13 @@ class PrintController extends Controller
     public function getPedidosPendentes(): JsonResponse
     {
         try {
-            // Buscar pedidos abertos que não foram impressos com sucesso
+            // Buscar pedidos abertos que têm impressões pendentes
             $pedidosPendentes = Pedido::with(['mesa', 'cliente', 'reserva.quarto', 'ultimaImpressao'])
                 ->where('status', 'aberto')
                 ->whereHas('itens')
-                ->naoImpressos() // Usando o scope criado no model
+                ->whereHas('impressoes', function($query) {
+                    $query->where('status_impressao', 'pendente');
+                })
                 ->orderBy('updated_at', 'desc')
                 ->get()
                 ->map(function ($pedido) {
