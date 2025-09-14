@@ -152,8 +152,8 @@ class PrintController extends Controller
                       ]);
                       $impressaoAtual = $impressaoPendente;
                   }
-              } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
-                  // Criar novo registro de impressão pendente apenas se não existir
+              } else {
+                  // Criar novo registro de impressão pendente
                   Log::info('Debug impressão - Criando nova impressão');
                   $impressaoAtual = $pedido->impressoes()->create([
                       'agente_impressao' => $request->input('agente', 'sistema_web'),
