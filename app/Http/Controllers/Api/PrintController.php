@@ -78,6 +78,7 @@ class PrintController extends Controller
              $foiImpresso = $pedido->foiImpresso();
              $temPendente = $pedido->temImpressaoPendente();
              $forcarImpressao = $request->input('forcar_impressao', false);
+             $impressaoId = $request->input('impressao_id'); // ID específico da impressão para atualizar
             
             // Se já foi impresso (mas não pendente) e não está forçando, retornar aviso
              if ($foiImpresso && !$temPendente && !$forcarImpressao) {
@@ -105,35 +106,50 @@ class PrintController extends Controller
              // API processa pedidos pendentes sem crítica (agente lista e imprime)
              // Críticas devem ser feitas apenas na interface web, não na API
             
-            // Gerenciar registro de impressão: atualizar pendente existente ou criar novo
-            if ($temPendente) {
-                // Atualizar registro pendente existente com novos dados da solicitação
-                $impressaoPendente = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
-                if ($impressaoPendente) {
-                    $impressaoPendente->update([
-                        'agente_impressao' => $request->input('agente', 'sistema_web'),
-                        'ip_origem' => $request->ip(),
-                        'dados_impressao' => array_merge($impressaoPendente->dados_impressao ?? [], [
-                            'user_agent' => $request->userAgent(),
-                            'timestamp_ultima_solicitacao' => now()->toISOString(),
-                            'tipo_solicitacao' => 'cupom_parcial'
-                        ]),
-                        'updated_at' => now()
-                    ]);
-                }
-            } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
-                // Criar novo registro de impressão pendente apenas se não existir
-                $pedido->impressoes()->create([
-                    'agente_impressao' => $request->input('agente', 'sistema_web'),
-                    'ip_origem' => $request->ip(),
-                    'status_impressao' => 'pendente',
-                    'dados_impressao' => [
-                        'user_agent' => $request->userAgent(),
-                        'timestamp_solicitacao' => now()->toISOString(),
-                        'tipo_solicitacao' => 'cupom_parcial'
-                    ]
-                ]);
-            }
+            // Gerenciar registro de impressão: atualizar específico, pendente existente ou criar novo
+             if ($impressaoId) {
+                 // Atualizar impressão específica pelo ID fornecido
+                 $impressaoEspecifica = $pedido->impressoes()->find($impressaoId);
+                 if ($impressaoEspecifica) {
+                     $impressaoEspecifica->update([
+                         'agente_impressao' => $request->input('agente', 'sistema_web'),
+                         'ip_origem' => $request->ip(),
+                         'dados_impressao' => array_merge($impressaoEspecifica->dados_impressao ?? [], [
+                             'user_agent' => $request->userAgent(),
+                             'timestamp_ultima_solicitacao' => now()->toISOString(),
+                             'tipo_solicitacao' => 'cupom_parcial'
+                         ]),
+                         'updated_at' => now()
+                     ]);
+                 }
+             } else if ($temPendente) {
+                 // Atualizar registro pendente existente com novos dados da solicitação
+                 $impressaoPendente = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
+                 if ($impressaoPendente) {
+                     $impressaoPendente->update([
+                         'agente_impressao' => $request->input('agente', 'sistema_web'),
+                         'ip_origem' => $request->ip(),
+                         'dados_impressao' => array_merge($impressaoPendente->dados_impressao ?? [], [
+                             'user_agent' => $request->userAgent(),
+                             'timestamp_ultima_solicitacao' => now()->toISOString(),
+                             'tipo_solicitacao' => 'cupom_parcial'
+                         ]),
+                         'updated_at' => now()
+                     ]);
+                 }
+             } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
+                 // Criar novo registro de impressão pendente apenas se não existir
+                 $pedido->impressoes()->create([
+                     'agente_impressao' => $request->input('agente', 'sistema_web'),
+                     'ip_origem' => $request->ip(),
+                     'status_impressao' => 'pendente',
+                     'dados_impressao' => [
+                         'user_agent' => $request->userAgent(),
+                         'timestamp_solicitacao' => now()->toISOString(),
+                         'tipo_solicitacao' => 'cupom_parcial'
+                     ]
+                 ]);
+             }
 
             // Estruturar os dados para impressão
             $dadosImpressao = [
@@ -193,9 +209,13 @@ class PrintController extends Controller
                 'tipo_cupom' => 'parcial'
             ];
 
+            // Obter o ID da impressão mais recente para retornar na resposta
+            $ultimaImpressao = $pedido->impressoes()->orderBy('updated_at', 'desc')->first();
+            
             return response()->json([
                 'success' => true,
                 'data' => $dadosImpressao,
+                'impressao_id' => $ultimaImpressao ? $ultimaImpressao->id : null,
                 'message' => 'Dados do pedido gerados com sucesso para impressão'
             ]);
 
@@ -268,19 +288,65 @@ class PrintController extends Controller
     {
         try {
             $pedido = Pedido::findOrFail($pedidoId);
+            $impressaoId = $request->input('impressao_id');
             
-            // Criar registro de impressão bem-sucedida
-            $impressao = $pedido->impressoes()->create([
-                'agente_impressao' => $request->input('agente', 'agente_externo'),
-                'ip_origem' => $request->ip(),
-                'status_impressao' => 'sucesso',
-                'dados_impressao' => [
-                    'user_agent' => $request->userAgent(),
-                    'timestamp_processamento' => now()->toISOString(),
-                    'impressora_usada' => $request->input('impressora'),
-                    'metodo_impressao' => $request->input('metodo', 'api')
-                ]
-            ]);
+            if ($impressaoId) {
+                // Atualizar registro específico existente
+                $impressao = $pedido->impressoes()->find($impressaoId);
+                if (!$impressao) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Registro de impressão não encontrado',
+                        'error_code' => 'IMPRESSAO_NOT_FOUND'
+                    ], 404);
+                }
+                
+                $impressao->update([
+                    'agente_impressao' => $request->input('agente', 'agente_externo'),
+                    'ip_origem' => $request->ip(),
+                    'status_impressao' => 'sucesso',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'user_agent' => $request->userAgent(),
+                        'timestamp_processamento' => now()->toISOString(),
+                        'impressora_usada' => $request->input('impressora'),
+                        'metodo_impressao' => $request->input('metodo', 'api')
+                    ])
+                ]);
+            } else {
+                // Buscar registro em processamento ou pendente para atualizar
+                $impressao = $pedido->impressoes()
+                    ->whereIn('status_impressao', ['processando', 'pendente'])
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($impressao) {
+                    // Atualizar registro existente para sucesso
+                    $impressao->update([
+                        'agente_impressao' => $request->input('agente', 'agente_externo'),
+                        'ip_origem' => $request->ip(),
+                        'status_impressao' => 'sucesso',
+                        'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                            'user_agent' => $request->userAgent(),
+                            'timestamp_processamento' => now()->toISOString(),
+                            'impressora_usada' => $request->input('impressora'),
+                            'metodo_impressao' => $request->input('metodo', 'api')
+                        ])
+                    ]);
+                } else {
+                    // Criar novo registro se não houver em processamento/pendente
+                    $impressao = $pedido->impressoes()->create([
+                        'agente_impressao' => $request->input('agente', 'agente_externo'),
+                        'ip_origem' => $request->ip(),
+                        'status_impressao' => 'sucesso',
+                        'dados_impressao' => [
+                            'user_agent' => $request->userAgent(),
+                            'timestamp_processamento' => now()->toISOString(),
+                            'impressora_usada' => $request->input('impressora'),
+                            'metodo_impressao' => $request->input('metodo', 'api')
+                        ]
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -311,25 +377,66 @@ class PrintController extends Controller
     {
         try {
             $pedido = Pedido::findOrFail($pedidoId);
+            $impressaoId = $request->input('impressao_id');
             
-            // Criar registro de tentativa de impressão
-            $impressao = $pedido->impressoes()->create([
-                'agente_impressao' => $request->input('agente', 'agente_externo'),
-                'ip_origem' => $request->ip(),
-                'status_impressao' => 'processando',
-                'dados_impressao' => [
-                    'user_agent' => $request->userAgent(),
-                    'timestamp_inicio' => now()->toISOString(),
-                    'impressora_alvo' => $request->input('impressora')
-                ]
-            ]);
+            if ($impressaoId) {
+                // Atualizar registro específico existente
+                $impressao = $pedido->impressoes()->find($impressaoId);
+                if (!$impressao) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Registro de impressão não encontrado',
+                        'error_code' => 'IMPRESSAO_NOT_FOUND'
+                    ], 404);
+                }
+                
+                $impressao->update([
+                    'agente_impressao' => $request->input('agente', 'agente_externo'),
+                    'ip_origem' => $request->ip(),
+                    'status_impressao' => 'processando',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'user_agent' => $request->userAgent(),
+                        'timestamp_inicio' => now()->toISOString(),
+                        'impressora_alvo' => $request->input('impressora')
+                    ])
+                ]);
+            } else {
+                // Buscar registro pendente existente ou criar novo
+                $impressao = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
+                
+                if ($impressao) {
+                    // Atualizar registro pendente para processando
+                    $impressao->update([
+                        'agente_impressao' => $request->input('agente', 'agente_externo'),
+                        'ip_origem' => $request->ip(),
+                        'status_impressao' => 'processando',
+                        'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                            'user_agent' => $request->userAgent(),
+                            'timestamp_inicio' => now()->toISOString(),
+                            'impressora_alvo' => $request->input('impressora')
+                        ])
+                    ]);
+                } else {
+                    // Criar novo registro se não houver pendente
+                    $impressao = $pedido->impressoes()->create([
+                        'agente_impressao' => $request->input('agente', 'agente_externo'),
+                        'ip_origem' => $request->ip(),
+                        'status_impressao' => 'processando',
+                        'dados_impressao' => [
+                            'user_agent' => $request->userAgent(),
+                            'timestamp_inicio' => now()->toISOString(),
+                            'impressora_alvo' => $request->input('impressora')
+                        ]
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tentativa de impressão registrada',
                 'pedido_id' => $pedidoId,
                 'impressao_id' => $impressao->id,
-                'timestamp' => $impressao->created_at->format('d/m/Y H:i:s')
+                'timestamp' => $impressao->updated_at->format('d/m/Y H:i:s')
             ]);
 
         } catch (\Exception $e) {
