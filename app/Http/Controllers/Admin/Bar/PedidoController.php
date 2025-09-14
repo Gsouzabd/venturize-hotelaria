@@ -8,6 +8,7 @@ use App\Models\Produto;
 use App\Models\Bar\Mesa;
 use App\Models\Categoria;
 use App\Models\Bar\Pedido;
+use App\Models\Bar\ImpressaoPedido;
 use Illuminate\Http\Request;
 use App\Events\ItemAdicionado;
 use App\Services\Bar\MesaService;
@@ -183,14 +184,48 @@ class PedidoController extends Controller
             ->with('notice', config('app.messages.delete'));
     }
 
-    public function showCupomParcial($idPedido)
+    public function showCupomParcial($idPedido, Request $request)
     {
+        $pedido = $this->model->findOrFail($idPedido);
+        
+        // Verificar se o pedido já foi impresso
+        $jaFoiImpresso = $pedido->foiImpresso();
+        
+        // Se já foi impresso e não foi confirmada a reimpressão, retornar confirmação
+        if ($jaFoiImpresso && !$request->has('confirmar_reimpressao')) {
+            return response()->json([
+                'requires_confirmation' => true,
+                'message' => 'Este pedido já foi impresso anteriormente. Deseja imprimir novamente?',
+                'pedido_id' => $idPedido,
+                'total_impressoes' => $pedido->totalImpressoes(),
+                'ultima_impressao' => $pedido->ultimaImpressao ? $pedido->ultimaImpressao->created_at->format('d/m/Y H:i:s') : null
+            ], 200);
+        }
+        
+        // Registrar tentativa de impressão na tabela impressoes_pedidos
+        $impressao = ImpressaoPedido::create([
+            'pedido_id' => $idPedido,
+            'agente_impressao' => 'sistema',
+            'ip_origem' => $request->ip(),
+            'status_impressao' => 'pendente',
+            'dados_impressao' => [
+                'user_agent' => $request->userAgent(),
+                'tipo_impressao' => 'cupom_parcial',
+                'timestamp_solicitacao' => now()->toISOString()
+            ]
+        ]);
+        
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
+        
+        // Atualizar status para processando
+        $impressao->update(['status_impressao' => 'processando']);
         
         // Imprimir automaticamente em todas as impressoras configuradas usando HTML original
         try {
             // Usar o novo método que mantém o layout original do template
             $printResults = $this->printerService->printHtmlToAllPrinters($idPedido);
+            
+            $sucessoGeral = collect($printResults)->contains('success', true);
             
             // Log dos resultados da impressão
             foreach ($printResults as $result) {
@@ -199,6 +234,26 @@ class PedidoController extends Controller
                 } else {
                     Log::warning("Falha ao imprimir cupom parcial na {$result['printer']} ({$result['ip']}): {$result['message']}");
                 }
+            }
+            
+            // Atualizar status da impressão baseado no resultado
+            if ($sucessoGeral) {
+                $impressao->update([
+                    'status_impressao' => 'sucesso',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'resultados_impressao' => $printResults,
+                        'timestamp_conclusao' => now()->toISOString()
+                    ])
+                ]);
+            } else {
+                $impressao->update([
+                    'status_impressao' => 'erro',
+                    'detalhes_erro' => 'Falha em todas as impressoras configuradas',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'resultados_impressao' => $printResults,
+                        'timestamp_erro' => now()->toISOString()
+                    ])
+                ]);
             }
             
             // Adicionar informações de impressão na resposta
@@ -213,16 +268,30 @@ class PedidoController extends Controller
             // Retornar o PDF com headers adicionais sobre o status da impressão
              return response($pdfOutput, 200, [
                  'Content-Type' => 'application/pdf',
-                 'X-Print-Status' => json_encode($printStatus)
+                 'X-Print-Status' => json_encode($printStatus),
+                 'X-Impressao-ID' => $impressao->id,
+                 'X-Impressao-Status' => $impressao->status_impressao
              ]);
                  
          } catch (\Exception $e) {
              Log::error("Erro ao imprimir cupom parcial: {$e->getMessage()}");
              
+             // Atualizar status da impressão para erro
+             $impressao->update([
+                 'status_impressao' => 'erro',
+                 'detalhes_erro' => $e->getMessage(),
+                 'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                     'timestamp_erro' => now()->toISOString(),
+                     'exception' => $e->getMessage()
+                 ])
+             ]);
+             
              // Mesmo com erro na impressão, retornar o PDF
              return response($pdfOutput, 200, [
                  'Content-Type' => 'application/pdf',
-                 'X-Print-Error' => $e->getMessage()
+                 'X-Print-Error' => $e->getMessage(),
+                 'X-Impressao-ID' => $impressao->id,
+                 'X-Impressao-Status' => 'erro'
              ]);
         }
     }
@@ -231,5 +300,47 @@ class PedidoController extends Controller
     {
         $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
         return response($pdfOutput, 200, ['Content-Type' => 'application/pdf']);
+    }
+
+    /**
+     * Confirma a reimpressão de um cupom parcial
+     */
+    public function confirmarReimpressao($idPedido, Request $request)
+    {
+        // Adicionar parâmetro de confirmação e redirecionar para showCupomParcial
+        $request->merge(['confirmar_reimpressao' => true]);
+        return $this->showCupomParcial($idPedido, $request);
+    }
+
+    /**
+     * Verifica o status de impressão de um pedido
+     */
+    public function statusImpressao($idPedido)
+    {
+        $pedido = $this->model->findOrFail($idPedido);
+        
+        return response()->json([
+            'pedido_id' => $idPedido,
+            'foi_impresso' => $pedido->foiImpresso(),
+            'tem_impressao_pendente' => $pedido->temImpressaoPendente(),
+            'tem_impressao_processando' => $pedido->temImpressaoProcessando(),
+            'total_impressoes' => $pedido->totalImpressoes(),
+            'ultima_impressao' => $pedido->ultimaImpressao ? [
+                'id' => $pedido->ultimaImpressao->id,
+                'status' => $pedido->ultimaImpressao->status_impressao,
+                'agente' => $pedido->ultimaImpressao->agente_impressao,
+                'data' => $pedido->ultimaImpressao->created_at->format('d/m/Y H:i:s'),
+                'detalhes_erro' => $pedido->ultimaImpressao->detalhes_erro
+            ] : null,
+            'historico_impressoes' => $pedido->impressoes()->orderBy('created_at', 'desc')->get()->map(function($impressao) {
+                return [
+                    'id' => $impressao->id,
+                    'status' => $impressao->status_impressao,
+                    'agente' => $impressao->agente_impressao,
+                    'data' => $impressao->created_at->format('d/m/Y H:i:s'),
+                    'detalhes_erro' => $impressao->detalhes_erro
+                ];
+            })
+        ]);
     }
 }

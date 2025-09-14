@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Produto;
+use App\Models\Categoria;
 
 class ProdutoSeeder extends Seeder
 {
@@ -12,7 +13,13 @@ class ProdutoSeeder extends Seeder
      */
     public function run(): void
     {
-        $categorias = array_keys(Produto::CATEGORIAS);
+        // Criar categorias primeiro
+        $categorias = [
+            Categoria::firstOrCreate(['nome' => 'Bebidas'], ['descricao' => 'Bebidas em geral']),
+            Categoria::firstOrCreate(['nome' => 'Comidas'], ['descricao' => 'Comidas em geral']),
+            Categoria::firstOrCreate(['nome' => 'Lanches'], ['descricao' => 'Lanches e petiscos']),
+        ];
+        
         $unidades = array_keys(Produto::UNIDADES);
         $impressoras = Produto::IMPRESSORA;
 
@@ -20,7 +27,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Coca-Cola 350ml',
                 'valor_unitario' => 3.50,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010015',
                 'codigo_interno' => '001',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -33,7 +40,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Pepsi 350ml',
                 'valor_unitario' => 3.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010022',
                 'codigo_interno' => '002',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -46,7 +53,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Água Mineral 500ml',
                 'valor_unitario' => 2.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010039',
                 'codigo_interno' => '003',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -59,7 +66,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Suco de Laranja 1L',
                 'valor_unitario' => 5.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010046',
                 'codigo_interno' => '004',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -72,7 +79,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Cerveja 350ml',
                 'valor_unitario' => 4.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010053',
                 'codigo_interno' => '005',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -85,7 +92,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Hambúrguer',
                 'valor_unitario' => 10.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010060',
                 'codigo_interno' => '006',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -98,7 +105,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Pizza Margherita',
                 'valor_unitario' => 25.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010077',
                 'codigo_interno' => '007',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -111,7 +118,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Salada Caesar',
                 'valor_unitario' => 15.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010084',
                 'codigo_interno' => '008',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -124,7 +131,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Batata Frita',
                 'valor_unitario' => 8.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010091',
                 'codigo_interno' => '009',
                 'impressora' => $impressoras[array_rand($impressoras)],
@@ -137,7 +144,7 @@ class ProdutoSeeder extends Seeder
             [
                 'descricao' => 'Sorvete de Chocolate',
                 'valor_unitario' => 7.00,
-                'categoria_produto' => $categorias[array_rand($categorias)],
+                'categoria_produto' => $categorias[array_rand($categorias)]->id,
                 'codigo_barras_produto' => '7894900010107',
                 'codigo_interno' => '010',
                 'impressora' => $impressoras[array_rand($impressoras)],

@@ -4,6 +4,8 @@
 // Salve como: teste-conexao-simples.php na raiz do projeto no servidor
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Illuminate\Contracts\Http\Kernel;
 
 echo "<h1>🔍 Teste de Conexão - Venturize Hotelaria</h1>";
 echo "<p>Executado em: " . date('Y-m-d H:i:s') . "</p>";
@@ -12,6 +14,11 @@ try {
     // Carregar Laravel
     require_once '../vendor/autoload.php';
     $app = require_once '../bootstrap/app.php';
+    
+    // IMPORTANTE: Fazer o boot da aplicação Laravel
+    $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+    $request = Illuminate\Http\Request::capture();
+    $kernel->bootstrap();
     
     echo "<h2>✅ Laravel carregado com sucesso</h2>";
     

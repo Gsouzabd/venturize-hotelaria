@@ -328,57 +328,115 @@
         gerarParcialBtn.addEventListener('click', function () {
             const pedidoId = {{ $pedido->id }};
             
-            // Primeiro, chama a API de impressão para disponibilizar os dados para o agente
-            fetch(`/api/print/pedido/${pedidoId}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Dados disponibilizados para o agente de impressão:', data.data);
+            // Função para processar a impressão
+            function processarImpressao(confirmarReimpressao = false) {
+                const url = confirmarReimpressao 
+                    ? `/admin/bar/pedidos/${pedidoId}/cupom-parcial/confirmar`
+                    : `/admin/bar/pedidos/${pedidoId}/cupom-parcial`;
                     
-                    // Opcional: Mostrar notificação de sucesso
-                    const notification = document.createElement('div');
-                    notification.className = 'alert alert-success alert-dismissible fade show';
-                    notification.innerHTML = `
-                        <strong>Sucesso!</strong> Dados enviados para o agente de impressão.
-                        <button type="button" class="close" data-dismiss="alert">
-                            <span>&times;</span>
-                        </button>
-                    `;
-                    document.querySelector('.container-fluid').prepend(notification);
+                const method = confirmarReimpressao ? 'POST' : 'GET';
+                
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json, application/pdf'
+                    }
+                })
+                .then(response => {
+                    const contentType = response.headers.get('content-type');
                     
-                    // Remove a notificação após 5 segundos
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 5000);
-                } else {
-                    console.error('Erro na API de impressão:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao chamar API de impressão:', error);
-            });
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        return response.blob();
+                    }
+                })
+                .then(data => {
+                    if (data.requires_confirmation) {
+                        // Mostrar modal de confirmação de reimpressão
+                        const confirmModal = `
+                            <div class="modal fade" id="confirmReimpressaoModal" tabindex="-1" role="dialog">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirmar Reimpressão</h5>
+                                            <button type="button" class="close" data-dismiss="modal">
+                                                <span>&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>${data.message}</p>
+                                            <p><strong>Total de impressões:</strong> ${data.total_impressoes}</p>
+                                            ${data.ultima_impressao ? `<p><strong>Última impressão:</strong> ${data.ultima_impressao}</p>` : ''}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                            <button type="button" class="btn btn-primary" id="confirmarReimpressaoBtn">Sim, Imprimir Novamente</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Remover modal existente se houver
+                        const existingModal = document.getElementById('confirmReimpressaoModal');
+                        if (existingModal) {
+                            existingModal.remove();
+                        }
+                        
+                        // Adicionar modal ao DOM
+                        document.body.insertAdjacentHTML('beforeend', confirmModal);
+                        
+                        // Mostrar modal
+                        $('#confirmReimpressaoModal').modal('show');
+                        
+                        // Adicionar evento ao botão de confirmação
+                        document.getElementById('confirmarReimpressaoBtn').addEventListener('click', function() {
+                            $('#confirmReimpressaoModal').modal('hide');
+                            processarImpressao(true);
+                        });
+                        
+                    } else if (data instanceof Blob) {
+                        // É um PDF - processar normalmente
+                        const url = window.URL.createObjectURL(data);
+                        window.open(url, '_blank');
+                        window.URL.revokeObjectURL(url);
+                        
+                        // Mostrar notificação de sucesso
+                        showNotification('Cupom parcial gerado e enviado para impressão!', 'success');
+                        
+                    } else if (data.error) {
+                        showNotification(data.error, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao gerar cupom parcial:', error);
+                    showNotification('Erro ao gerar cupom parcial. Tente novamente.', 'danger');
+                });
+            }
             
-            // Em seguida, gera o PDF como antes (funcionalidade original mantida)
-            fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => console.error('Error:', error));
+            // Função para mostrar notificações
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show`;
+                notification.innerHTML = `
+                    <strong>${type === 'success' ? 'Sucesso!' : type === 'danger' ? 'Erro!' : 'Info:'}</strong> ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                `;
+                document.querySelector('.container-fluid').prepend(notification);
+                
+                // Remove a notificação após 5 segundos
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+            
+            // Iniciar o processo
+             processarImpressao();
          });
 
         const gerarExtratoBtn = document.getElementById('gerarExtratoBtn');

@@ -22,13 +22,15 @@ class UsuarioAdminSeeder extends Seeder
         }
         
         // Criar o usuário administrador
-        Usuario::create([
-            'nome' => 'danilo',
-            'email' => 'danilo@pousada.com.br',
-            'senha' => bcrypt('admin'), // Usando o campo correto 'senha' em vez de 'password'
-            'tipo' => 'administrador',
-            'grupo_usuario_id' => $grupoAdmin->id,
-            'fl_ativo' => true,
-        ]);
+        Usuario::firstOrCreate(
+            ['email' => 'danilo@pousada.com.br'],
+            [
+                'nome' => 'danilo',
+                'senha' => bcrypt('admin'), // Usando o campo correto 'senha' em vez de 'password'
+                'tipo' => 'administrador',
+                'grupo_usuario_id' => $grupoAdmin->id,
+                'fl_ativo' => true,
+            ]
+        );
     }
 }
