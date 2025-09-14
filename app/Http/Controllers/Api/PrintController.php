@@ -102,28 +102,8 @@ class PrintController extends Controller
                  ], 409); // 409 Conflict
              }
              
-             // Se tem impressão pendente, retornar erro específico (a menos que force)
-             if ($temPendente && !$forcarImpressao) {
-                 $ultimaImpressao = $pedido->ultimaImpressao;
-                 
-                 return response()->json([
-                     'success' => false,
-                     'requires_confirmation' => true,
-                     'data' => [
-                         'pedido_id' => $pedidoId,
-                         'foi_impresso' => $foiImpresso,
-                         'tem_impressao_pendente' => $temPendente,
-                         'ultima_impressao' => $ultimaImpressao ? [
-                             'status' => $ultimaImpressao->status_impressao,
-                             'agente' => $ultimaImpressao->agente_impressao,
-                             'data' => $ultimaImpressao->created_at->format('d/m/Y H:i:s')
-                         ] : null,
-                         'total_impressoes' => $pedido->totalImpressoes()
-                     ],
-                     'message' => 'Este pedido possui uma impressão pendente. Deseja criar uma nova solicitação de impressão?',
-                     'error_code' => 'PENDING_PRINT'
-                 ], 409); // 409 Conflict
-             }
+             // API processa pedidos pendentes sem crítica (agente lista e imprime)
+             // Críticas devem ser feitas apenas na interface web, não na API
             
             // Criar registro de impressão pendente apenas se não existir um pendente
             if (!$temPendente && ($forcarImpressao || (!$foiImpresso && !$temPendente))) {
