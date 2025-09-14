@@ -110,18 +110,9 @@ class PrintController extends Controller
             // Gerenciar registro de impressão: atualizar específico, pendente existente ou criar novo
              $impressaoAtual = null;
              
-             Log::info('Debug impressão - Condições:', [
-                 'pedido_id' => $pedido->id,
-                 'impressao_id' => $impressaoId,
-                 'tem_pendente' => $temPendente,
-                 'foi_impresso' => $foiImpresso,
-                 'forcar_impressao' => $forcarImpressao
-             ]);
-             
                if ($impressaoId) {
                   // Atualizar impressão específica pelo ID fornecido
                   $impressaoEspecifica = $pedido->impressoes()->find($impressaoId);
-                  Log::info('Debug impressão - Impressão específica:', ['encontrada' => !!$impressaoEspecifica]);
                   if ($impressaoEspecifica) {
                       $impressaoEspecifica->update([
                           'agente_impressao' => $request->input('agente', 'sistema_web'),
@@ -138,7 +129,6 @@ class PrintController extends Controller
               } else if ($temPendente) {
                   // Atualizar registro pendente existente com novos dados da solicitação
                   $impressaoPendente = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
-                  Log::info('Debug impressão - Pendente encontrada:', ['encontrada' => !!$impressaoPendente]);
                   if ($impressaoPendente) {
                       $impressaoPendente->update([
                           'agente_impressao' => $request->input('agente', 'sistema_web'),
@@ -154,7 +144,12 @@ class PrintController extends Controller
                   }
               } else {
                   // Criar novo registro de impressão pendente
-                  Log::info('Debug impressão - Criando nova impressão');
+                  Log::debug('PrintController: Criando novo registro de impressão', [
+                      'pedido_id' => $pedido->id,
+                      'agente' => $request->input('agente', 'sistema_web'),
+                      'ip' => $request->ip()
+                  ]);
+                  
                   $impressaoAtual = $pedido->impressoes()->create([
                       'agente_impressao' => $request->input('agente', 'sistema_web'),
                       'ip_origem' => $request->ip(),
@@ -165,12 +160,12 @@ class PrintController extends Controller
                           'tipo_solicitacao' => 'cupom_parcial'
                       ]
                   ]);
+                  
+                  Log::debug('PrintController: Registro criado', [
+                      'impressao_id' => $impressaoAtual ? $impressaoAtual->id : 'NULL',
+                      'impressao_existe' => $impressaoAtual ? 'SIM' : 'NAO'
+                  ]);
               }
-              
-              Log::info('Debug impressão - Resultado final:', [
-                  'impressao_atual_id' => $impressaoAtual ? $impressaoAtual->id : null,
-                  'impressao_atual_existe' => !!$impressaoAtual
-              ]);
 
             // Estruturar os dados para impressão
             $dadosImpressao = [
