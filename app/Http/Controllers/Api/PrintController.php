@@ -55,6 +55,7 @@ class PrintController extends Controller
 
     /**
      * Gera dados do pedido em formato JSON para o agente de impressão
+     * VERSÃO ATUALIZADA - 2024-12-07
      *
      * @param int $pedidoId
      * @param Request $request
@@ -78,8 +79,8 @@ class PrintController extends Controller
              $temPendente = $pedido->temImpressaoPendente();
              $forcarImpressao = $request->input('forcar_impressao', false);
             
-            // Se já foi impresso ou tem pendente e não está forçando, retornar aviso
-             if (($foiImpresso || $temPendente) && !$forcarImpressao) {
+            // Se já foi impresso (mas não pendente) e não está forçando, retornar aviso
+             if ($foiImpresso && !$temPendente && !$forcarImpressao) {
                  $ultimaImpressao = $pedido->ultimaImpressao;
                  
                  return response()->json([
@@ -96,31 +97,49 @@ class PrintController extends Controller
                          ] : null,
                          'total_impressoes' => $pedido->totalImpressoes()
                      ],
-                     'message' => $foiImpresso 
-                         ? 'Este pedido já foi impresso anteriormente. Deseja imprimir novamente?' 
-                         : 'Este pedido possui uma impressão pendente. Deseja criar uma nova solicitação de impressão?',
-                     'error_code' => $foiImpresso ? 'ALREADY_PRINTED' : 'PENDING_PRINT'
+                     'message' => 'Este pedido já foi impresso anteriormente. Deseja imprimir novamente?',
+                     'error_code' => 'ALREADY_PRINTED'
+                 ], 409); // 409 Conflict
+             }
+             
+             // Se tem impressão pendente, retornar erro específico (a menos que force)
+             if ($temPendente && !$forcarImpressao) {
+                 $ultimaImpressao = $pedido->ultimaImpressao;
+                 
+                 return response()->json([
+                     'success' => false,
+                     'requires_confirmation' => true,
+                     'data' => [
+                         'pedido_id' => $pedidoId,
+                         'foi_impresso' => $foiImpresso,
+                         'tem_impressao_pendente' => $temPendente,
+                         'ultima_impressao' => $ultimaImpressao ? [
+                             'status' => $ultimaImpressao->status_impressao,
+                             'agente' => $ultimaImpressao->agente_impressao,
+                             'data' => $ultimaImpressao->created_at->format('d/m/Y H:i:s')
+                         ] : null,
+                         'total_impressoes' => $pedido->totalImpressoes()
+                     ],
+                     'message' => 'Este pedido possui uma impressão pendente. Deseja criar uma nova solicitação de impressão?',
+                     'error_code' => 'PENDING_PRINT'
                  ], 409); // 409 Conflict
              }
             
-            // Se tem impressão pendente e está forçando, não criar novo registro
-            if ($temPendente && $forcarImpressao) {
-                // Apenas retornar os dados sem criar novo registro na tabela impressoes_pedidos
-            } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
-                // Criar registro de impressão pendente apenas se não existir um pendente
-                 if (!$temPendente) {
-                     $pedido->impressoes()->create([
-                         'agente_impressao' => $request->input('agente', 'sistema_web'),
-                         'ip_origem' => $request->ip(),
-                         'status_impressao' => 'pendente',
-                         'dados_impressao' => [
-                             'user_agent' => $request->userAgent(),
-                             'timestamp_solicitacao' => now()->toISOString(),
-                             'tipo_solicitacao' => 'cupom_parcial'
-                         ]
-                     ]);
-                 }
+            // Criar registro de impressão pendente apenas se não existir um pendente
+            if (!$temPendente && ($forcarImpressao || (!$foiImpresso && !$temPendente))) {
+                $pedido->impressoes()->create([
+                    'agente_impressao' => $request->input('agente', 'sistema_web'),
+                    'ip_origem' => $request->ip(),
+                    'status_impressao' => 'pendente',
+                    'dados_impressao' => [
+                        'user_agent' => $request->userAgent(),
+                        'timestamp_solicitacao' => now()->toISOString(),
+                        'tipo_solicitacao' => 'cupom_parcial'
+                    ]
+                ]);
             }
+            
+            // Para pedidos com impressão pendente, a API processa normalmente sem criar novo registro
 
             // Estruturar os dados para impressão
             $dadosImpressao = [
