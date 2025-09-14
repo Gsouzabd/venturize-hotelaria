@@ -105,8 +105,24 @@ class PrintController extends Controller
              // API processa pedidos pendentes sem crítica (agente lista e imprime)
              // Críticas devem ser feitas apenas na interface web, não na API
             
-            // Criar registro de impressão pendente apenas se não existir um pendente
-            if (!$temPendente && ($forcarImpressao || (!$foiImpresso && !$temPendente))) {
+            // Gerenciar registro de impressão: atualizar pendente existente ou criar novo
+            if ($temPendente) {
+                // Atualizar registro pendente existente com novos dados da solicitação
+                $impressaoPendente = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
+                if ($impressaoPendente) {
+                    $impressaoPendente->update([
+                        'agente_impressao' => $request->input('agente', 'sistema_web'),
+                        'ip_origem' => $request->ip(),
+                        'dados_impressao' => array_merge($impressaoPendente->dados_impressao ?? [], [
+                            'user_agent' => $request->userAgent(),
+                            'timestamp_ultima_solicitacao' => now()->toISOString(),
+                            'tipo_solicitacao' => 'cupom_parcial'
+                        ]),
+                        'updated_at' => now()
+                    ]);
+                }
+            } else if ($forcarImpressao || (!$foiImpresso && !$temPendente)) {
+                // Criar novo registro de impressão pendente apenas se não existir
                 $pedido->impressoes()->create([
                     'agente_impressao' => $request->input('agente', 'sistema_web'),
                     'ip_origem' => $request->ip(),
@@ -118,8 +134,6 @@ class PrintController extends Controller
                     ]
                 ]);
             }
-            
-            // Para pedidos com impressão pendente, a API processa normalmente sem criar novo registro
 
             // Estruturar os dados para impressão
             $dadosImpressao = [
