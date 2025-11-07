@@ -4,7 +4,7 @@ Esta documentação descreve a API criada para integração com o agente de impr
 
 ## Visão Geral
 
-A API de impressão foi desenvolvida para permitir que um agente externo (NodeJS ou Python) monitore e processe pedidos para impressão automática em múltiplas impressoras.
+A API de impressão foi desenvolvida para permitir que um agente externo monitore e processe pedidos para impressão automática em múltiplas impressoras.
 
 ## Endpoints Disponíveis
 
@@ -192,42 +192,6 @@ async function processarPedido(pedidoId) {
 setInterval(verificarPedidosPendentes, 30000);
 ```
 
-### Exemplo de Monitoramento (Python)
-
-```python
-import requests
-import time
-import json
-
-def verificar_pedidos_pendentes():
-    try:
-        response = requests.get('http://seu-dominio.com/api/print/pedidos-pendentes')
-        pedidos = response.json()['data']
-        
-        for pedido in pedidos:
-            processar_pedido(pedido['id'])
-    except Exception as e:
-        print(f'Erro ao verificar pedidos: {e}')
-
-def processar_pedido(pedido_id):
-    try:
-        response = requests.get(f'http://seu-dominio.com/api/print/pedido/{pedido_id}')
-        dados_pedido = response.json()['data']
-        
-        # Implementar lógica de impressão aqui
-        imprimir_pedido(dados_pedido)
-        
-        # Marcar como impresso
-        requests.post(f'http://seu-dominio.com/api/print/pedido/{pedido_id}/impresso')
-    except Exception as e:
-        print(f'Erro ao processar pedido {pedido_id}: {e}')
-
-# Loop principal
-while True:
-    verificar_pedidos_pendentes()
-    time.sleep(30)  # Aguarda 30 segundos
-```
-
 ## Tratamento de Erros
 
 Todos os endpoints retornam erros no formato:
@@ -252,24 +216,8 @@ Todos os endpoints retornam erros no formato:
 - Para produção, considere implementar autenticação via token
 - Monitore os logs de acesso para detectar uso indevido
 
-## Próximos Passos
-
-1. **Testar a API** com dados reais
-2. **Desenvolver o agente de impressão** (NodeJS/Python)
-3. **Configurar as impressoras** na rede local
-4. **Implementar fila de impressão** no agente
-5. **Adicionar logs e monitoramento**
-
-## Suporte
-
-Para dúvidas ou problemas com a API, verifique:
-
-1. **Logs do Laravel** em `storage/logs/laravel.log`
-2. **Console do navegador** para erros JavaScript
-3. **Logs do servidor web** para problemas de conectividade
-
 ---
 
 **Versão:** 1.0  
-**Data:** Janeiro 2025  
-**Autor:** Sistema Venturize Hotelaria
+**Data:** Outubro 2025  
+**Autor:** Ferraz Tecnologia

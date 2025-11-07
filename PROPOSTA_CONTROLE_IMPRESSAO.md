@@ -6,66 +6,7 @@ Atualmente, o sistema não possui um controle efetivo de quais pedidos já foram
 
 ## Soluções Propostas
 
-### Opção 1: Campo na Tabela Pedidos (Mais Simples)
-
-**Vantagens:**
-- Implementação rápida e simples
-- Consultas mais eficientes
-- Menos complexidade no código
-
-**Desvantagens:**
-- Não mantém histórico de impressões
-- Não permite rastrear múltiplas impressões
-- Informação limitada (apenas se foi impresso ou não)
-
-**Implementação:**
-```sql
--- Migration: add_impressao_fields_to_pedidos_table
-ALTER TABLE pedidos ADD COLUMN impresso BOOLEAN DEFAULT FALSE;
-ALTER TABLE pedidos ADD COLUMN impresso_em TIMESTAMP NULL;
-ALTER TABLE pedidos ADD COLUMN impresso_por VARCHAR(255) NULL;
-```
-
-### Opção 2: Tabela de Log de Impressões (Mais Completa) ⭐ RECOMENDADA
-
-**Vantagens:**
-- Histórico completo de impressões
-- Rastreabilidade total
-- Permite múltiplas impressões do mesmo pedido
-- Informações detalhadas (agente, IP, status, etc.)
-- Facilita auditoria e relatórios
-
-**Desvantagens:**
-- Implementação um pouco mais complexa
-- Consultas podem ser ligeiramente mais lentas
-
-**Implementação:**
-```sql
--- Migration: create_impressoes_pedidos_table
-CREATE TABLE impressoes_pedidos (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    pedido_id BIGINT UNSIGNED NOT NULL,
-    agente_impressao VARCHAR(255) NOT NULL, -- 'sistema', 'agente_externo', etc.
-    ip_origem VARCHAR(45) NULL,
-    status_impressao ENUM('pendente', 'processando', 'sucesso', 'erro') DEFAULT 'pendente',
-    detalhes_erro TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
-    INDEX idx_pedido_id (pedido_id),
-    INDEX idx_status (status_impressao),
-    INDEX idx_created_at (created_at)
-);
-```
-
-### Opção 3: Sistema Híbrido (Melhor Performance)
-
-**Combina as duas abordagens:**
-- Campo `ultima_impressao_em` na tabela pedidos (para consultas rápidas)
-- Tabela de log completa para histórico e auditoria
-
-## Implementação Recomendada (Opção 2)
+## Implementação
 
 ### 1. Migration da Tabela de Impressões
 
