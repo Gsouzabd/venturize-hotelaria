@@ -8,9 +8,11 @@ use App\Models\Produto;
 use App\Models\Bar\Mesa;
 use App\Models\Categoria;
 use App\Models\Bar\Pedido;
+use App\Models\Bar\ImpressaoPedido;
 use Illuminate\Http\Request;
 use App\Events\ItemAdicionado;
 use App\Services\Bar\MesaService;
+use App\Services\PrinterService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
@@ -18,11 +20,13 @@ class PedidoController extends Controller
 {
     private Pedido $model;
     private MesaService $mesaService;
+    private PrinterService $printerService;
 
-    public function __construct(Pedido $model, MesaService $mesaService)
+    public function __construct(Pedido $model, MesaService $mesaService, PrinterService $printerService)
     {
         $this->model = $model;
         $this->mesaService = $mesaService;
+        $this->printerService = $printerService;
     }
 
     public function index(Request $request)
@@ -180,15 +184,66 @@ class PedidoController extends Controller
             ->with('notice', config('app.messages.delete'));
     }
 
-    public function showCupomParcial($idPedido)
+    public function showCupomParcial($idPedido, Request $request = null)
     {
+        $pedido = $this->model->findOrFail($idPedido);
+        
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
-        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
+        
+        // Criar registro de impressão com status 'pendente'
+        $impressao = $pedido->impressoes()->create([
+            'agente_impressao' => 'sistema_web',
+            'ip_origem' => request()->ip(),
+            'status_impressao' => 'pendente',
+            'dados_impressao' => [
+                'user_agent' => request()->userAgent(),
+                'timestamp_criacao' => now()->toISOString(),
+                'tipo_cupom' => 'parcial'
+            ]
+        ]);
+        
+        // Retornar o PDF
+        return response($pdfOutput, 200, [
+            'Content-Type' => 'application/pdf',
+            'X-Impressao-ID' => $impressao->id,
+            'X-Impressao-Status' => 'pendente'
+        ]);
     }
 
     public function showExtratoParcial($idPedido)
     {
         $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
-        return response($pdfOutput, 200)->header('Content-Type', 'application/pdf');
+        return response($pdfOutput, 200, ['Content-Type' => 'application/pdf']);
+    }
+
+    /**
+     * Verifica o status de impressão de um pedido
+     */
+    public function statusImpressao($idPedido)
+    {
+        $pedido = $this->model->findOrFail($idPedido);
+        
+        return response()->json([
+            'pedido_id' => $idPedido,
+            'foi_impresso' => $pedido->foiImpresso(),
+            'tem_impressao_pendente' => $pedido->temImpressaoPendente(),
+            'total_impressoes' => $pedido->totalImpressoes(),
+            'ultima_impressao' => $pedido->ultimaImpressao ? [
+                'id' => $pedido->ultimaImpressao->id,
+                'status' => $pedido->ultimaImpressao->status_impressao,
+                'agente' => $pedido->ultimaImpressao->agente_impressao,
+                'data' => $pedido->ultimaImpressao->created_at->format('d/m/Y H:i:s'),
+                'detalhes_erro' => $pedido->ultimaImpressao->detalhes_erro
+            ] : null,
+            'historico_impressoes' => $pedido->impressoes()->orderBy('created_at', 'desc')->get()->map(function($impressao) {
+                return [
+                    'id' => $impressao->id,
+                    'status' => $impressao->status_impressao,
+                    'agente' => $impressao->agente_impressao,
+                    'data' => $impressao->created_at->format('d/m/Y H:i:s'),
+                    'detalhes_erro' => $impressao->detalhes_erro
+                ];
+            })
+        ]);
     }
 }

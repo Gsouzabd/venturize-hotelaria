@@ -327,21 +327,18 @@
 
         gerarParcialBtn.addEventListener('click', function () {
             const pedidoId = {{ $pedido->id }};
-            fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => console.error('Error:', error));
-        });
+            
+            // Gerar cupom parcial diretamente
+            const url = `/admin/bar/pedidos/${pedidoId}/cupom-parcial`;
+            
+            // Abrir em nova janela para impressão
+            window.open(url, '_blank');
+            
+            // Recarregar a página após um pequeno delay
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+         });
 
         const gerarExtratoBtn = document.getElementById('gerarExtratoBtn');
         gerarExtratoBtn.addEventListener('click', function () {
@@ -671,29 +668,6 @@
     });
 </script>
 
-<!-- Script para  gerar parcial -->
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const gerarParcialBtn = document.getElementById('gerarParcialBtn');
 
-        gerarParcialBtn.addEventListener('click', function () {
-            const pedidoId = {{ $pedido->id }};
-            fetch(`/admin/bar/pedidos/${pedidoId}/cupom-parcial`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': APP_CSRF_TOKEN
-                }
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    });
-</script>
 
 @endsection

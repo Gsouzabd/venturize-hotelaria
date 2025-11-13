@@ -1,6 +1,6 @@
 @extends('layouts.admin.master')
-@php 
-use Carbon\Carbon; 
+@php
+use Carbon\Carbon;
 
 $contadores = collect($statusMesaNoDia)->countBy('status');
 @endphp
@@ -50,7 +50,7 @@ $contadores = collect($statusMesaNoDia)->countBy('status');
           @if($status['status'] === 'Ocupada' && $status['pedido'])
               <a href="{{ route('admin.bar.pedidos.edit', ['id' => $status['pedido']->id]) }}" class="card room-card shadow-sm h-100" style="text-decoration: none;">
           @else
-              <div class="card room-card shadow-sm h-100" data-toggle="modal" 
+              <div class="card room-card shadow-sm h-100" data-toggle="modal"
                 data-target="#modal-nova-comanda" data-mesa-id="{{ $status['mesa']->id }}" data-mesa-numero="{{ $status['mesa']->numero }}">
           @endif
               <div class="card-body text-center p-2" style="color: white; background-color: {{ $corDeFundo }};"
@@ -70,14 +70,14 @@ $contadores = collect($statusMesaNoDia)->countBy('status');
               >
                   <!-- Número da Mesa -->
                   <h5 class="card-title mb-2">{{ $status['mesa']->numero }}</h5>
-                  
+
                   <!-- Ícone baseado no status -->
                   @if($status['status'] === 'Ocupada')
                       <i class="fas fa-lock fa-2x text-danger"></i> <!-- Ícone de cadeado -->
                   @else
                       <i class="fas fa-thumbs-up fa-2x" style="color: #0d6c0d;"></i> <!-- Ícone de joinha -->
                   @endif
-                  
+
                   <p class="card-text mesa">{{ $label }}</p>
               </div>
           @if($status['status'] === 'Ocupada' && $status['pedido'])
@@ -135,8 +135,10 @@ $contadores = collect($statusMesaNoDia)->countBy('status');
   </div>
 </div>
 
-@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/echo.js'])<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-<script>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+@vite('resources/js/echo.js')
   // Enable Pusher logging - don't include this in production
   Pusher.logToConsole = true;
 
@@ -162,7 +164,7 @@ $contadores = collect($statusMesaNoDia)->countBy('status');
 
 <script>
     $(document).ready(function(){
-        $('[data-toggle="tooltip"]').tooltip(); 
+        $('[data-toggle="tooltip"]').tooltip();
 
         $('#modal-nova-comanda').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget); // Botão que acionou o modal
