@@ -98,6 +98,187 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
 
-
     });
 });
+
+// Rotas de teste para impressoras (fora do middleware de autenticação)
+Route::get('/test-printers', function () {
+    $printerService = new \App\Services\PrinterService();
+    $status = $printerService->checkPrintersStatus();
+    
+    return response()->json([
+        'message' => 'Status das impressoras configuradas',
+        'printers' => $status
+    ]);
+})->name('test.printers');
+
+Route::get('/test-print', function () {
+    $printerService = app(\App\Services\PrinterService::class);
+    
+    // Usar um ID de pedido válido que existe na base de dados
+    $testPedidoId = 174;
+    
+    try {
+        $results = $printerService->printHtmlToAllPrinters($testPedidoId);
+        
+        return response()->json([
+            'message' => 'Teste de impressão executado',
+            'pedido_id' => $testPedidoId,
+            'results' => $results
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Erro no teste de impressão',
+            'error' => $e->getMessage(),
+            'pedido_id' => $testPedidoId
+        ], 500);
+    }
+});
+
+// Rota de teste para verificar status das impressoras
+Route::get('/test-printer-status', function () {
+    $printerService = app(\App\Services\PrinterService::class);
+    
+    try {
+        $status = $printerService->checkPrintersStatus();
+        return response()->json($status);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Rota de teste para debug de impressão
+Route::get('/test-mike42-print', function () {
+    try {
+        $printerService = new \App\Services\PrinterService();
+        
+        // Configurar uma impressora de teste
+        $printer = [
+            'name' => 'Impressora Bar',
+            'ip' => '192.168.1.81'
+        ];
+        
+        $testContent = "=== TESTE DE IMPRESSÃO ===\n";
+        $testContent .= "Data: " . now()->format('d/m/Y H:i:s') . "\n";
+        $testContent .= "Teste da biblioteca mike42/escpos-php\n";
+        $testContent .= "================================\n";
+        
+        // Usar reflexão para acessar o método privado
+        $reflection = new \ReflectionClass($printerService);
+        $method = $reflection->getMethod('printTextToThermalPrinter');
+        $method->setAccessible(true);
+        
+        $result = $method->invoke($printerService, $printer, $testContent);
+        
+        return response()->json([
+            'status' => 'success',
+            'printer' => $printer,
+            'result' => $result,
+            'message' => 'Teste de impressão executado com mike42/escpos-php'
+        ]);
+        
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+})->name('test.print');
+
+// Rota para testar impressão simulada (sem impressora real)
+Route::get('/test-print-simulation', function () {
+    try {
+        $printerService = new \App\Services\PrinterService();
+        
+        // Simular impressão sem impressora real
+        $pedidoId = 174;
+        $pedido = \App\Models\Bar\Pedido::with(['mesa', 'reserva.quarto', 'cliente', 'itens.produto'])->findOrFail($pedidoId);
+        
+        // Gerar conteúdo do cupom
+        $reflection = new \ReflectionClass($printerService);
+        $method = $reflection->getMethod('generateCupomContent');
+        $method->setAccessible(true);
+        $cupomContent = $method->invoke($printerService, $pedido);
+        
+        // Simular comandos ESC/POS que seriam enviados
+        $escPos = "\x1B\x40"; // ESC @ - Inicializar
+        $escPos .= $cupomContent;
+        $escPos .= "\x0A\x0A\x0A"; // 3 quebras de linha
+        $escPos .= "\x1D\x56\x41\x03"; // Corte parcial
+        
+        return response()->json([
+            'status' => 'simulation_success',
+            'cupom_content' => $cupomContent,
+            'cupom_length' => strlen($cupomContent),
+            'escpos_length' => strlen($escPos),
+            'escpos_hex' => bin2hex($escPos),
+            'message' => 'Simulação de impressão concluída - dados que seriam enviados para impressora'
+        ]);
+        
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+})->name('test.print.simulation');
+
+// Teste com conteúdo longo para verificar se a impressão completa funciona
+Route::get('/test-long-print', function () {
+    $printerService = new \App\Services\PrinterService();
+    
+    // Gerar conteúdo longo de teste
+    $longContent = "TESTE DE IMPRESSÃO LONGA\n";
+    $longContent .= str_repeat("=", 40) . "\n";
+    
+    for ($i = 1; $i <= 30; $i++) {
+        $longContent .= sprintf("Linha %02d: Item de teste muito longo para verificar se a impressão completa %s\n", $i, str_repeat("*", 10));
+    }
+    
+    $longContent .= str_repeat("=", 40) . "\n";
+    $longContent .= "FIM DO TESTE - TOTAL: 30 LINHAS\n";
+    
+    // Tentar imprimir o conteúdo longo usando o método interno
+    $printer = ['name' => 'Impressora Bar', 'ip' => '192.168.1.81'];
+    $reflection = new \ReflectionClass($printerService);
+    $method = $reflection->getMethod('printTextToThermalPrinter');
+    $method->setAccessible(true);
+    $result = $method->invoke($printerService, $printer, $longContent);
+    
+    return response()->json([
+        'test_result' => $result,
+        'content_length' => strlen($longContent),
+        'line_count' => substr_count($longContent, "\n"),
+        'message' => 'Teste de impressão longa concluído'
+    ]);
+});
+
+// Rota para debug - visualizar o texto formatado
+Route::get('/debug-print-text', function () {
+    $pedidoId = 174;
+    $pedido = \App\Models\Bar\Pedido::with(['mesa', 'reserva.quarto', 'cliente', 'itens.produto'])->findOrFail($pedidoId);
+    
+    // Usar reflexão para acessar o método privado generateCupomContent
+    $printerService = new \App\Services\PrinterService();
+    $reflection = new \ReflectionClass($printerService);
+    $method = $reflection->getMethod('generateCupomContent');
+    $method->setAccessible(true);
+    
+    $textContent = $method->invoke($printerService, $pedido);
+    
+    // Mostrar informações detalhadas sobre o conteúdo
+    $info = [
+        'content_length' => strlen($textContent),
+        'line_count' => substr_count($textContent, "\n"),
+        'content' => $textContent,
+        'content_hex' => bin2hex($textContent)
+    ];
+    
+    return response()->json($info, 200, [
+        'Content-Type' => 'application/json; charset=utf-8'
+    ]);
+})->name('debug.print.text');

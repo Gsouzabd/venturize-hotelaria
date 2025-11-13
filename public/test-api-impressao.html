@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste API de Impressão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .test-section h3 {
+            color: #555;
+            margin-top: 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+            margin: 0 10px;
+        }
+        .method-info {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖨️ Teste da API de Impressão</h1>
+        
+        <div class="test-section">
+            <h3>1. Listar Pedidos Pendentes</h3>
+            <p class="method-info">GET /api/print/pedidos-pendentes</p>
+            <button onclick="testarPedidosPendentes()">Testar Pedidos Pendentes</button>
+            <div id="result-pendentes" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Obter Dados do Pedido</h3>
+            <p class="method-info">GET /api/print/pedido/{id}</p>
+            <label>ID do Pedido: <input type="number" id="pedido-id-get" value="174" min="1"></label>
+            <button onclick="testarObterPedido()">Obter Dados do Pedido</button>
+            <div id="result-obter" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Marcar Pedido como Impresso</h3>
+            <p class="method-info">POST /api/print/pedido/{id}/impresso</p>
+            <label>ID do Pedido: <input type="number" id="pedido-id-post" value="174" min="1"></label>
+            <button onclick="testarMarcarImpresso()">Marcar como Impresso</button>
+            <div id="result-marcar" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Endpoint de Compatibilidade</h3>
+            <p class="method-info">GET /api/cupom-parcial/{id}</p>
+            <label>ID do Pedido: <input type="number" id="pedido-id-compat" value="174" min="1"></label>
+            <button onclick="testarCompatibilidade()">Testar Compatibilidade</button>
+            <div id="result-compat" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>ℹ️ Informações Importantes</h3>
+            <div class="info result" style="display: block;">
+<strong>Sobre o erro "Method Not Allowed":</strong>
+
+O erro que você viu acontece quando você tenta acessar a URL diretamente no navegador:
+• Navegadores fazem requisições GET por padrão
+• A rota /api/print/pedido/{id}/impresso só aceita POST
+• Por isso o erro: "The GET method is not supported"
+
+<strong>Como usar corretamente:</strong>
+• Use ferramentas como curl, Postman ou JavaScript (fetch/axios)
+• Para POST: curl -X POST http://127.0.0.1:8000/api/print/pedido/174/impresso
+• Para GET: curl http://127.0.0.1:8000/api/print/pedido/174
+
+<strong>Esta página demonstra o uso correto via JavaScript.</strong>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://127.0.0.1:8000';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testarPedidosPendentes() {
+            try {
+                const response = await fetch(`${baseUrl}/api/print/pedidos-pendentes`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('result-pendentes', data);
+            } catch (error) {
+                showResult('result-pendentes', { error: error.message }, true);
+            }
+        }
+
+        async function testarObterPedido() {
+            const pedidoId = document.getElementById('pedido-id-get').value;
+            if (!pedidoId) {
+                showResult('result-obter', { error: 'Por favor, informe o ID do pedido' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/api/print/pedido/${pedidoId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('result-obter', data);
+            } catch (error) {
+                showResult('result-obter', { error: error.message }, true);
+            }
+        }
+
+        async function testarMarcarImpresso() {
+            const pedidoId = document.getElementById('pedido-id-post').value;
+            if (!pedidoId) {
+                showResult('result-marcar', { error: 'Por favor, informe o ID do pedido' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/api/print/pedido/${pedidoId}/impresso`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('result-marcar', data);
+            } catch (error) {
+                showResult('result-marcar', { error: error.message }, true);
+            }
+        }
+
+        async function testarCompatibilidade() {
+            const pedidoId = document.getElementById('pedido-id-compat').value;
+            if (!pedidoId) {
+                showResult('result-compat', { error: 'Por favor, informe o ID do pedido' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/api/cupom-parcial/${pedidoId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('result-compat', data);
+            } catch (error) {
+                showResult('result-compat', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>

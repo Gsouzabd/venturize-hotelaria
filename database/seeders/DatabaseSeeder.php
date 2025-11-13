@@ -13,6 +13,7 @@ use Database\Seeders\ProdutoSeeder;
 use Database\Seeders\ReservaSeeder;
 use Illuminate\Support\Facades\Hash;
 use Database\Seeders\GrupoUsuarioSeeder;
+use Database\Seeders\UsuarioAdminSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,9 +26,12 @@ class DatabaseSeeder extends Seeder
 
 
         $this->call([
+            UsuarioAdminSeeder::class,
+            GrupoUsuarioSeeder::class,
             ProdutoSeeder::class,
             LocaisEstoqueTableSeeder::class,
             EstoqueTableSeeder::class,
+            MesaSeeder::class,
         ]);
 
     }
