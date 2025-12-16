@@ -55,6 +55,21 @@ php artisan migrate
 php artisan db:seed
 ```
 
+### 7. Instale as dependências do Node.js
+```bash
+npm install
+```
+
+### 8. Compile os assets do frontend
+```bash
+# Para produção
+npm run build
+
+# Para desenvolvimento (com hot-reload)
+npm run dev
+```
+
+**Importante:** Sempre execute `npm run build` após clonar o repositório ou quando os assets do frontend não estiverem disponíveis. Isso gera o arquivo `manifest.json` necessário para o Laravel carregar os assets corretamente.
 
 ### 9. Configure as permissões (Linux/Mac)
 ```bash
@@ -149,6 +164,10 @@ php artisan make:controller NomeController
 
 # Criar nova migration
 php artisan make:migration nome_da_migration
+
+# Compilar assets do frontend
+npm run build        # Para produção
+npm run dev          # Para desenvolvimento (com hot-reload)
 ```
 
 ## 🔍 Troubleshooting
@@ -162,4 +181,13 @@ chmod -R 775 storage bootstrap/cache
 ```bash
 composer install --no-dev
 ```
+
+### Erro "Vite manifest not found"
+Se você encontrar o erro `Vite manifest not found at: public/build/manifest.json`, execute:
+```bash
+npm install
+npm run build
+```
+
+Isso compilará os assets do frontend e gerará o arquivo `manifest.json` necessário.
 
