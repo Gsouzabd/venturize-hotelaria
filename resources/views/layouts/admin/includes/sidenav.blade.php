@@ -91,6 +91,23 @@
                     <div>Usuários</div>
                 </a>
             </li>
+            
+            <!-- Despesas Menu -->
+            <li class="sidenav-item{{ is_active_path('admin/despesas') ? ' active' : '' }}">
+                <a href="{{ route('admin.despesas.index') }}" class="sidenav-link">
+                    <i class="sidenav-icon fas fa-receipt"></i>
+                    <div>Despesas</div>
+                </a>
+                <ul class="sidenav-submenu">
+                    <!-- Categorias de Despesas Menu Item -->
+                    <li class="sidenav-item{{ is_active_path('admin/categorias-despesas') ? ' active' : '' }}">
+                        <a href="{{ route('admin.categorias-despesas.index') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-tags"></i>
+                            <span>Categorias</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
         @else  
 
         <li class="sidenav-item{{ is_active_path('admin') ? ' active' : '' }}">

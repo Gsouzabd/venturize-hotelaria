@@ -44,6 +44,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/reservas/{id}/gerar-extrato', [ReservaController::class, 'gerarExtrato'])->name('reservas.gerar-extrato');
 
+        // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})
+        Route::get('/despesas/relatorios', [\App\Http\Controllers\Admin\DespesaController::class, 'relatorios'])->name('despesas.relatorios');
+
         $prefixes = [
             'usuarios' => UsuarioController::class,
             'clientes' => ClienteController::class,
@@ -54,6 +57,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'produtos' => ProdutoController::class,
             'estoque' => EstoqueController::class,
             'locais-estoque' => LocalEstoqueController::class,
+            'categorias-despesas' => \App\Http\Controllers\Admin\CategoriaDespesaController::class,
         ];
 
         
@@ -97,6 +101,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/reservas/{id}/remover-taxa-servico', [ReservaController::class, 'removerTaxaServico'])->name('reserva.removerTaxaServico');
 
         Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
+
+        // Rotas de despesas (definidas manualmente para evitar conflito com rotas específicas)
+        Route::prefix('despesas')->name('despesas.')->controller(\App\Http\Controllers\Admin\DespesaController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'edit')->name('create');
+            Route::match(['post', 'put'], '/', 'save')->name('save');
+            Route::get('/{id}/show', 'show')->name('show');
+            Route::get('/{id}', 'edit')->name('edit');
+            Route::delete('/{id}', 'destroy')->name('destroy');
+        });
 
     });
 });

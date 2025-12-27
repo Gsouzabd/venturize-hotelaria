@@ -41,3 +41,10 @@ Route::prefix('print')->name('api.print.')->group(function () {
 
 // Rota específica para o agente de impressão (compatibilidade)
 Route::get('/cupom-parcial/{pedidoId}', [PrintController::class, 'getPedidoForPrint'])->name('api.cupom-parcial');
+
+// Rotas da API de Despesas
+Route::prefix('despesas')->name('api.despesas.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\DespesaController::class, 'index'])->name('index');
+    Route::get('/relatorio', [\App\Http\Controllers\Api\DespesaController::class, 'relatorio'])->name('relatorio');
+    Route::get('/categorias', [\App\Http\Controllers\Api\DespesaController::class, 'categorias'])->name('categorias');
+});
