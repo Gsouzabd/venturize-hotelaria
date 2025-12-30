@@ -41,6 +41,20 @@
 
         <x-admin.field-group>
             <x-admin.field cols="12">
+                <x-admin.label label="Fornecedor"/>
+                <select name="fornecedor_id" id="fornecedor_id" class="custom-select">
+                    <option value="">Selecione um fornecedor (opcional)</option>
+                    @foreach($fornecedores as $fornecedor)
+                        <option value="{{ $fornecedor->id }}" {{ old('fornecedor_id', $despesa->fornecedor_id ?? '') == $fornecedor->id ? 'selected' : '' }}>
+                            {{ $fornecedor->nome }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.field>
+        </x-admin.field-group>
+
+        <x-admin.field-group>
+            <x-admin.field cols="12">
                 <x-admin.label label="Descrição" required/>
                 <x-admin.textarea name="descricao" id="descricao" rows="3" required>{{ old('descricao', $despesa->descricao ?? '') }}</x-admin.textarea>
                 <small class="form-text text-muted">Descreva a despesa de forma clara e objetiva.</small>

@@ -20,6 +20,7 @@ class Despesa extends Model
         'valor_total',
         'observacoes',
         'usuario_id',
+        'fornecedor_id',
     ];
 
     protected $casts = [
@@ -30,6 +31,11 @@ class Despesa extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class);
+    }
+
+    public function fornecedor()
+    {
+        return $this->belongsTo(Fornecedor::class);
     }
 
     public function despesaCategorias()
@@ -71,6 +77,11 @@ class Despesa extends Model
         return $query->whereHas('despesaCategorias', function ($q) use ($categoriaId) {
             $q->where('categoria_despesa_id', $categoriaId);
         });
+    }
+
+    public function scopePorFornecedor($query, $fornecedorId)
+    {
+        return $query->where('fornecedor_id', $fornecedorId);
     }
 }
 

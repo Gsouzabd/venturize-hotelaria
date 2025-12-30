@@ -37,6 +37,29 @@ Route::prefix('print')->name('api.print.')->group(function () {
     
     // Estatísticas de impressão
     Route::get('/estatisticas', [PrintController::class, 'getEstatisticasImpressao'])->name('estatisticas');
+    
+    // Listar impressoras configuradas (para o PrintingAgent)
+    Route::get('/impressoras', function() {
+        try {
+            $impressoras = \App\Models\Impressora::ativas()->ordenadas()->get();
+            
+            return response()->json([
+                'success' => true,
+                'printers' => $impressoras->map(function($imp) {
+                    return [
+                        'name' => $imp->nome,
+                        'ip' => $imp->ip,
+                        'port' => $imp->porta
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar impressoras: ' . $e->getMessage()
+            ], 500);
+        }
+    })->name('impressoras');
 });
 
 // Rota específica para o agente de impressão (compatibilidade)

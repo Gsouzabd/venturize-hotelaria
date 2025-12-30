@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ImportarUsuarioController;
 use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
+use App\Http\Controllers\Admin\ImpressoraController;
 // SEMPRE RODAR O COMANDO:
 //php artisan cache:clear; php artisan route:cache;
 include 'bar/routes.php';
@@ -58,6 +59,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'estoque' => EstoqueController::class,
             'locais-estoque' => LocalEstoqueController::class,
             'categorias-despesas' => \App\Http\Controllers\Admin\CategoriaDespesaController::class,
+            'fornecedores' => \App\Http\Controllers\Admin\FornecedorController::class,
+            'impressoras' => ImpressoraController::class,
         ];
 
         
@@ -102,11 +105,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/estoque/{local_estoque_id}/edit/{id}', [EstoqueController::class, 'edit'])->name('admin.estoque.edit');
 
+        // Rota para testar conectividade da impressora
+        Route::post('/impressoras/{id}/testar', [ImpressoraController::class, 'testar'])->name('impressoras.testar');
+
         // Rotas de despesas (definidas manualmente para evitar conflito com rotas específicas)
         Route::prefix('despesas')->name('despesas.')->controller(\App\Http\Controllers\Admin\DespesaController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'edit')->name('create');
             Route::match(['post', 'put'], '/', 'save')->name('save');
+            Route::get('/relatorios/exportar-consolidado', 'exportarConsolidado')->name('relatorios.exportar-consolidado');
+            Route::get('/relatorios/exportar-detalhado', 'exportarDetalhado')->name('relatorios.exportar-detalhado');
             Route::get('/{id}/show', 'show')->name('show');
             Route::get('/{id}', 'edit')->name('edit');
             Route::delete('/{id}', 'destroy')->name('destroy');
