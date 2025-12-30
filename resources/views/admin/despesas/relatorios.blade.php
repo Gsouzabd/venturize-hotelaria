@@ -48,8 +48,11 @@
     </div>
     
     <div class="card mt-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Resumo Consolidado</h5>
+            <a href="{{ route('admin.despesas.relatorios.exportar-consolidado', $filters) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
         </div>
         <div class="card-body">
             <div class="row mb-4">
@@ -108,8 +111,11 @@
     </div>
     
     <div class="card mt-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Detalhamento de Despesas</h5>
+            <a href="{{ route('admin.despesas.relatorios.exportar-detalhado', $filters) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
         </div>
         <div class="card-body">
             <div class="table-responsive">

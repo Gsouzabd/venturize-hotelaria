@@ -6,11 +6,14 @@ use Carbon\Carbon;
 use App\Models\Despesa;
 use App\Models\CategoriaDespesa;
 use App\Models\DespesaCategoria;
+use App\Models\Fornecedor;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DespesaRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ExcelExportService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DespesaController extends Controller
 {
@@ -28,8 +31,9 @@ class DespesaController extends Controller
         $filters['data_inicial'] ??= '';
         $filters['data_final'] ??= '';
         $filters['categoria_id'] ??= '';
+        $filters['fornecedor_id'] ??= '';
 
-        $query = $this->model->with(['usuario', 'despesaCategorias.categoriaDespesa']);
+        $query = $this->model->with(['usuario', 'despesaCategorias.categoriaDespesa', 'fornecedor']);
 
         if ($filters['numero_nota_fiscal']) {
             $query->where('numero_nota_fiscal', 'like', '%' . $filters['numero_nota_fiscal'] . '%');
@@ -51,14 +55,19 @@ class DespesaController extends Controller
             });
         }
 
+        if ($filters['fornecedor_id']) {
+            $query->where('fornecedor_id', $filters['fornecedor_id']);
+        }
+
         $despesas = $query
             ->orderBy('data', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(config('app.rows_per_page', 15));
 
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
+        $fornecedores = Fornecedor::orderBy('nome')->get();
 
-        return view('admin.despesas.index', compact('despesas', 'filters', 'categorias'));
+        return view('admin.despesas.index', compact('despesas', 'filters', 'categorias', 'fornecedores'));
     }
 
     public function edit($id = null)
@@ -66,13 +75,20 @@ class DespesaController extends Controller
         $edit = boolval($id);
         $despesa = $edit ? $this->model->with('despesaCategorias.categoriaDespesa')->findOrFail($id) : $this->model->newInstance();
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
+        $fornecedores = Fornecedor::orderBy('nome')->get();
 
-        return view('admin.despesas.form', compact('despesa', 'edit', 'categorias'));
+        return view('admin.despesas.form', compact('despesa', 'edit', 'categorias', 'fornecedores'));
     }
 
     public function save(DespesaRequest $request)
     {
         $data = $request->validated();
+        $edit = $request->has('id');
+        $despesa = null;
+        
+        if ($edit) {
+            $despesa = $this->model->findOrFail($request->get('id'));
+        }
         
         // Processar arquivo se fornecido
         if ($request->hasFile('arquivo_nota')) {
@@ -93,7 +109,7 @@ class DespesaController extends Controller
             $path = $file->storeAs($directory, $filename, 'public');
             
             $data['arquivo_nota'] = $path;
-        } elseif ($edit && !$request->has('arquivo_nota')) {
+        } elseif ($edit && $despesa && !$request->has('arquivo_nota')) {
             // Se estiver editando e não foi enviado novo arquivo, manter o existente
             $data['arquivo_nota'] = $despesa->arquivo_nota;
         }
@@ -101,6 +117,11 @@ class DespesaController extends Controller
         // Converter data do formato brasileiro
         if (isset($data['data']) && str_contains($data['data'], '/')) {
             $data['data'] = Carbon::createFromFormat('d/m/Y', $data['data'])->format('Y-m-d');
+        }
+
+        // Tratar fornecedor_id vazio como null
+        if (isset($data['fornecedor_id']) && empty($data['fornecedor_id'])) {
+            $data['fornecedor_id'] = null;
         }
 
         // Adicionar usuário que cadastrou
@@ -145,7 +166,7 @@ class DespesaController extends Controller
 
     public function show($id)
     {
-        $despesa = $this->model->with(['usuario', 'despesaCategorias.categoriaDespesa'])->findOrFail($id);
+        $despesa = $this->model->with(['usuario', 'fornecedor', 'despesaCategorias.categoriaDespesa'])->findOrFail($id);
         
         return view('admin.despesas.show', compact('despesa'));
     }
@@ -212,6 +233,173 @@ class DespesaController extends Controller
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
 
         return view('admin.despesas.relatorios', compact('consolidado', 'totalGeral', 'filters', 'categorias', 'despesas'));
+    }
+
+    public function exportarConsolidado(Request $request)
+    {
+        $filters = $request->all();
+        $filters['data_inicial'] ??= Carbon::now()->startOfMonth()->format('d/m/Y');
+        $filters['data_final'] ??= Carbon::now()->format('d/m/Y');
+        $filters['categoria_id'] ??= '';
+
+        $dataInicial = Carbon::createFromFormat('d/m/Y', $filters['data_inicial'])->startOfDay();
+        $dataFinal = Carbon::createFromFormat('d/m/Y', $filters['data_final'])->endOfDay();
+
+        $query = $this->model->whereBetween('data', [$dataInicial, $dataFinal]);
+
+        if ($filters['categoria_id']) {
+            $query->whereHas('despesaCategorias', function ($q) use ($filters) {
+                $q->where('categoria_despesa_id', $filters['categoria_id']);
+            });
+        }
+
+        $despesas = $query->with('despesaCategorias.categoriaDespesa')->get();
+
+        // Consolidar por categoria
+        $consolidado = [];
+        $totalGeral = 0;
+
+        foreach ($despesas as $despesa) {
+            foreach ($despesa->despesaCategorias as $despesaCategoria) {
+                $categoriaNome = $despesaCategoria->categoriaDespesa 
+                    ? $despesaCategoria->categoriaDespesa->nome 
+                    : 'Sem categoria';
+                $categoriaId = $despesaCategoria->categoria_despesa_id ?? 'sem_categoria';
+                
+                if (!isset($consolidado[$categoriaId])) {
+                    $consolidado[$categoriaId] = [
+                        'nome' => $categoriaNome,
+                        'valor' => 0,
+                        'quantidade' => 0,
+                    ];
+                }
+                
+                $consolidado[$categoriaId]['valor'] += $despesaCategoria->valor;
+                $consolidado[$categoriaId]['quantidade']++;
+                $totalGeral += $despesaCategoria->valor;
+            }
+        }
+
+        $consolidadoArray = array_values($consolidado);
+
+        // Preparar dados para Excel
+        $dadosExcel = [];
+        
+        // Título e período
+        $dadosExcel[] = ['Relatório Consolidado de Despesas'];
+        $dadosExcel[] = ['Período: ' . $dataInicial->format('d/m/Y') . ' a ' . $dataFinal->format('d/m/Y')];
+        $dadosExcel[] = [];
+        
+        // Cabeçalhos
+        $dadosExcel[] = ['Categoria', 'Quantidade', 'Valor Total', 'Percentual'];
+        
+        // Dados
+        foreach ($consolidadoArray as $item) {
+            $percentual = $totalGeral > 0 ? number_format(($item['valor'] / $totalGeral) * 100, 2, ',', '.') : '0,00';
+            $dadosExcel[] = [
+                $item['nome'],
+                $item['quantidade'],
+                number_format($item['valor'], 2, ',', '.'),
+                $percentual . '%'
+            ];
+        }
+        
+        // Total
+        $dadosExcel[] = [];
+        $dadosExcel[] = ['TOTAL GERAL', '', number_format($totalGeral, 2, ',', '.'), '100,00%'];
+
+        // Gerar arquivo Excel
+        $filename = 'relatorio_consolidado_despesas_' . $dataInicial->format('Y-m-d') . '_' . $dataFinal->format('Y-m-d') . '.xls';
+        $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório Consolidado de Despesas');
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.ms-excel',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function exportarDetalhado(Request $request)
+    {
+        $filters = $request->all();
+        $filters['data_inicial'] ??= Carbon::now()->startOfMonth()->format('d/m/Y');
+        $filters['data_final'] ??= Carbon::now()->format('d/m/Y');
+        $filters['categoria_id'] ??= '';
+
+        $dataInicial = Carbon::createFromFormat('d/m/Y', $filters['data_inicial'])->startOfDay();
+        $dataFinal = Carbon::createFromFormat('d/m/Y', $filters['data_final'])->endOfDay();
+
+        $query = $this->model->whereBetween('data', [$dataInicial, $dataFinal]);
+
+        if ($filters['categoria_id']) {
+            $query->whereHas('despesaCategorias', function ($q) use ($filters) {
+                $q->where('categoria_despesa_id', $filters['categoria_id']);
+            });
+        }
+
+        $despesas = $query->with(['usuario', 'despesaCategorias.categoriaDespesa'])->get();
+
+        // Preparar dados para Excel
+        $dadosExcel = [];
+        
+        // Título e período
+        $dadosExcel[] = ['Relatório Detalhado de Despesas'];
+        $dadosExcel[] = ['Período: ' . $dataInicial->format('d/m/Y') . ' a ' . $dataFinal->format('d/m/Y')];
+        $dadosExcel[] = [];
+        
+        // Cabeçalhos
+        $dadosExcel[] = [
+            'ID',
+            'Número da Nota Fiscal',
+            'Descrição',
+            'Data',
+            'Valor Total',
+            'Categoria',
+            'Valor Rateado',
+            'Observações Rateio',
+            'Cadastrado por',
+            'Data de Cadastro'
+        ];
+        
+        // Dados
+        foreach ($despesas as $despesa) {
+            if ($despesa->despesaCategorias->count() > 0) {
+                foreach ($despesa->despesaCategorias as $index => $rateio) {
+                    $dadosExcel[] = [
+                        $index === 0 ? $despesa->id : '',
+                        $index === 0 ? $despesa->numero_nota_fiscal : '',
+                        $index === 0 ? $despesa->descricao : '',
+                        $index === 0 ? $despesa->data->format('d/m/Y') : '',
+                        $index === 0 ? number_format($despesa->valor_total, 2, ',', '.') : '',
+                        $rateio->categoriaDespesa ? $rateio->categoriaDespesa->nome : 'Sem categoria',
+                        number_format($rateio->valor, 2, ',', '.'),
+                        $rateio->observacoes ?? '',
+                        $index === 0 ? ($despesa->usuario->nome ?? '-') : '',
+                        $index === 0 ? $despesa->created_at->format('d/m/Y H:i:s') : ''
+                    ];
+                }
+            } else {
+                // Despesa sem rateio
+                $dadosExcel[] = [
+                    $despesa->id,
+                    $despesa->numero_nota_fiscal,
+                    $despesa->descricao,
+                    $despesa->data->format('d/m/Y'),
+                    number_format($despesa->valor_total, 2, ',', '.'),
+                    'Sem rateio',
+                    '',
+                    '',
+                    $despesa->usuario->nome ?? '-',
+                    $despesa->created_at->format('d/m/Y H:i:s')
+                ];
+            }
+        }
+
+        // Gerar arquivo Excel
+        $filename = 'relatorio_detalhado_despesas_' . $dataInicial->format('Y-m-d') . '_' . $dataFinal->format('Y-m-d') . '.xls';
+        $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório Detalhado de Despesas');
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.ms-excel',
+        ])->deleteFileAfterSend(true);
     }
 }
 

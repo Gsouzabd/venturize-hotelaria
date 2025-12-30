@@ -27,6 +27,7 @@ class DespesaRequest extends FormRequest
             'valor_total' => 'required|numeric|min:0.01',
             'arquivo_nota' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'observacoes' => 'nullable|string',
+            'fornecedor_id' => 'nullable|exists:fornecedores,id',
             'rateios' => 'required|array|min:1',
             'rateios.*.categoria_despesa_id' => 'nullable|exists:categorias_despesas,id',
             'rateios.*.valor' => 'required|numeric|min:0.01',

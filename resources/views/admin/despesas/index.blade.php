@@ -36,6 +36,17 @@
                 @endforeach
             </x-admin.select>
         </x-admin.filter>
+        <x-admin.filter cols="2">
+            <x-admin.label label="Fornecedor"/>
+            <select name="fornecedor_id" class="custom-select">
+                <option value="">Todos</option>
+                @foreach($fornecedores as $fornecedor)
+                    <option value="{{ $fornecedor->id }}" {{ ($filters['fornecedor_id'] ?? '') == $fornecedor->id ? 'selected' : '' }}>
+                        {{ $fornecedor->nome }}
+                    </option>
+                @endforeach
+            </select>
+        </x-admin.filter>
     </x-admin.filters>
 
     <x-admin.grid :pagination="$despesas">
@@ -45,6 +56,7 @@
                 <th>ID</th>
                 <th>Número da Nota</th>
                 <th>Descrição</th>
+                <th>Fornecedor</th>
                 <th>Data</th>
                 <th>Valor Total</th>
                 <th>Rateios</th>
@@ -59,6 +71,7 @@
                     <td>{{ $despesa->id }}</td>
                     <td>{{ $despesa->numero_nota_fiscal }}</td>
                     <td>{{ strlen($despesa->descricao ?? '-') > 50 ? substr($despesa->descricao ?? '-', 0, 50) . '...' : ($despesa->descricao ?? '-') }}</td>
+                    <td>{{ $despesa->fornecedor->nome ?? '-' }}</td>
                     <td>{{ $despesa->data->format('d/m/Y') }}</td>
                     <td>R$ {{ number_format($despesa->valor_total, 2, ',', '.') }}</td>
                     <td>
@@ -97,7 +110,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center">{{ config('app.messages.no_rows') }}</td>
+                    <td colspan="10" class="text-center">{{ config('app.messages.no_rows') }}</td>
                 </tr>
             @endforelse
             </tbody>

@@ -12,18 +12,40 @@ use Mike42\Escpos\EscposImage;
 class PrinterService
 {
     /**
-     * Obter configurações das impressoras do .env
+     * Obter configurações das impressoras
+     * Prioriza banco de dados, com fallback para .env
      */
     private function getPrinterConfigs()
     {
-        $printers = [];
+        // Primeiro tenta buscar do banco de dados
+        try {
+            if (class_exists(\App\Models\Impressora::class)) {
+                $impressoras = \App\Models\Impressora::ativas()->ordenadas()->get();
+                
+                if ($impressoras->isNotEmpty()) {
+                    return $impressoras->map(function($imp) {
+                        return [
+                            'ip' => $imp->ip,
+                            'name' => $imp->nome,
+                            'port' => $imp->porta,
+                            'tipo' => $imp->tipo
+                        ];
+                    })->toArray();
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Erro ao buscar impressoras do banco de dados: ' . $e->getMessage());
+        }
         
-        // Verificar quantas impressoras estão configuradas
+        // Fallback para .env (compatibilidade)
+        $printers = [];
         $i = 1;
         while (env("PRINTER_{$i}_IP")) {
             $printers[] = [
                 'ip' => env("PRINTER_{$i}_IP"),
-                'name' => env("PRINTER_{$i}_NAME", "Impressora {$i}")
+                'name' => env("PRINTER_{$i}_NAME", "Impressora {$i}"),
+                'port' => env("PRINTER_{$i}_PORT", 9100),
+                'tipo' => 'termica'
             ];
             $i++;
         }

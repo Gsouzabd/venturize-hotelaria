@@ -91,6 +91,12 @@
                     <div>Usuários</div>
                 </a>
             </li>
+            <li class="sidenav-item{{ is_active_path('admin/impressoras') ? ' active' : '' }}">
+                <a href="{{ route('admin.impressoras.index') }}" class="sidenav-link">
+                    <i class="sidenav-icon fas fa-print"></i>
+                    <div>Impressoras</div>
+                </a>
+            </li>
             
             <!-- Despesas Menu -->
             <li class="sidenav-item{{ is_active_path('admin/despesas') ? ' active' : '' }}">
@@ -104,6 +110,13 @@
                         <a href="{{ route('admin.categorias-despesas.index') }}" class="sidenav-link">
                             <i class="sidenav-icon fas fa-tags"></i>
                             <span>Categorias</span>
+                        </a>
+                    </li>
+                    <!-- Fornecedores Menu Item -->
+                    <li class="sidenav-item{{ is_active_path('admin/fornecedores') ? ' active' : '' }}">
+                        <a href="{{ route('admin.fornecedores.index') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-truck"></i>
+                            <span>Fornecedores</span>
                         </a>
                     </li>
                 </ul>

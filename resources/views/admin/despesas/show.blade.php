@@ -16,6 +16,7 @@
                 <div class="col-md-6">
                     <p><strong>Número da Nota Fiscal:</strong> {{ $despesa->numero_nota_fiscal }}</p>
                     <p><strong>Descrição:</strong> {{ $despesa->descricao }}</p>
+                    <p><strong>Fornecedor:</strong> {{ $despesa->fornecedor->nome ?? '-' }}</p>
                     <p><strong>Data:</strong> {{ $despesa->data->format('d/m/Y') }}</p>
                     <p><strong>Valor Total:</strong> R$ {{ number_format($despesa->valor_total, 2, ',', '.') }}</p>
                     <p><strong>Cadastrado por:</strong> {{ $despesa->usuario->nome ?? '-' }}</p>
