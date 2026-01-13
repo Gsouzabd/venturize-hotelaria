@@ -18,3 +18,10 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Arquivos grandes do printing agent
+/printingAgent/printing-agent.exe
+/printingAgent/*.exe
+
+
+/printingAgent

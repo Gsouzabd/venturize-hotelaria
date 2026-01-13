@@ -12,6 +12,20 @@ use Illuminate\Support\Facades\Log;
 class PrintController extends Controller
 {
     /**
+     * Verifica se o erro é devido ao banco estar em modo read-only
+     *
+     * @param \Exception $e
+     * @return bool
+     */
+    private function isDatabaseReadOnlyError(\Exception $e): bool
+    {
+        $message = $e->getMessage();
+        return strpos($message, 'read-only') !== false 
+            || strpos($message, '1290') !== false
+            || ($e instanceof \Illuminate\Database\QueryException && strpos($message, 'read-only') !== false);
+    }
+
+    /**
      * Verifica o status de impressão de um pedido
      *
      * @param int $pedidoId
@@ -109,7 +123,9 @@ class PrintController extends Controller
             
             // Gerenciar registro de impressão: atualizar específico, pendente existente ou criar novo
              $impressaoAtual = null;
+             $databaseReadOnly = false;
              
+             try {
                if ($impressaoId) {
                   // Atualizar impressão específica pelo ID fornecido
                   $impressaoEspecifica = $pedido->impressoes()->find($impressaoId);
@@ -165,6 +181,27 @@ class PrintController extends Controller
                       'impressao_id' => $impressaoAtual ? $impressaoAtual->id : 'NULL',
                       'impressao_existe' => $impressaoAtual ? 'SIM' : 'NAO'
                   ]);
+              }
+             } catch (\Exception $e) {
+                 // Verificar se o erro é devido ao banco estar em modo read-only
+                 if ($this->isDatabaseReadOnlyError($e)) {
+                     $databaseReadOnly = true;
+                     Log::warning('PrintController: Banco de dados em modo read-only, continuando sem atualizar registro de impressão', [
+                         'pedido_id' => $pedido->id,
+                         'impressao_id' => $impressaoId,
+                         'error' => $e->getMessage()
+                     ]);
+                     
+                     // Tentar buscar impressão existente sem atualizar
+                     if ($impressaoId) {
+                         $impressaoAtual = $pedido->impressoes()->find($impressaoId);
+                     } else if ($temPendente) {
+                         $impressaoAtual = $pedido->impressoes()->where('status_impressao', 'pendente')->first();
+                     }
+                 } else {
+                     // Re-lançar exceção se não for erro de read-only
+                     throw $e;
+                 }
               }
 
             // Estruturar os dados para impressão
@@ -225,12 +262,20 @@ class PrintController extends Controller
                 'tipo_cupom' => 'parcial'
             ];
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'data' => $dadosImpressao,
                 'impressao_id' => $impressaoAtual ? $impressaoAtual->id : null,
                 'message' => 'Dados do pedido gerados com sucesso para impressão'
-            ]);
+            ];
+            
+            // Adicionar aviso se o banco estiver em modo read-only
+            if ($databaseReadOnly) {
+                $response['warning'] = 'Banco de dados em modo read-only: registro de impressão não foi atualizado';
+                $response['database_read_only'] = true;
+            }
+            
+            return response()->json($response);
 
         } catch (\Exception $e) {
             return response()->json([
