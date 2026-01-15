@@ -55,14 +55,13 @@
             <!-- Tipo -->
             <x-admin.field cols="4">
                 <x-admin.label label="Tipo" required/>
-                <x-admin.select name="tipo" id="tipo" required>
-                    <option value="termica" {{ old('tipo', $impressora->tipo ?? 'termica') == 'termica' ? 'selected' : '' }}>
-                        Térmica
-                    </option>
-                    <option value="convencional" {{ old('tipo', $impressora->tipo ?? '') == 'convencional' ? 'selected' : '' }}>
-                        Convencional
-                    </option>
-                </x-admin.select>
+                <x-admin.select 
+                    name="tipo" 
+                    id="tipo" 
+                    :items="['termica' => 'Térmica', 'convencional' => 'Convencional']" 
+                    :selected-item="old('tipo', $impressora->tipo ?? 'termica')" 
+                    defaultValue="termica"
+                    required/>
             </x-admin.field>
 
             <!-- Ordem -->

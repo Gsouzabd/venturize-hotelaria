@@ -190,4 +190,3 @@ npm run build
 ```
 
 Isso compilará os assets do frontend e gerará o arquivo `manifest.json` necessário.
-

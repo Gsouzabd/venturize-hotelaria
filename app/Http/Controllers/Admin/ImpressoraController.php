@@ -7,6 +7,8 @@ use App\Http\Requests\Admin\ImpressoraRequest;
 use App\Models\Impressora;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class ImpressoraController extends Controller
 {
@@ -65,6 +67,15 @@ class ImpressoraController extends Controller
             $this->model->fill($data)->save();
         }
 
+        // Sincronizar impressoras com o agente (em background)
+        try {
+            Artisan::call('printers:sync');
+            Log::info('Impressoras sincronizadas automaticamente após salvar');
+        } catch (\Exception $e) {
+            Log::warning('Erro ao sincronizar impressoras automaticamente: ' . $e->getMessage());
+            // Não falhar a requisição se a sincronização falhar
+        }
+
         return redirect()
             ->route('admin.impressoras.index')
             ->with('notice', config('app.messages.' . ($id ? 'update' : 'insert')));
@@ -74,6 +85,15 @@ class ImpressoraController extends Controller
     {
         $impressora = $this->model->findOrFail($id);
         $impressora->delete();
+
+        // Sincronizar impressoras com o agente (em background)
+        try {
+            Artisan::call('printers:sync');
+            Log::info('Impressoras sincronizadas automaticamente após deletar');
+        } catch (\Exception $e) {
+            Log::warning('Erro ao sincronizar impressoras automaticamente: ' . $e->getMessage());
+            // Não falhar a requisição se a sincronização falhar
+        }
 
         return redirect()
             ->route('admin.impressoras.index')
