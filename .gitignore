@@ -20,8 +20,10 @@ yarn-error.log
 /.vscode
 
 # Arquivos grandes do printing agent
+/printingAgent/**/*.exe
+/printingAgent/**/*.zip
+/printingAgent/Agentimpressao.zip
 /printingAgent/printing-agent.exe
-/printingAgent/*.exe
-
-
-/printingAgent
+/printingAgent/**/printing-agent.exe
+/printingAgent/**/service-manager.exe
+/printingAgent/**/setup-printers.exe
