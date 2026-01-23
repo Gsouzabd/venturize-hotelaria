@@ -60,8 +60,7 @@ class DespesaController extends Controller
         }
 
         $despesas = $query
-            ->orderBy('data', 'desc')
-            ->orderBy('id', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate(config('app.rows_per_page', 15));
 
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
@@ -73,9 +72,11 @@ class DespesaController extends Controller
     public function edit($id = null)
     {
         $edit = boolval($id);
-        $despesa = $edit ? $this->model->with('despesaCategorias.categoriaDespesa')->findOrFail($id) : $this->model->newInstance();
+        $despesa = $edit ? $this->model->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->findOrFail($id) : $this->model->newInstance();
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
-        $fornecedores = Fornecedor::orderBy('nome')->get();
+        // Não precisamos mais carregar todos os fornecedores, pois usamos busca AJAX
+        // Mas mantemos para compatibilidade caso necessário
+        $fornecedores = collect([]);
 
         return view('admin.despesas.form', compact('despesa', 'edit', 'categorias', 'fornecedores'));
     }
@@ -122,6 +123,11 @@ class DespesaController extends Controller
         // Tratar fornecedor_id vazio como null
         if (isset($data['fornecedor_id']) && empty($data['fornecedor_id'])) {
             $data['fornecedor_id'] = null;
+        }
+
+        // Tratar numero_nota_fiscal vazio como null
+        if (isset($data['numero_nota_fiscal']) && empty($data['numero_nota_fiscal'])) {
+            $data['numero_nota_fiscal'] = null;
         }
 
         // Adicionar usuário que cadastrou

@@ -24,8 +24,8 @@
         
         <x-admin.field-group>
             <x-admin.field cols="4">
-                <x-admin.label label="Número da Nota Fiscal" required/>
-                <x-admin.text name="numero_nota_fiscal" id="numero_nota_fiscal" :value="old('numero_nota_fiscal', $despesa->numero_nota_fiscal ?? '')" required/>
+                <x-admin.label label="Número da Nota Fiscal"/>
+                <x-admin.text name="numero_nota_fiscal" id="numero_nota_fiscal" :value="old('numero_nota_fiscal', $despesa->numero_nota_fiscal ?? '')"/>
             </x-admin.field>
 
             <x-admin.field cols="4">
@@ -42,14 +42,20 @@
         <x-admin.field-group>
             <x-admin.field cols="12">
                 <x-admin.label label="Fornecedor"/>
-                <select name="fornecedor_id" id="fornecedor_id" class="custom-select">
-                    <option value="">Selecione um fornecedor (opcional)</option>
-                    @foreach($fornecedores as $fornecedor)
-                        <option value="{{ $fornecedor->id }}" {{ old('fornecedor_id', $despesa->fornecedor_id ?? '') == $fornecedor->id ? 'selected' : '' }}>
-                            {{ $fornecedor->nome }}
-                        </option>
-                    @endforeach
-                </select>
+                <x-admin.select2 
+                    name="fornecedor_id" 
+                    id="fornecedor_id"
+                    remoteUrl="{{ route('admin.fornecedores.search') }}"
+                    minInputLength="3"
+                    placeholder="Buscar fornecedor (opcional)"
+                    remoteUrlSelectedValue="{{ old('fornecedor_id', $despesa->fornecedor_id ?? '') }}"
+                    remoteUrlSelectedText="{{ ($edit && $despesa->fornecedor) ? $despesa->fornecedor->nome : '' }}"
+                />
+                <div class="mt-2">
+                    <a href="{{ route('admin.fornecedores.create') }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i> CADASTRAR NOVO FORNECEDOR
+                    </a>
+                </div>
             </x-admin.field>
         </x-admin.field-group>
 
@@ -161,6 +167,68 @@
 <script>
     $(document).ready(function() {
         $('.date-mask').mask('00/00/0000');
+        
+        // Configurar Select2 para fornecedor com AJAX
+        // Aguardar um pouco para garantir que o componente tenha inicializado
+        setTimeout(function() {
+            var $select = $('#fornecedor_id');
+            var selectedValue = $select.val();
+            var selectedText = $select.find('option:selected').text();
+            
+            // Se já foi inicializado pelo componente, destruir e reinicializar com AJAX
+            if ($select.data('select2')) {
+                $select.select2('destroy');
+            }
+            
+            // Configurar Select2 com AJAX
+            $select.select2({
+                dropdownParent: $select.parent(),
+                language: 'pt-BR',
+                ajax: {
+                    url: '{{ route('admin.fornecedores.search') }}',
+                    dataType: 'json',
+                    delay: 500,
+                    cache: false,
+                    data: function (params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results || []
+                        };
+                    }
+                },
+                minimumInputLength: 3,
+                escapeMarkup: function (markup) {
+                    // Não fazer escape adicional - o texto já vem correto do servidor
+                    return markup;
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    // Retornar texto sem escape adicional
+                    return data.text;
+                },
+                templateSelection: function(data) {
+                    // Retornar texto sem escape adicional para exibição
+                    return data.text || data.id;
+                }
+            });
+            
+            // Se há valor selecionado, garantir que está selecionado
+            if (selectedValue && selectedValue !== '' && selectedText && selectedText.trim() !== '') {
+                // Verificar se a opção já existe
+                if ($select.find('option[value="' + selectedValue + '"]').length === 0) {
+                    // Adicionar opção se não existir
+                    var option = new Option(selectedText, selectedValue, true, true);
+                    $select.append(option);
+                }
+                $select.val(selectedValue).trigger('change');
+            }
+        }, 300);
         
         let rateioIndex = {{ $edit && $despesa->despesaCategorias->count() > 0 ? $despesa->despesaCategorias->count() : 0 }};
         const categorias = @json($categorias);

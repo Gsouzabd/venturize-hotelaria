@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
 use App\Http\Controllers\Admin\ImpressoraController;
+use App\Http\Controllers\Admin\FornecedorController;
 // SEMPRE RODAR O COMANDO:
 //php artisan cache:clear; php artisan route:cache;
 include 'bar/routes.php';
@@ -32,8 +33,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('logout', [LoginController::class, 'logout'])->name('logout');
         Route::get('/', [HomeController::class, 'index'])->name('home');
 
-        Route::get('/produtos/search', [ProdutoController::class, 'search'])->name('admin.produtos.search');
-        Route::get('/clientes/search', [ClienteController::class, 'search'])->name('admin.clientes.search');
+        Route::get('/produtos/search', [ProdutoController::class, 'search'])->name('produtos.search');
+        Route::get('/clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
+        Route::get('/fornecedores/search', [FornecedorController::class, 'search'])->name('fornecedores.search');
 
         Route::match(['post', 'put'], '/estoque/movimentacoes/', [MovimentacaoEstoqueController::class, 'save'])->name('movimentacoes-estoque.save');
 

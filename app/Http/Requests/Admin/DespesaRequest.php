@@ -17,10 +17,12 @@ class DespesaRequest extends FormRequest
         $id = $this->route('id');
         $rules = [
             'numero_nota_fiscal' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
-                Rule::unique('despesas', 'numero_nota_fiscal')->ignore($id),
+                Rule::unique('despesas', 'numero_nota_fiscal')->ignore($id)->where(function ($query) {
+                    return $query->whereNotNull('numero_nota_fiscal');
+                }),
             ],
             'descricao' => 'required|string|max:1000',
             'data' => 'required|date_format:d/m/Y|before_or_equal:today',
@@ -40,7 +42,6 @@ class DespesaRequest extends FormRequest
     public function messages()
     {
         return [
-            'numero_nota_fiscal.required' => 'O número da nota fiscal é obrigatório.',
             'numero_nota_fiscal.unique' => 'Já existe uma despesa com este número de nota fiscal.',
             'descricao.required' => 'A descrição da despesa é obrigatória.',
             'descricao.max' => 'A descrição não pode ter mais de 1000 caracteres.',

@@ -79,4 +79,26 @@ class FornecedorController extends Controller
             ->route('admin.fornecedores.index')
             ->with('notice', config('app.messages.delete'));
     }
+
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+
+        if (strlen($query) < 3) {
+            return response()->json(['results' => []]);
+        }
+
+        $fornecedores = $this->model->where('nome', 'like', '%' . $query . '%')
+                                    ->orderBy('nome', 'asc')
+                                    ->get();
+
+        $results = $fornecedores->map(function ($fornecedor) {
+            return [
+                'id' => $fornecedor->id,
+                'text' => html_entity_decode($fornecedor->nome, ENT_QUOTES, 'UTF-8')
+            ];
+        });
+
+        return response()->json(['results' => $results]);
+    }
 }
