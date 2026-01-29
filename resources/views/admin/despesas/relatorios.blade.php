@@ -16,13 +16,11 @@
                 <div class="row">
                     <div class="col-md-3">
                         <label>Data Inicial</label>
-                        <input type="text" name="data_inicial" class="form-control date-mask" 
-                               value="{{ $filters['data_inicial'] ?? '' }}" required>
+                        <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''" required/>
                     </div>
                     <div class="col-md-3">
                         <label>Data Final</label>
-                        <input type="text" name="data_final" class="form-control date-mask" 
-                               value="{{ $filters['data_final'] ?? '' }}" required>
+                        <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''" required/>
                     </div>
                     <div class="col-md-3">
                         <label>Categoria</label>
@@ -122,19 +120,20 @@
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Número da Nota</th>
                             <th>Data</th>
+                            <th>ID</th>
+                            <th>Fornecedor</th>
                             <th>Valor Total</th>
                             <th>Rateios</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($despesas as $despesa)
                             <tr>
-                                <td>{{ $despesa->id }}</td>
-                                <td>{{ $despesa->numero_nota_fiscal }}</td>
                                 <td>{{ $despesa->data->format('d/m/Y') }}</td>
+                                <td>{{ $despesa->id }}</td>
+                                <td>{{ $despesa->fornecedor->nome ?? '-' }}</td>
                                 <td>R$ {{ number_format($despesa->valor_total, 2, ',', '.') }}</td>
                                 <td>
                                     <ul class="list-unstyled mb-0">
@@ -148,10 +147,14 @@
                                         @endforeach
                                     </ul>
                                 </td>
+                                <td class="cell-nowrap">
+                                    <x-admin.edit-btn route="admin.despesas.edit" :route-params="['id' => $despesa->id]"/>
+                                    <x-admin.delete-btn route="admin.despesas.destroy" :route-params="['id' => $despesa->id]"/>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center">Nenhuma despesa encontrada para o período selecionado</td>
+                                <td colspan="6" class="text-center">Nenhuma despesa encontrada para o período selecionado</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -168,11 +171,4 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-    $(document).ready(function() {
-        $('.date-mask').mask('00/00/0000');
-    });
-</script>
-@endpush
 

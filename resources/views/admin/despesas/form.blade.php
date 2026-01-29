@@ -62,7 +62,7 @@
         <x-admin.field-group>
             <x-admin.field cols="12">
                 <x-admin.label label="Descrição" required/>
-                <x-admin.textarea name="descricao" id="descricao" rows="3" required>{{ old('descricao', $despesa->descricao ?? '') }}</x-admin.textarea>
+                <x-admin.textarea name="descricao" id="descricao" rows="3" :value="old('descricao', $despesa->descricao ?? '')" required/>
                 <small class="form-text text-muted">Descreva a despesa de forma clara e objetiva.</small>
             </x-admin.field>
         </x-admin.field-group>
@@ -87,7 +87,7 @@
         <x-admin.field-group>
             <x-admin.field cols="12">
                 <x-admin.label label="Observações"/>
-                <x-admin.textarea name="observacoes" id="observacoes">{{ old('observacoes', $despesa->observacoes ?? '') }}</x-admin.textarea>
+                <x-admin.textarea name="observacoes" id="observacoes" :value="old('observacoes', $despesa->observacoes ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
 

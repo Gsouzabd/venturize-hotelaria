@@ -2,6 +2,7 @@
 namespace App\Listeners;
 
 use App\Events\ItemAdicionado;
+use App\Services\Bar\MesaService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,7 @@ class GeneratePdfForItemAdicionado
      */
     public function handle(ItemAdicionado $event)
     {
-        $pdfContent = app('App\Services\MesaService')->gerarCupomItemAdicionado($event->data['pedido_id'], $event->item);
+        $pdfContent = app(MesaService::class)->gerarCupomItemAdicionado($event->data['pedido_id'], $event->item);
 
         // Save the PDF to a temporary file
         $pdfPath = storage_path("app/public/cupom_pedido_{$event->data['pedido_id']}.pdf");

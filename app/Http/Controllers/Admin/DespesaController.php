@@ -211,7 +211,7 @@ class DespesaController extends Controller
             });
         }
 
-        $despesas = $query->with('despesaCategorias.categoriaDespesa')->get();
+        $despesas = $query->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->get();
 
         // Consolidar por categoria
         $consolidado = [];
@@ -341,7 +341,7 @@ class DespesaController extends Controller
             });
         }
 
-        $despesas = $query->with(['usuario', 'despesaCategorias.categoriaDespesa'])->get();
+        $despesas = $query->with(['usuario', 'despesaCategorias.categoriaDespesa', 'fornecedor'])->get();
 
         // Preparar dados para Excel
         $dadosExcel = [];
@@ -355,6 +355,7 @@ class DespesaController extends Controller
         $dadosExcel[] = [
             'ID',
             'Número da Nota Fiscal',
+            'Fornecedor',
             'Descrição',
             'Data',
             'Valor Total',
@@ -372,6 +373,7 @@ class DespesaController extends Controller
                     $dadosExcel[] = [
                         $index === 0 ? $despesa->id : '',
                         $index === 0 ? $despesa->numero_nota_fiscal : '',
+                        $index === 0 ? ($despesa->fornecedor->nome ?? '-') : '',
                         $index === 0 ? $despesa->descricao : '',
                         $index === 0 ? $despesa->data->format('d/m/Y') : '',
                         $index === 0 ? number_format($despesa->valor_total, 2, ',', '.') : '',
@@ -387,6 +389,7 @@ class DespesaController extends Controller
                 $dadosExcel[] = [
                     $despesa->id,
                     $despesa->numero_nota_fiscal,
+                    $despesa->fornecedor->nome ?? '-',
                     $despesa->descricao,
                     $despesa->data->format('d/m/Y'),
                     number_format($despesa->valor_total, 2, ',', '.'),
