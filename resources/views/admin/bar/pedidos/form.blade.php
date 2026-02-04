@@ -327,17 +327,71 @@
 
         gerarParcialBtn.addEventListener('click', function () {
             const pedidoId = {{ $pedido->id }};
-            
-            // Gerar cupom parcial diretamente
-            const url = `/admin/bar/pedidos/${pedidoId}/cupom-parcial`;
-            
-            // Abrir em nova janela para impressão
-            window.open(url, '_blank');
-            
-            // Recarregar a página após um pequeno delay
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            const printUrl = `/admin/bar/pedidos/${pedidoId}/cupom-parcial`;
+            const apiUrl = `/api/print/pedido/${pedidoId}`;
+
+            // Função para abrir o PDF e recarregar
+            const openPdfAndReload = (skipLog = false) => {
+                const url = skipLog ? `${printUrl}?no_log=1` : printUrl;
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            };
+
+            // Primeiro chama a API para verificar status e preparar dados para o agente
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(async response => {
+                const data = await response.json();
+                
+                // Verifica se requer confirmação (HTTP 409)
+                if (response.status === 409 && data.requires_confirmation) {
+                    Swal.fire({
+                        title: 'Confirmação',
+                        text: data.message || "Este pedido já foi impresso anteriormente. Deseja imprimir novamente?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Sim, imprimir novamente',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.value || result.isConfirmed) {
+                            // Usuário confirmou, força a impressão
+                            fetch(`${apiUrl}?forcar_impressao=true`, {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                }
+                            }).then((resp) => {
+                                // Se a API respondeu OK, pulamos o log no Controller do PDF
+                                const skipLog = resp.ok;
+                                openPdfAndReload(skipLog);
+                            }).catch(() => {
+                                // Erro na rede, logamos via Controller do PDF
+                                openPdfAndReload(false);
+                            });
+                        }
+                    });
+                } else {
+                    // Se sucesso (200), a API já registrou a impressão.
+                    // Se erro (ex: 500), a API não registrou, então deixamos o PDF registrar.
+                    const skipLog = response.ok;
+                    openPdfAndReload(skipLog);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao conectar com API de impressão:', error);
+                // Em caso de erro de rede, prossegue com o PDF local
+                openPdfAndReload(false);
+            });
          });
 
         const gerarExtratoBtn = document.getElementById('gerarExtratoBtn');

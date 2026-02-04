@@ -194,14 +194,34 @@ class PedidoController extends Controller
             ->with('notice', config('app.messages.delete'));
     }
 
-    public function showCupomParcial($idPedido, Request $request = null)
+    public function showCupomParcial($idPedido)
     {
         $pedido = $this->model->findOrFail($idPedido);
         
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
         
-        // Criar registro de impressão e imprimir via PrinterService
-        $impressao = $this->criarRegistroEImprimir($pedido, $pdfOutput, 'parcial');
+        // Verificar se deve pular o registro de impressão (caso já tenha sido feito pela API ou já exista pendente)
+        // Usando helper request() para garantir acesso aos parâmetros query string
+        // Adicionada verificação de impressão pendente para evitar duplicidade
+        if ((request()->has('no_log') && request()->input('no_log') == '1') || $pedido->temImpressaoPendente()) {
+            // Log::info('Pulando registro de impressão (no_log=1 ou já existe pendente)');
+            return response($pdfOutput, 200, [
+                'Content-Type' => 'application/pdf'
+            ]);
+        }
+
+        // Log::info('Criando novo registro de impressão no Controller');
+        // Criar registro de impressão com status 'pendente'
+        $impressao = $pedido->impressoes()->create([
+            'agente_impressao' => 'sistema_web',
+            'ip_origem' => request()->ip(),
+            'status_impressao' => 'pendente',
+            'dados_impressao' => [
+                'user_agent' => request()->userAgent(),
+                'timestamp_criacao' => now()->toISOString(),
+                'tipo_cupom' => 'parcial'
+            ]
+        ]);
         
         // Retornar o PDF com headers de controle
         return response($pdfOutput, 200, [
