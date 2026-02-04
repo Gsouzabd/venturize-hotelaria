@@ -295,11 +295,10 @@ class ReservaService
 
     public function gerarFichaNacional($id)
     {
-        // Buscar os dados da reserva com base no ID
-        $reserva = Reserva::findOrFail($id);
+        // Buscar os dados da reserva com base no ID (com acompanhantes, quarto e cliente responsável)
+        $reserva = Reserva::with(['acompanhantes', 'quarto', 'clienteResponsavel', 'checkIn'])->findOrFail($id);
         $data = [
             'reserva' => $reserva,
-            // Adicione outros dados necessários aqui
         ];
 
         $html = $this->view->make('pdf.ficha-nacional', $data)->render();

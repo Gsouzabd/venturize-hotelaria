@@ -14,7 +14,7 @@ use Mike42\Escpos\Printer;
 use App\Models\LocalEstoque;
 use Illuminate\Support\Facades\DB;
 use App\Services\MovimentacaoEstoqueService;
-use Illuminate\Container\Attributes\Log;
+use Illuminate\Support\Facades\Log;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 
 class MesaService {
@@ -402,6 +402,14 @@ class MesaService {
             $pedido = $pedido->first();
         }
 
+        $totalTaxaServicoConsumoConsumo = $pedido && ($pedido->remover_taxa == 0)
+            ? floatval($pedido->taxa_servico)
+            : 0;
+
+        if ($reserva && $reserva->remover_taxa_servico == 1) {
+            $totalTaxaServicoConsumoConsumo = 'Cliente optou por remover';
+        }
+
         // Configurar Dompdf
         $options = new Options();
         $options->set('defaultFont', 'Courier');
@@ -410,7 +418,7 @@ class MesaService {
 
 
         // Dados do pedido e itens
-        $html = view('pdf.extrato_parcial', compact('pedido', 'reserva'))->render();
+        $html = view('pdf.extrato_parcial', compact('pedido', 'reserva', 'totalTaxaServicoConsumoConsumo'))->render();
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');

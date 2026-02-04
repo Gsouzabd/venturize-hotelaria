@@ -66,7 +66,11 @@
     <table>
         <tr>
             <td class="half-width"><strong>Nome Completo / Full Name:</strong> {{ $reserva->clienteResponsavel->nome ?? '       ' }}</td>
+            <td class="half-width"><strong>Nome Social / Social Name:</strong> {{ $reserva->clienteResponsavel->nome ?? '       ' }}</td>
+        </tr>
+        <tr>
             <td class="half-width"><strong>E-mail:</strong> {{ $reserva->clienteResponsavel->email ?? '       ' }}</td>
+            <td class="half-width"><strong>Número de Hóspedes / Number of Guests:</strong> {{ (int)($reserva->adultos ?? 0) + (int)($reserva->criancas_ate_7 ?? 0) + (int)($reserva->criancas_mais_7 ?? 0) }}</td>
         </tr>
         <tr>
             <td class="half-width"><strong>Telefone / Phone:</strong> {{ $reserva->clienteResponsavel->telefone ?? '       ' }}</td>
@@ -74,7 +78,7 @@
             <td class="half-width"><strong>Profissão / Occupation:</strong> {{ $reserva->clienteResponsavel->profissao ?? '       ' }}</td>
         </tr>
         <tr>
-            <td class="half-width"><strong>Data Nasc. / Birth Date:</strong> {{ \Carbon\Carbon::parse($reserva->clienteResponsavel->data_nascimento)->format('d/m/Y') }}</td>
+            <td class="half-width"><strong>Data Nasc. / Birth Date:</strong> {{ $reserva->clienteResponsavel->data_nascimento ? \Carbon\Carbon::parse($reserva->clienteResponsavel->data_nascimento)->format('d/m/Y') : '       ' }}</td>
             <td class="half-width"><strong>Nacionalidade (País) / Citizenship (Country):</strong> {{ $reserva->clienteResponsavel->nacionalidade ?? '       ' }}</td>
             <td class="half-width"><strong>Gênero / Gender:</strong> {{ $reserva->clienteResponsavel->genero ?? '       ' }}</td>
         </tr>
@@ -134,13 +138,47 @@
     <p class="section-title">Check-in e Check-out</p>
     <table>
         <tr>
-            <td class="half-width"><strong>Check-in:</strong> {{ \Carbon\Carbon::parse($reserva->checkin->checkin_at)->format('d/m/Y H:i') }}</td>
-            <td class="half-width"><strong>Check-out:</strong> {{  \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y H:i') }}</td>   
-         </tr>
-    <tr>
-        <td class="half-width"><strong>Número para contato em caso de emergência:</strong> {{ $reserva->contato_emergencia ?? '       ' }}</td>
-    </tr>
+            <td class="third-width"><strong>UH N°:</strong> {{ $reserva->quarto->numero ?? '—' }}</td>
+            <td class="third-width"><strong>Check-in:</strong> {{ $reserva->checkin ? \Carbon\Carbon::parse($reserva->checkin->checkin_at)->format('d/m/Y H:i:s') : '—' }}</td>
+            <td class="third-width"><strong>Check-out:</strong> {{ $reserva->data_checkout ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y H:i') : '—' }}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><strong>Número para contato em caso de emergência:</strong> {{ $reserva->contato_emergencia ?? '       ' }}</td>
+        </tr>
     </table>
+
+    <p class="section-title">Veículo / Vehicle</p>
+    <table>
+        <tr>
+            <td class="third-width"><strong>Modelo / Model:</strong> {{ $reserva->veiculo_modelo ?? '       ' }}</td>
+            <td class="third-width"><strong>Cor / Color:</strong> {{ $reserva->veiculo_cor ?? '       ' }}</td>
+            <td class="third-width"><strong>Placa / Plate:</strong> {{ $reserva->veiculo_placa ?? '       ' }}</td>
+        </tr>
+    </table>
+
+    @if($reserva->acompanhantes && $reserva->acompanhantes->count() > 0)
+    <p class="section-title">Informações dos Acompanhantes / Companion Information</p>
+    <table>
+        <tr>
+            <th style="width: 25%;">Nome / Name</th>
+            <th style="width: 15%;">CPF</th>
+            <th style="width: 15%;">Data Nasc. / Birth Date</th>
+            <th style="width: 15%;">Tipo / Type</th>
+            <th style="width: 15%;">E-mail</th>
+            <th style="width: 15%;">Telefone / Phone</th>
+        </tr>
+        @foreach($reserva->acompanhantes as $acompanhante)
+        <tr>
+            <td>{{ $acompanhante->nome ?? '—' }}</td>
+            <td>{{ $acompanhante->cpf ?? '—' }}</td>
+            <td>{{ $acompanhante->data_nascimento ? \Carbon\Carbon::parse($acompanhante->data_nascimento)->format('d/m/Y') : '—' }}</td>
+            <td>{{ $acompanhante->tipo ?? '—' }}</td>
+            <td>{{ $acompanhante->email ?? '—' }}</td>
+            <td>{{ $acompanhante->telefone ?? '—' }}</td>
+        </tr>
+        @endforeach
+    </table>
+    @endif
     
     <table>
         <p class="section-title">Meio de Transporte / Arriving By</p>

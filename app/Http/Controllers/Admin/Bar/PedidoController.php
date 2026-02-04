@@ -100,13 +100,11 @@ class PedidoController extends Controller
                     // Disparar o evento
                     event(new ItemAdicionado($data, $itens, $pdfUrl));
                 
-                    $conteudoCupom = "Pedido ID: " . $data['pedido_id'] . "\n";
-                    foreach ($itens as $item) {
-                        $conteudoCupom .= "{$item['nome']} - R$ {$item['preco']}\n";
-                    }
-                
-                    // Acionar a impressão
-                    $this->mesaService->imprimirCupom($conteudoCupom);
+                    // Buscar o pedido para criar registro de impressão
+                    $pedido = $this->model->findOrFail($data['pedido_id']);
+                    
+                    // Criar registro de impressão e imprimir via PrinterService
+                    $this->criarRegistroEImprimir($pedido, $pdfContent, 'item_adicionado');
                 
                     // Retornar resposta com o URL do PDF
                     return response()->json([
@@ -124,6 +122,12 @@ class PedidoController extends Controller
                     // Salvar o PDF em um arquivo temporário
                     $pdfPath = storage_path("app/public/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf");
                     file_put_contents($pdfPath, $pdfContent);
+        
+                    // Buscar o pedido para criar registro de impressão
+                    $pedido = $this->model->findOrFail($data['pedido_id']);
+                    
+                    // Criar registro de impressão e imprimir via PrinterService
+                    $this->criarRegistroEImprimir($pedido, $pdfContent, 'cancelamento');
         
                     // Retornar uma resposta que abre o PDF em uma nova aba
                     return response()->json([
@@ -143,6 +147,12 @@ class PedidoController extends Controller
                         // Salvar o PDF em um arquivo temporário
                         $pdfPath = storage_path("app/public/cupom_fechamento_pedido_{$pedidoId}.pdf");
                         file_put_contents($pdfPath, $pdfContent);
+        
+                        // Buscar o pedido para criar registro de impressão
+                        $pedido = $this->model->findOrFail($pedidoId);
+                        
+                        // Criar registro de impressão e imprimir via PrinterService
+                        $this->criarRegistroEImprimir($pedido, $pdfContent, 'fechamento');
         
                         // Retornar uma resposta que abre o PDF em uma nova aba
                         return response()->json([
@@ -213,18 +223,29 @@ class PedidoController extends Controller
             ]
         ]);
         
-        // Retornar o PDF
+        // Retornar o PDF com headers de controle
         return response($pdfOutput, 200, [
             'Content-Type' => 'application/pdf',
             'X-Impressao-ID' => $impressao->id,
-            'X-Impressao-Status' => 'pendente'
+            'X-Impressao-Status' => $impressao->status_impressao
         ]);
     }
 
     public function showExtratoParcial($idPedido)
     {
+        $pedido = $this->model->findOrFail($idPedido);
+        
         $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
-        return response($pdfOutput, 200, ['Content-Type' => 'application/pdf']);
+        
+        // Criar registro de impressão e imprimir via PrinterService
+        $impressao = $this->criarRegistroEImprimir($pedido, $pdfOutput, 'extrato');
+        
+        // Retornar o PDF com headers de controle
+        return response($pdfOutput, 200, [
+            'Content-Type' => 'application/pdf',
+            'X-Impressao-ID' => $impressao->id,
+            'X-Impressao-Status' => $impressao->status_impressao
+        ]);
     }
 
     /**
@@ -256,5 +277,107 @@ class PedidoController extends Controller
                 ];
             })
         ]);
+    }
+
+    /**
+     * Método helper para criar registro de impressão e imprimir via PrinterService
+     * 
+     * @param Pedido $pedido
+     * @param string $pdfContent Conteúdo binário do PDF
+     * @param string $tipoCupom Tipo do cupom: 'parcial', 'extrato', 'item_adicionado', 'cancelamento', 'fechamento'
+     * @return ImpressaoPedido
+     */
+    private function criarRegistroEImprimir(Pedido $pedido, string $pdfContent, string $tipoCupom): ImpressaoPedido
+    {
+        Log::info('PedidoController: Criando registro de impressão', [
+            'pedido_id' => $pedido->id,
+            'tipo_cupom' => $tipoCupom,
+            'ip_origem' => request()->ip()
+        ]);
+
+        // Criar registro de impressão com status 'pendente'
+        $impressao = $pedido->impressoes()->create([
+            'agente_impressao' => 'sistema_web',
+            'ip_origem' => request()->ip(),
+            'status_impressao' => 'pendente',
+            'dados_impressao' => [
+                'user_agent' => request()->userAgent(),
+                'timestamp_criacao' => now()->toISOString(),
+                'tipo_cupom' => $tipoCupom
+            ]
+        ]);
+
+        Log::info('PedidoController: Registro de impressão criado', [
+            'impressao_id' => $impressao->id,
+            'pedido_id' => $pedido->id
+        ]);
+
+        // Tentar imprimir via PrinterService
+        try {
+            Log::info('PedidoController: Iniciando impressão via PrinterService', [
+                'impressao_id' => $impressao->id,
+                'pedido_id' => $pedido->id,
+                'tipo_cupom' => $tipoCupom
+            ]);
+
+            $resultados = $this->printerService->printPdfToAllPrinters($pdfContent);
+            
+            // Verificar se pelo menos uma impressora imprimiu com sucesso
+            $sucesso = collect($resultados)->contains(function($resultado) {
+                return isset($resultado['success']) && $resultado['success'] === true;
+            });
+            
+            if ($sucesso) {
+                Log::info('PedidoController: Impressão realizada com sucesso', [
+                    'impressao_id' => $impressao->id,
+                    'pedido_id' => $pedido->id,
+                    'resultados' => $resultados
+                ]);
+
+                // Atualizar registro para sucesso
+                $impressao->update([
+                    'status_impressao' => 'sucesso',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'timestamp_processamento' => now()->toISOString(),
+                        'resultados_impressao' => $resultados
+                    ])
+                ]);
+            } else {
+                Log::warning('PedidoController: Nenhuma impressora conseguiu imprimir', [
+                    'impressao_id' => $impressao->id,
+                    'pedido_id' => $pedido->id,
+                    'resultados' => $resultados
+                ]);
+
+                // Manter como pendente para que o agente externo possa processar depois
+                $impressao->update([
+                    'status_impressao' => 'pendente',
+                    'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                        'resultados_impressao' => $resultados,
+                        'erro_impressao' => 'Nenhuma impressora conseguiu imprimir'
+                    ])
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('PedidoController: Erro ao imprimir via PrinterService', [
+                'pedido_id' => $pedido->id,
+                'impressao_id' => $impressao->id,
+                'tipo_cupom' => $tipoCupom,
+                'erro' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Em caso de erro, manter como pendente
+            $impressao->update([
+                'status_impressao' => 'pendente',
+                'detalhes_erro' => $e->getMessage(),
+                'dados_impressao' => array_merge($impressao->dados_impressao ?? [], [
+                    'erro_excecao' => $e->getMessage(),
+                    'timestamp_erro' => now()->toISOString()
+                ])
+            ]);
+        }
+
+        return $impressao;
     }
 }

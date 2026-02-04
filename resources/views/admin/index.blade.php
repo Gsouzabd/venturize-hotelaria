@@ -74,44 +74,57 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
                     $situacao = $status['status'];
                     $corDeFundo = $situacoesReserva[$situacao]['background'] ?? '#00a65a';
                     $label = $situacoesReserva[$situacao]['label'] ?? 'Livre';
+                    $hoje = Carbon::today()->format('Y-m-d');
+                    $amanha = Carbon::today()->addDay()->format('Y-m-d');
+                    $urlLivre = route('admin.reservas.create', [
+                        'quarto_id' => $status['quarto']->id,
+                        'quarto_numero' => $status['quarto']->numero,
+                        'quarto_classificacao' => $status['quarto']->classificacao ?? '',
+                        'quarto_andar' => $status['quarto']->andar ?? '',
+                        'data_checkin' => $hoje,
+                        'data_checkout' => $amanha,
+                    ]);
+                    $urlComReserva = $status['reserva'] ? route('admin.reservas.edit', ['id' => $status['reserva']->id]) : $urlLivre;
                 @endphp
                 <div class="col-lg-2 col-md-2 col-sm-4 col-6 mb-4 quartos">
-                    <div class="card room-card shadow-sm h-100">
-                        <div class="card-body text-center p-2" style="color: white; background-color: {{ $corDeFundo }};"
-                            @if($status['status'] != 'Livre' && $status['reserva'])
-                                data-toggle="tooltip" data-html="true" title="
-                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
-                                        <strong>Cliente:</strong> <span>{{ ucwords(strtolower($status['reserva']->clienteResponsavel->nome ?? 'N/A')) }}</span>
-                                    </div>
-                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
-                                        <strong>Check-in:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkin)->format('d-m-Y H:i') }}</span>
-                                    </div>
-                                    <div class='d-flex justify-content-between' style='font-size: 12px;'>
-                                        <strong>Check-out:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkout)->format('d-m-Y H:i') }}</span>
-                                    </div>
-                                "
-                            @endif
-                        >
-                            <!-- Número do Quarto -->
-                            <h5 class="card-title mb-2">{{ $status['quarto']->numero }}</h5>
-                            
-                            <!-- Nome do Quarto (Classificação) -->
-                            <p class="room-name">{{ $status['quarto']->classificacao }}</p>
-                            
-                            <!-- Ícone baseado no status -->
-                            @if($status['status'] == 'HOSPEDADO')
-                                <i class="fas fa-lock fa-2x text-danger"></i> <!-- Ícone de cadeado -->
-                            @elseif($status['status'] == 'Livre')
-                                <i class="fas fa-thumbs-up fa-2x" style="color: #0d6c0d;"></i> <!-- Ícone de joinha -->
-                            @elseif($status['status'] == 'RESERVADO')
-                                <i class="fas fa-dollar-sign fa-2x" style="color: #062381;"></i> <!-- Ícone de pagamento -->
-                            @else
-                                <i class="fas fa-question-circle fa-2x text-warning"></i> <!-- Ícone de status desconhecido -->
-                            @endif
-                            
-                            <p class="card-text quarto">{{ $label }}</p>
+                    <a href="{{ $status['status'] === 'Livre' ? $urlLivre : $urlComReserva }}" class="text-decoration-none d-block" style="color: inherit; cursor: pointer;">
+                        <div class="card room-card shadow-sm h-100">
+                            <div class="card-body text-center p-2" style="color: white; background-color: {{ $corDeFundo }};"
+                                @if($status['status'] != 'Livre' && $status['reserva'])
+                                    data-toggle="tooltip" data-html="true" title="
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Cliente:</strong> <span>{{ ucwords(strtolower($status['reserva']->clienteResponsavel->nome ?? 'N/A')) }}</span>
+                                        </div>
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Check-in:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkin)->format('d-m-Y H:i') }}</span>
+                                        </div>
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Check-out:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkout)->format('d-m-Y H:i') }}</span>
+                                        </div>
+                                    "
+                                @endif
+                            >
+                                <!-- Número do Quarto -->
+                                <h5 class="card-title mb-2">{{ $status['quarto']->numero }}</h5>
+                                
+                                <!-- Nome do Quarto (Classificação) -->
+                                <p class="room-name">{{ $status['quarto']->classificacao }}</p>
+                                
+                                <!-- Ícone baseado no status -->
+                                @if($status['status'] == 'HOSPEDADO')
+                                    <i class="fas fa-lock fa-2x text-danger"></i> <!-- Ícone de cadeado -->
+                                @elseif($status['status'] == 'Livre')
+                                    <i class="fas fa-thumbs-up fa-2x" style="color: #0d6c0d;"></i> <!-- Ícone de joinha -->
+                                @elseif($status['status'] == 'RESERVADO')
+                                    <i class="fas fa-dollar-sign fa-2x" style="color: #062381;"></i> <!-- Ícone de pagamento -->
+                                @else
+                                    <i class="fas fa-question-circle fa-2x text-warning"></i> <!-- Ícone de status desconhecido -->
+                                @endif
+                                
+                                <p class="card-text quarto">{{ $label }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             @endforeach
         </div>
