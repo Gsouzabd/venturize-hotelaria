@@ -12,18 +12,40 @@ use Mike42\Escpos\EscposImage;
 class PrinterService
 {
     /**
-     * Obter configurações das impressoras do .env
+     * Obter configurações das impressoras
+     * Prioriza banco de dados, com fallback para .env
      */
     private function getPrinterConfigs()
     {
-        $printers = [];
+        // Primeiro tenta buscar do banco de dados
+        try {
+            if (class_exists(\App\Models\Impressora::class)) {
+                $impressoras = \App\Models\Impressora::ativas()->ordenadas()->get();
+                
+                if ($impressoras->isNotEmpty()) {
+                    return $impressoras->map(function($imp) {
+                        return [
+                            'ip' => $imp->ip,
+                            'name' => $imp->nome,
+                            'port' => $imp->porta,
+                            'tipo' => $imp->tipo
+                        ];
+                    })->toArray();
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Erro ao buscar impressoras do banco de dados: ' . $e->getMessage());
+        }
         
-        // Verificar quantas impressoras estão configuradas
+        // Fallback para .env (compatibilidade)
+        $printers = [];
         $i = 1;
         while (env("PRINTER_{$i}_IP")) {
             $printers[] = [
                 'ip' => env("PRINTER_{$i}_IP"),
-                'name' => env("PRINTER_{$i}_NAME", "Impressora {$i}")
+                'name' => env("PRINTER_{$i}_NAME", "Impressora {$i}"),
+                'port' => env("PRINTER_{$i}_PORT", 9100),
+                'tipo' => 'termica'
             ];
             $i++;
         }
@@ -382,22 +404,40 @@ class PrinterService
     private function printToPrinter($printer, $pdfContent)
     {
         try {
-            // Verificar se é uma impressora térmica (porta 9100 disponível)
+            // Sempre tentar primeiro via socket (porta 9100) - método mais confiável e não depende de exec()
             $isThermalPrinter = $this->checkThermalPrinter($printer['ip']);
             
             if ($isThermalPrinter) {
-                // Para impressoras térmicas, usar comandos ESC/POS
+                // Para impressoras térmicas, usar comandos ESC/POS via socket
                 $socketResult = $this->printToThermalPrinter($printer, $pdfContent);
                 
                 if ($socketResult['success']) {
                     return $socketResult;
                 }
+                
+                Log::warning('PrinterService: Falha na impressão via socket, tentando método alternativo', [
+                    'printer_ip' => $printer['ip'],
+                    'erro' => $socketResult['message'] ?? 'N/A'
+                ]);
             }
             
-            // Para impressoras convencionais ou fallback, usar comando do sistema
-            return $this->printViaSystemCommand($printer, $pdfContent);
+            // Fallback: tentar via comando do sistema (só se exec() estiver disponível)
+            if (function_exists('exec')) {
+                return $this->printViaSystemCommand($printer, $pdfContent);
+            } else {
+                // Se exec() não estiver disponível e socket falhou, retornar erro
+                return [
+                    'success' => false,
+                    'message' => 'Impressão via socket falhou e exec() não está disponível. Verifique se a impressora está acessível na porta 9100.'
+                ];
+            }
             
         } catch (Exception $e) {
+            Log::error('PrinterService: Erro ao imprimir', [
+                'printer_ip' => $printer['ip'] ?? 'N/A',
+                'erro' => $e->getMessage()
+            ]);
+            
             return [
                 'success' => false,
                 'message' => 'Erro na impressão: ' . $e->getMessage()
@@ -424,6 +464,15 @@ class PrinterService
     private function printViaSystemCommand($printer, $pdfContent)
     {
         try {
+            // Verificar se exec() está disponível
+            if (!function_exists('exec')) {
+                Log::warning('PrinterService: Função exec() não está disponível no servidor');
+                return [
+                    'success' => false,
+                    'message' => 'Função exec() não está disponível. Use impressão via socket (porta 9100) para impressoras térmicas.'
+                ];
+            }
+
             // Salvar o PDF temporariamente
             $tempFile = tempnam(sys_get_temp_dir(), 'cupom_') . '.pdf';
             file_put_contents($tempFile, $pdfContent);
@@ -441,12 +490,12 @@ class PrinterService
                 
                 $output = [];
                 $returnCode = 0;
-                exec($command, $output, $returnCode);
+                \exec($command, $output, $returnCode);
                 
                 if ($returnCode !== 0) {
                     // Método 2: Usar print command direto
                     $command = "print /D:\\\\{$printer['ip']}\\printer \"$tempFile\" 2>&1";
-                    exec($command, $output, $returnCode);
+                    \exec($command, $output, $returnCode);
                 }
                 
                 $success = ($returnCode === 0);
@@ -463,7 +512,7 @@ class PrinterService
                 foreach ($commands as $command) {
                     $output = [];
                     $returnCode = 0;
-                    exec($command, $output, $returnCode);
+                    \exec($command, $output, $returnCode);
                     
                     if ($returnCode === 0) {
                         $success = true;
@@ -486,7 +535,7 @@ class PrinterService
                 foreach ($commands as $command) {
                     $output = [];
                     $returnCode = 0;
-                    exec($command, $output, $returnCode);
+                    \exec($command, $output, $returnCode);
                     
                     if ($returnCode === 0) {
                         $success = true;
@@ -515,6 +564,11 @@ class PrinterService
             if (isset($tempFile) && file_exists($tempFile)) {
                 unlink($tempFile);
             }
+            
+            Log::error('PrinterService: Erro no comando do sistema', [
+                'erro' => $e->getMessage(),
+                'printer_ip' => $printer['ip'] ?? 'N/A'
+            ]);
             
             return [
                 'success' => false,

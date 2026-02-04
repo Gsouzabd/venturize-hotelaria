@@ -118,10 +118,10 @@
                 <tr>
                     <td>Taxa de Serviço</td>
                     <td>
-                        @if (is_string($totalTaxaServicoConsumoConsumo))
-                            {{ $totalTaxaServicoConsumoConsumo }}
+                        @if (is_string($totalTaxaServicoConsumoConsumo ?? null))
+                            {{ $totalTaxaServicoConsumoConsumo ?? '' }}
                         @else
-                        R$ {{ number_format( $totalTaxaServicoConsumoConsumo, 2, ',', '.') }}
+                        R$ {{ number_format(($totalTaxaServicoConsumoConsumo ?? 0), 2, ',', '.') }}
 
                         @endif
                     </td>
@@ -135,7 +135,7 @@
                     <td><strong>Total</strong></td>
                     <td>
                         <strong>
-                            R$ {{ number_format($totalConsumo + (!is_string($totalTaxaServicoConsumoConsumo) ?? 0), 2, ',', '.') }}
+                            R$ {{ number_format($totalConsumo + (!is_string($totalTaxaServicoConsumoConsumo ?? null) ? ($totalTaxaServicoConsumoConsumo ?? 0) : 0), 2, ',', '.') }}
                         </strong>
                     </td>
                     <td></td>
