@@ -28,6 +28,7 @@
                 <th>ID</th>
                 <th>Andar</th>
                 <th>Número</th>
+                <th>Referência</th>
                 <th>Classificação</th>
                 <th>Inativo</th>
                 <th>Criado em</th>
@@ -41,6 +42,7 @@
                     <td>{{ $quarto->id }}</td>
                     <td>{{ $quarto->andar }}</td>
                     <td>{{ $quarto->numero }}</td>
+                    <td>{{ $quarto->referencia }}</td>
                     <td>{{ $quarto->classificacao }}</td>
                     <td>{{ formata_bool($quarto->inativo) }}</td>
                     <td>{{ timestamp_br($quarto->created_at) }}</td>

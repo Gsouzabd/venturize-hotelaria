@@ -66,6 +66,16 @@ class HomeController extends Controller
                 ->take(5)
                 ->get();
 
+            // Day Use de hoje (resumo para dashboard)
+            $hoje = Carbon::now('America/Sao_Paulo')->toDateString();
+            $dayUseHoje = Reserva::where('tipo_reserva', 'DAY_USE')
+                ->whereDate('data_checkin', $hoje)
+                ->get();
+
+            $dayUseHojeTotal = $dayUseHoje->count();
+            $dayUseHojePessoas = $dayUseHoje->sum('adultos')
+                + $dayUseHoje->sum('criancas_ate_7')
+                + $dayUseHoje->sum('criancas_mais_7');
 
 
             //Quartos / Reservas do DIA 
@@ -77,9 +87,21 @@ class HomeController extends Controller
             // dd($statusQuartoNoDia);
 
         return view('admin.index', compact(
-            'totalUsuarios', 'totalClientes', 'totalQuartos', 'reservasAtivas', 'reservasPorMes', 'ultimasReservas',
-            'reservas', 'dataInicial', 'intervaloDias', 'statusQuartoNoDia', 'totalOcupados', 'totalDisponiveis', 'totalLimpos'
-        
+            'totalUsuarios',
+            'totalClientes',
+            'totalQuartos',
+            'reservasAtivas',
+            'reservasPorMes',
+            'ultimasReservas',
+            'reservas',
+            'dataInicial',
+            'intervaloDias',
+            'statusQuartoNoDia',
+            'totalOcupados',
+            'totalDisponiveis',
+            'totalLimpos',
+            'dayUseHojeTotal',
+            'dayUseHojePessoas'
         ));
     }
 
@@ -102,6 +124,11 @@ class HomeController extends Controller
         }
 
         foreach ($reservas as $reserva) {
+            // Ignora reservas sem quarto associado (ex.: Day Use)
+            if (!$reserva->quarto) {
+                continue;
+            }
+
             $status[$reserva->quarto->id] = [
                 'quarto' => $reserva->quarto,
                 'status' => $reserva->situacao_reserva,

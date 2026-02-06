@@ -14,8 +14,8 @@ class ReservaRequest extends FormRequest
 
     public function rules()
     {
-        return [
-            'tipo_reserva' => 'string',            
+        $rules = [
+            'tipo_reserva' => 'nullable|string|in:INDIVIDUAL,GRUPO,DAY_USE',
             'nome' => 'required|string|max:255',
             'cpf' => ['required', 'string', 'max:14'],
             'rg' => 'nullable|string|max:20',
@@ -27,7 +27,7 @@ class ReservaRequest extends FormRequest
             'nome_fantasia_faturamento' => 'nullable|string|max:255',
             'empresa_faturamento_id' => 'nullable|integer|exists:empresas,id',
             'cnpj_faturamento' => ['nullable', 'string', 'max:18', 'min:14'],
-            
+
             'nome_fantasia_solicitante' => 'nullable|string|max:255',
             'empresa_solicitante_id' => 'nullable|integer|exists:empresas,id',
             'cnpj_solicitante' => ['nullable', 'string', 'max:18', 'min:14'],
@@ -36,19 +36,19 @@ class ReservaRequest extends FormRequest
             'data_entrada' => 'required|date_format:d/m/Y',
             'data_saida' => 'required|date_format:d/m/Y|after_or_equal:data_entrada',
             'tipo_quarto' => 'nullable|string|max:255',
-            // 'apartamentos' => 'integer|min:1',
-            // 'adultos' => 'integer|min:1',
-            // 'criancas' => 'integer|min:0',
-            'quartos' => 'required|array|min:1',
-            // 'quartos.*.numero' => 'required|string|max:10',
-            // 'quartos.*.andar' => 'required|string|max:50',
-            // 'quartos.*.classificacao' => 'required|string|max:50',
-            // 'quartos.*.data_checkin' => 'required',
-            // 'quartos.*.data_checkout' => 'required|after_or_equal:quartos.*.data_checkin',
-            
-            'quartos.*.responsavel_nome' => 'nullable|string|max:255',
-            'quartos.*.responsavel_cpf' => ['nullable','string', 'max:14'],
+            'com_cafe' => 'sometimes|boolean',
         ];
+
+        // Day Use não exige quartos; demais tipos exigem ao menos um quarto
+        if ($this->input('tipo_reserva') === 'DAY_USE') {
+            $rules['quartos'] = 'nullable|array';
+        } else {
+            $rules['quartos'] = 'required|array|min:1';
+            $rules['quartos.*.responsavel_nome'] = 'nullable|string|max:255';
+            $rules['quartos.*.responsavel_cpf'] = ['nullable', 'string', 'max:14'];
+        }
+
+        return $rules;
     }
 
     public function messages()

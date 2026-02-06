@@ -21,8 +21,8 @@
                 </li>
                 @if ($reserva->situacao_reserva != 'HOSPEDADO' && $reserva->situacao_reserva != 'FINALIZADO')
                     <li class="nav-item">
-                        <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false">
-                            <i class="fas fa-calendar-alt"></i> Disponibilidade
+                        <a class="nav-link {{$edit ? '' : 'disabled'}}" id="disponibilidade-tab" data-toggle="tab" href="#disponibilidade" role="tab" aria-controls="disponibilidade" aria-selected="false" data-label-default="Disponibilidade" data-label-dayuse="Day Use">
+                            <i class="fas fa-calendar-alt"></i> <span id="disponibilidade-tab-label">Disponibilidade</span>
                         </a>
                     </li>
                     <li class="nav-item">

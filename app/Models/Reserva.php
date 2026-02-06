@@ -42,12 +42,15 @@ class Reserva extends Model
         'cart_serialized', // Novo campo
         'total', // Novo campo
         'remover_taxa_servico', // Nova coluna
+        'com_cafe',
+        'valor_cafe',
 
     ];
 
     const TIPOSRESERVA = [
         'INDIVIDUAL' => 'Individual',
         'GRUPO' => 'Grupo',
+        'DAY_USE' => 'Day Use',
     ];
 
     const SITUACOESRESERVA = [
@@ -147,6 +150,14 @@ class Reserva extends Model
     public function pedidos()
     {
         return $this->hasMany(Pedido::class);
+    }
+
+    /**
+     * Indica se a reserva é do tipo Day Use.
+     */
+    public function isDayUse(): bool
+    {
+        return $this->tipo_reserva === 'DAY_USE';
     }
     
 }

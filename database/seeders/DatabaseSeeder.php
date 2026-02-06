@@ -14,6 +14,7 @@ use Database\Seeders\ReservaSeeder;
 use Illuminate\Support\Facades\Hash;
 use Database\Seeders\GrupoUsuarioSeeder;
 use Database\Seeders\UsuarioAdminSeeder;
+use Database\Seeders\DayUsePlanoPrecoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -33,6 +34,7 @@ class DatabaseSeeder extends Seeder
             EstoqueTableSeeder::class,
             MesaSeeder::class,
             DespesaSeeder::class,
+            DayUsePlanoPrecoSeeder::class,
         ]);
 
     }

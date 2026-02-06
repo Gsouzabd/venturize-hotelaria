@@ -25,7 +25,7 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
             @php
                 $situacao = $situacoesReserva[$key];
             @endphp
-            <div class="col-md-2 col-6">
+            <div class="col-7">
                 <div class="circle-indicator mx-auto" style="background-color: {{ $situacao['background'] }};">
                     {{ $contadores[$key] ?? 0 }}
                 </div>
@@ -36,7 +36,7 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
                 </div>
             </div>
         @endforeach
-        <div class="col-md-2 col-6">
+        <div class="col-7">
             <div class="circle-indicator mx-auto" style="background-color: #00A65B;">
                 {{ $totalDisponiveis }}
             </div>
@@ -45,6 +45,32 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
                     <i class="fas fa-circle" style="color: #00A65B;"></i> Livre
                 </p>
             </div>
+        </div>
+    </div>
+
+    <!-- Bloco de Day Use (hoje) -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-12">
+            <a href="{{ route('admin.reservas.day-use', [
+                    'data_checkin' => Carbon::now('America/Sao_Paulo')->format('d/m/Y'),
+                    'data_checkout' => Carbon::now('America/Sao_Paulo')->format('d/m/Y'),
+                ]) }}"
+               class="text-decoration-none" style="color: inherit;">
+                <div class="card shadow-sm h-100" style="cursor: pointer;">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="mr-3">
+                            <i class="fas fa-sun fa-2x" style="color: #f39c12;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Day Use (hoje)</h6>
+                            <div><strong>{{ $dayUseHojeTotal }}</strong> reserva(s) Day Use</div>
+                            <div class="text-muted" style="font-size: 0.9rem;">
+                                {{ $dayUseHojePessoas }} pessoa(s) previstas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 </div>
@@ -178,8 +204,8 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
                         @foreach($ultimasReservas as $reserva)
                         <tr>
                             <td>{{ $reserva->id }}</td>
-                            <td>{{ $reserva->clienteSolicitante->nome}}</td>
-                            <td>{{ $reserva->quarto->numero }}</td>
+                            <td>{{ $reserva->clienteSolicitante->nome }}</td>
+                            <td>{{ optional($reserva->quarto)->numero ?? '—' }}</td>
                             <td>{{ $reserva->operador->nome }}</td>
                             <td>
                                 <span class="badge" style="background: {{Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}}; color: white;">

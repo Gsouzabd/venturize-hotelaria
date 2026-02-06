@@ -760,7 +760,10 @@ p.card-text.quarto {
 #dados-quarto-ocupado {
     font-size: 9px;
 }
-
+div#indicadores {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
 #indicadores p {
     font-size: 13px;
     margin-top: 2px;

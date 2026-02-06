@@ -11,6 +11,8 @@ use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\Acompanhante;
+use App\Models\DayUsePlanoPreco;
+use App\Models\QuartoOpcaoExtra;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\View\Factory as ViewFactory;
@@ -38,6 +40,8 @@ class ReservaService
     {
         $reservas = [];
         // dd($data);
+
+        $isDayUse = isset($data['tipo_reserva']) && $data['tipo_reserva'] === 'DAY_USE';
 
         $reserva_site = $data['reserva_site'] ?? false;
         if($reserva_site && !isset($data['is_edit'])) {
@@ -110,21 +114,36 @@ class ReservaService
                 ]
             );
         }
- 
+
+        // Day Use sem quartos: montar um único bloco a partir dos dados do formulário
+        if ($isDayUse && (empty($data['quartos']) || !is_array($data['quartos']))) {
+            $data['quartos'] = [
+                'day_use' => [
+                    'data_checkin' => $data['data_entrada'] ?? null,
+                    'data_checkout' => $data['data_saida'] ?? null,
+                    'adultos' => $data['adultos'] ?? 1,
+                    'criancas_ate_7' => $data['criancas_ate_7'] ?? 0,
+                    'criancas_mais_7' => $data['criancas_mais_7'] ?? 0,
+                    'total' => $data['valor_total'] ?? 0,
+                    'reserva_id' => $data['id'] ?? $data['reserva_id'] ?? null,
+                ],
+            ];
+        }
 
         try {
             foreach ($data['quartos'] as $quartoId => $quartoData) {
 
-                $cartSerialized = json_decode($data['cart_serialized'], true);
-
-                // Tratar o cart serialized para encontrar do quarto/reserva atual
-                // que iremos criar
                 $quartoCartSerialized = null;
-                foreach ($cartSerialized as $quarto) {
-                    // dd($quarto);
-                    if ($quarto['quartoId'] == $quartoId) {
-                        $quartoCartSerialized = json_encode($quarto);
-                        break;
+                if (!empty($data['cart_serialized'])) {
+                    $cartSerialized = json_decode($data['cart_serialized'], true);
+
+                    // Tratar o cart serialized para encontrar do quarto/reserva atual
+                    // que iremos criar
+                    foreach ($cartSerialized as $quarto) {
+                        if (isset($quarto['quartoId']) && $quarto['quartoId'] == $quartoId) {
+                            $quartoCartSerialized = json_encode($quarto);
+                            break;
+                        }
                     }
                 }
 
@@ -162,7 +181,7 @@ class ReservaService
                     'estrangeiro' => 'Não',
                     'cliente_solicitante_id' => $clienteSolicitante->id,
                     'cliente_responsavel_id' => $clienteResponsavel ? $clienteResponsavel->id : null,
-                    'quarto_id' => $quartoId,
+                    'quarto_id' => $isDayUse ? null : $quartoId,
                     'adultos' => $quartoData['adultos'],
                     'criancas_ate_7' => $quartoData['criancas_ate_7'],
                     'criancas_mais_7' => $quartoData['criancas_mais_7'],
@@ -176,10 +195,25 @@ class ReservaService
                     'observacoes' => $data['observacoes'],
                     'observacoes_internas' => $data['observacoes_internas'],
                     'cart_serialized' => $quartoCartSerialized ?? null,
+                    'com_cafe' => $data['com_cafe'] ?? false,
+                    'valor_cafe' => null,
                     'total' => $quartoData['total'] ?? 0,
                     'created_at' => Carbon::now('America/Sao_Paulo'),
 
                 ];
+
+                // Cálculo automático de valor para Day Use (fallback caso o total não venha do front)
+                if ($isDayUse && (empty($reservaData['total']) || floatval($reservaData['total']) <= 0)) {
+                    $dataUso = $data['data_entrada'] ?? $dataCheckin;
+                    $reservaData['total'] = $this->calcularPrecoDayUse(
+                        $dataUso,
+                        intval($reservaData['adultos']),
+                        intval($reservaData['criancas_ate_7']),
+                        intval($reservaData['criancas_mais_7']),
+                        (bool) $reservaData['com_cafe'],
+                        $reservaData
+                    );
+                }
 
 
                 // dd($reservaData);
@@ -399,4 +433,90 @@ class ReservaService
         return $precosDiarios;
     }
     
+    /**
+     * Calcula o preço de um Day Use para uma data específica.
+     *
+     * @param string $dataUso        Data no formato d/m/Y ou d-m-Y
+     * @param int    $adultos
+     * @param int    $criancasAte7
+     * @param int    $criancasMais7
+     * @param bool   $comCafe
+     * @param array  $reservaDataRef Referência opcional para preencher valor_cafe
+     *
+     * @return float
+     */
+    protected function calcularPrecoDayUse(
+        string $dataUso,
+        int $adultos,
+        int $criancasAte7,
+        int $criancasMais7,
+        bool $comCafe,
+        array &$reservaDataRef = []
+    ): float {
+        // Normalizar formato da data
+        $formatos = ['d/m/Y', 'd-m-Y', 'Y-m-d'];
+        $data = null;
+        foreach ($formatos as $formato) {
+            try {
+                $data = Carbon::createFromFormat($formato, $dataUso);
+                break;
+            } catch (Exception $e) {
+                continue;
+            }
+        }
+
+        if (!$data) {
+            throw new Exception('Data de Day Use inválida: ' . $dataUso);
+        }
+
+        // Buscar plano vigente (período específico ou plano default)
+        $plano = DayUsePlanoPreco::vigente($data, $data)->orderBy('data_inicio', 'desc')->first();
+
+        if (!$plano) {
+            // Fallback: tenta pegar qualquer plano default
+            $plano = DayUsePlanoPreco::where('is_default', true)->first();
+        }
+
+        if (!$plano) {
+            throw new Exception('Nenhum plano de Day Use configurado.');
+        }
+
+        $precoBase = $plano->getPrecoDia($data) ?? 0.0;
+
+        // Valores extras para crianças (Day Use)
+        // Opcionalmente podemos manter até 7 anos grátis para Day Use
+        $precoCriancaAte7 = QuartoOpcaoExtra::where('nome', 'Criança (Até 7 anos)')->value('preco') ?? 0.0;
+
+        // Criança 4–12 anos (Day Use) – opção específica; se não existir, usa preço de 07 à 12 anos como fallback
+        $precoCrianca4a12 = QuartoOpcaoExtra::where('nome', 'Criança (4 à 12 anos - Day Use)')->value('preco');
+        if (is_null($precoCrianca4a12)) {
+            $precoCrianca4a12 = QuartoOpcaoExtra::where('nome', 'Criança (07 à 12 anos)')->value('preco') ?? 0.0;
+        }
+
+        // Para Day Use, consideramos criancas_mais_7 como faixa 4–12 pagante
+        $totalCriancasAte7Pagas = 0; // até 7 anos permanece gratuito aqui
+        $valorCriancas = ($totalCriancasAte7Pagas * $precoCriancaAte7) + ($criancasMais7 * $precoCrianca4a12);
+
+        // Café da manhã – valor por pessoa pagante (adultos + crianças pagantes)
+        $valorCafe = 0.0;
+        if ($comCafe) {
+            $pessoasPagantesCafe = max(0, $adultos) + max(0, $criancasMais7);
+            $valorCafe = $plano->getPrecoCafeDia($data) * $pessoasPagantesCafe;
+        }
+
+        if (array_key_exists('valor_cafe', $reservaDataRef)) {
+            $reservaDataRef['valor_cafe'] = $valorCafe;
+        }
+
+        return floatval($precoBase + $valorCriancas + $valorCafe);
+    }
+
+    /**
+     * Calcula o total de uma reserva Day Use (para exibição no front ou API).
+     */
+    public function calcularTotalDayUse(string $dataUso, int $adultos, int $criancasAte7, int $criancasMais7, bool $comCafe): float
+    {
+        $ref = [];
+        return $this->calcularPrecoDayUse($dataUso, $adultos, $criancasAte7, $criancasMais7, $comCafe, $ref);
+    }
 }

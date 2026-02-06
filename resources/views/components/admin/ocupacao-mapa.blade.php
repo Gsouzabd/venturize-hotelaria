@@ -52,7 +52,7 @@ use Illuminate\Support\Str;
         <tbody>
             @foreach($quartos ?? [] as $quarto)
                 <tr>
-                    <td class="quarto">{{ $quarto->numero ?? '' }}</td>
+                    <td class="quarto">{{ $quarto->referencia ?? $quarto->numero ?? '' }}</td>
                         @for($i = 0; $i < ($intervaloDias ?? 0); $i++)
                             @php
                                 $diaAtual = ($dataInicial ?? now())->copy()->addDays($i)->toDateString();
@@ -80,10 +80,30 @@ use Illuminate\Support\Str;
                    
                                             $dataCheckin = \Carbon\Carbon::parse($reservaNoDia->data_checkin)->toDateString();
                                             $dataCheckout = \Carbon\Carbon::parse($reservaNoDia->data_checkout)->toDateString();
+
+                                            $titular = $reservaNoDia->clienteResponsavel
+                                                ? $reservaNoDia->clienteResponsavel->nome
+                                                : optional($reservaNoDia->clienteSolicitante)->nome;
+
+                                            $situacaoLabel = Reserva::SITUACOESRESERVA[$reservaNoDia->situacao_reserva]['label'] ?? $reservaNoDia->situacao_reserva;
                                         @endphp
-                                        <a href="{{ route('admin.reservas.edit', ['id' => $reservaNoDia->id] )}}" 
+                                        <a href="{{ route('admin.reservas.edit', ['id' => $reservaNoDia->id] )}}"
+                                            data-reserva-id="{{ $reservaNoDia->id }}"
+                                            data-reserva-titular="{{ $titular }}"
+                                            data-reserva-uh="{{ $quarto->referencia ?? $quarto->numero ?? '' }}"
+                                            data-reserva-situacao="{{ $situacaoLabel }}"
+                                            data-reserva-situacao-cor="{{ $cor }}"
+                                            data-reserva-checkin="{{ $dataCheckin }}"
+                                            data-reserva-checkout="{{ $dataCheckout }}"
+                                            data-reserva-adultos="{{ $reservaNoDia->adultos }}"
+                                            data-reserva-criancas-ate7="{{ $reservaNoDia->criancas_ate_7 }}"
+                                            data-reserva-criancas-mais7="{{ $reservaNoDia->criancas_mais_7 }}"
+                                            data-reserva-total="{{ $reservaNoDia->total }}"
+                                            data-reserva-observacoes="{{ $reservaNoDia->observacoes }}"
+                                            data-reserva-edit-url="{{ route('admin.reservas.edit', ['id' => $reservaNoDia->id] )}}"
                                             class="
                                                 reserva-dia 
+                                                js-open-reserva-modal
                                                 {{$diaAtual == $dataCheckin ? 'checkin' : ''}} 
                                                 {{$diaAtual == $dataCheckout ? 'checkout' : ''}}
                                                 {{$diaAtual != $dataCheckin && $diaAtual != $dataCheckout ? 'intermediario' : ''}}
@@ -117,3 +137,152 @@ use Illuminate\Support\Str;
         </tbody>
     </table>
 </div>
+
+@php
+    // Agrupar Day Uses (reservas sem quarto) por dia de check-in
+    $dayUsePorDia = collect($reservas ?? [])->filter(function($reserva) {
+        return method_exists($reserva, 'isDayUse') && $reserva->isDayUse();
+    })->groupBy(function($reserva) {
+        return \Carbon\Carbon::parse($reserva->data_checkin)->toDateString();
+    });
+@endphp
+
+@if(($dayUsePorDia ?? collect())->isNotEmpty())
+    <div class="mt-5">
+        <h5>Day Uses</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Day Use</th>
+                    @for($i = 0; $i < $intervaloDias; $i++)
+                        <th>{{ $dataInicial->copy()->addDays($i)->format('d/m') }}</th>
+                    @endfor
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Qtde / Clientes</td>
+                    @for($i = 0; $i < $intervaloDias; $i++)
+                        @php
+                            $diaAtual = $dataInicial->copy()->addDays($i)->toDateString();
+                            $reservasDia = $dayUsePorDia[$diaAtual] ?? collect();
+                        @endphp
+                        <td style="padding: 4px; min-width: 120px;">
+                            @if($reservasDia->isNotEmpty())
+                                <div><strong>{{ $reservasDia->count() }} Day Use(s)</strong></div>
+                                <ul class="mb-0 pl-3" style="font-size: 11px; max-height: 80px; overflow-y: auto;">
+                                    @foreach($reservasDia as $reservaDayUse)
+                                        @php
+                                            $titularDayUse = $reservaDayUse->clienteResponsavel
+                                                ? $reservaDayUse->clienteResponsavel->nome
+                                                : optional($reservaDayUse->clienteSolicitante)->nome;
+                                        @endphp
+                                        <li>
+                                            <a href="{{ route('admin.reservas.edit', ['id' => $reservaDayUse->id]) }}">
+                                                {{ \Illuminate\Support\Str::limit(ucwords(strtolower($titularDayUse ?? '')), 20) }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </td>
+                    @endfor
+                </tr>
+            </tbody>
+        </table>
+    </div>
+@endif
+
+<!-- Modal de resumo da reserva -->
+<div class="modal fade" id="reservaResumoModal" tabindex="-1" role="dialog" aria-labelledby="reservaResumoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reservaResumoModalLabel">
+                    Reserva #<span id="resumo-reserva-id"></span> - <span class="badge" id="resumo-reserva-situacao"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Titular:</strong> <span id="resumo-reserva-titular"></span></p>
+                        <p><strong>UH:</strong> <span id="resumo-reserva-uh"></span></p>
+                        <p><strong>Check-in:</strong> <span id="resumo-reserva-checkin"></span></p>
+                        <p><strong>Check-out:</strong> <span id="resumo-reserva-checkout"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Adultos:</strong> <span id="resumo-reserva-adultos"></span></p>
+                        <p><strong>Crianças até 7 anos:</strong> <span id="resumo-reserva-criancas-ate7"></span></p>
+                        <p><strong>Crianças acima de 7 anos:</strong> <span id="resumo-reserva-criancas-mais7"></span></p>
+                        <p><strong>Valor Total:</strong> R$ <span id="resumo-reserva-total"></span></p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <p><strong>Observações:</strong></p>
+                        <p id="resumo-reserva-observacoes" class="border rounded p-2" style="min-height: 60px;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="resumo-reserva-edit-link" class="btn btn-primary" target="_self">
+                    Editar reserva
+                </a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    $(document).ready(function () {
+        $(document).on('click', '.js-open-reserva-modal', function (event) {
+            event.preventDefault();
+
+            var $el = $(this);
+
+            var id = $el.data('reserva-id') || '';
+            var titular = $el.data('reserva-titular') || '';
+            var uh = $el.data('reserva-uh') || '';
+            var situacao = $el.data('reserva-situacao') || '';
+            var situacaoCor = $el.data('reserva-situacao-cor') || '';
+            var checkin = $el.data('reserva-checkin') || '';
+            var checkout = $el.data('reserva-checkout') || '';
+            var adultos = $el.data('reserva-adultos') || 0;
+            var criancasAte7 = $el.data('reserva-criancas-ate7') || 0;
+            var criancasMais7 = $el.data('reserva-criancas-mais7') || 0;
+            var total = $el.data('reserva-total') || '';
+            var observacoes = $el.data('reserva-observacoes') || '';
+            var editUrl = $el.data('reserva-edit-url') || '#';
+
+            $('#resumo-reserva-id').text(id);
+            $('#resumo-reserva-titular').text(titular);
+            $('#resumo-reserva-uh').text(uh);
+            $('#resumo-reserva-checkin').text(checkin);
+            $('#resumo-reserva-checkout').text(checkout);
+            $('#resumo-reserva-adultos').text(adultos);
+            $('#resumo-reserva-criancas-ate7').text(criancasAte7);
+            $('#resumo-reserva-criancas-mais7').text(criancasMais7);
+            $('#resumo-reserva-total').text(total);
+            $('#resumo-reserva-observacoes').text(observacoes);
+
+            var $situacaoBadge = $('#resumo-reserva-situacao');
+            $situacaoBadge.text(situacao);
+            if (situacaoCor) {
+                $situacaoBadge.css('background-color', situacaoCor);
+                $situacaoBadge.css('color', '#fff');
+            } else {
+                $situacaoBadge.removeAttr('style');
+            }
+
+            $('#resumo-reserva-edit-link').attr('href', editUrl);
+
+            $('#reservaResumoModal').modal('show');
+        });
+    });
+</script>
+@endpush

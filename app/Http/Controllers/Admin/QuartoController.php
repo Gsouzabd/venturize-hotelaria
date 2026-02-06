@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Quarto;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class QuartoController extends Controller
 {
@@ -50,6 +51,22 @@ class QuartoController extends Controller
 
     public function save(Request $request)
     {
+        $id = $request->get('id');
+
+        // Validação para não permitir dois quartos com o mesmo número
+        // Aplica UNIQUE apenas na criação; na edição, permite ajustar referência mesmo havendo duplicados antigos
+        if (!$id) {
+            $request->validate([
+                'numero' => [
+                    'required',
+                    'integer',
+                    Rule::unique('quartos', 'numero'),
+                ],
+            ], [
+                'numero.unique' => 'Já existe um quarto cadastrado com esse número.',
+            ]);
+        }
+
         $data = $request->all();
 
 

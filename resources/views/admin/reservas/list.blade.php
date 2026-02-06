@@ -27,6 +27,16 @@ use App\Models\Reserva;
                             :selected-item="$filters['quarto_id']"
                             placeholder="Todos"/>
         </x-admin.filter>
+
+        <x-admin.filter cols="2">
+            <x-admin.label label="Tipo de Reserva"/>
+            <select name="tipo_reserva" class="form-control">
+                <option value="">Todas</option>
+                <option value="INDIVIDUAL" {{ ($filters['tipo_reserva'] ?? '') === 'INDIVIDUAL' ? 'selected' : '' }}>Individual</option>
+                <option value="GRUPO" {{ ($filters['tipo_reserva'] ?? '') === 'GRUPO' ? 'selected' : '' }}>Grupo</option>
+                <option value="DAY_USE" {{ ($filters['tipo_reserva'] ?? '') === 'DAY_USE' ? 'selected' : '' }}>Day Use</option>
+            </select>
+        </x-admin.filter>
         
         <!-- Filtro de Período -->
         <x-admin.filter cols="4">
@@ -59,12 +69,23 @@ use App\Models\Reserva;
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Cliente Solicitante</th>
-                <th>Quarto</th>
+                <th>Tipo</th>
+
+                @if(\Illuminate\Support\Facades\Route::currentRouteName() !== 'admin.reservas.day-use')
+                    <th>Cliente Solicitante</th>
+                @endif                
+                @if(\Illuminate\Support\Facades\Route::currentRouteName() === 'admin.reservas.day-use')
+                    <th>Adultos</th>
+                    <th>Crianças</th>
+                @else
+                    <th>Quarto</th>
+                @endif
                 <th>Cliente Responsável</th>
                 <th>Situação</th>
                 <th>Check-in</th> <!-- Novo campo -->
-                <th>Check-out</th> <!-- Novo campo -->
+                @if(\Illuminate\Support\Facades\Route::currentRouteName() !== 'admin.reservas.day-use')
+                    <th>Check-out</th> <!-- Novo campo -->
+                @endif
                 <th>Valor Total</th>
                 <th>Criado em</th>
                 <th>Operador</th>
@@ -76,8 +97,30 @@ use App\Models\Reserva;
             @forelse($reservas as $reserva)
                 <tr>
                     <td>{{ $reserva->id }}</td>
+                    <td width="110">
+                        @php
+                            $tipo = $reserva->tipo_reserva;
+                            $labelTipo = $tipo && isset(Reserva::TIPOSRESERVA[$tipo])
+                                ? Reserva::TIPOSRESERVA[$tipo]
+                                : ($tipo ?? '—');
+                        @endphp
+                        @if($tipo)
+                            <span class="badge {{ $tipo === 'DAY_USE' ? 'badge-warning' : 'badge-secondary' }}">
+                                {{ $labelTipo }}
+                            </span>
+                        @else
+                            —
+                        @endif
+                    </td>
+                    @if(\Illuminate\Support\Facades\Route::currentRouteName() === 'admin.reservas.day-use')
+                        <td>{{ $reserva->adultos }}</td>
+                        <td>{{ $reserva->criancas_ate_7 + $reserva->criancas_mais_7 }}</td>
+
+                    @else
                     <td>{{ $reserva->clienteSolicitante->nome}}</td>
-                    <td>{{ $reserva->quarto->numero }}</td>
+
+                        <td>{{ optional($reserva->quarto)->numero ?? '—' }}</td>
+                    @endif
                     <td>{{ $reserva->clienteResponsavel ? $reserva->clienteResponsavel->nome : "GR: ".$reserva->clienteSolicitante->nome  }}</td>
                     <td width="100">
                         <span class="status-reserva" style="background: {{Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}};">
@@ -85,7 +128,9 @@ use App\Models\Reserva;
                         </span>
                     </td>
                     <td width="100">{{ Carbon::parse($reserva->data_checkin)->format('d-m-Y') }}</td> <!-- Novo campo -->
-                    <td width="100">{{ Carbon::parse($reserva->data_checkout)->format('d-m-Y') }}</td> <!-- Novo campo -->
+                    @if(\Illuminate\Support\Facades\Route::currentRouteName() !== 'admin.reservas.day-use')
+                        <td width="100">{{ Carbon::parse($reserva->data_checkout)->format('d-m-Y') }}</td> <!-- Novo campo -->
+                    @endif
                     <td width="100">R$ {{$reserva->total  ?? '' }}</R$>
                     <td width="100">{{ timestamp_br($reserva->created_at) }}</td>
                     <td>{{ $reserva->operador->nome }}</td>

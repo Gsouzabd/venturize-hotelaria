@@ -9,7 +9,7 @@
             <h5><i class="fa-solid fa-1"></i> Método de Pagamento</h5>
             <div class="d-flex justify-content-around" id="metodos-pagamento-tabs">
                 @php
-                    $selectedMetodo = old('metodo_pagamento', $reserva->pagamento->metodo_pagamento ?? '');
+                    $selectedMetodo = old('metodo_pagamento', optional($reserva->pagamentos->first())->metodo_pagamento ?? '');
                 @endphp
             
                 @foreach($metodosPagamento as $key => $metodo)
@@ -108,7 +108,7 @@
                     </div>
                 </x-admin.field>
                 
-                <x-admin.field cols="3">
+                <x-admin.field cols="3" id="field-quarto-select">
                     <x-admin.label label="Selecionar Quarto"/>
                     <div class="input-group mb-3 mt-2">
                         <select id="quarto-select" class="form-control">
@@ -130,17 +130,13 @@
     <x-admin.label label="Valores Recebidos"/>
     
     @php
-        // Acessa o primeiro pagamento da coleção
         $pagamento = $reserva->pagamentos->first();
-
-        // Recupera os valores antigos, se existirem
         $valoresRecebidosOld = old('valores_recebidos');
         $metodosPagamentoOld = old('metodos_pagamento');
         $submetodosPagamentoOld = old('submetodos_pagamento');
         $observacoesPagamentoOld = old('observacoes_pagamento');
 
         if ($valoresRecebidosOld && $metodosPagamentoOld && $submetodosPagamentoOld) {
-            // Reconstroi os valores recebidos a partir dos dados antigos
             $valoresRecebidos = [];
             foreach ($valoresRecebidosOld as $index => $valor) {
                 $metodo = $metodosPagamentoOld[$index];
@@ -154,11 +150,8 @@
                 }
             }
         } else {
-            // Utiliza os valores do banco de dados
-            $valoresRecebidos = json_decode($pagamento->valores_recebidos ?? '{}', true);
+            $valoresRecebidos = $pagamento ? (json_decode($pagamento->valores_recebidos ?? '{}', true) ?: []) : [];
         }
-
-        // Determina o método de pagamento selecionado
         $selectedMetodo = old('metodo_pagamento', $pagamento->metodo_pagamento ?? '');
     @endphp
 
@@ -196,14 +189,21 @@
                 <tr>
                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
-                    <td>Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}
-                    <td> {{$observacao}} </td>
+                    <td>{{ $reserva->tipo_reserva === 'DAY_USE' ? 'Day Use' : ('Quarto ' . ($reserva->quarto->numero ?? '') . ' - ' . ($reserva->quarto->classificacao ?? '')) }}</td>
+                    <td>{{ $observacao }}</td>
                     <td>
                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                        <input type="hidden" class="valores_recebidos" name="quartos[{{$reserva->quarto_id}}][valores_recebidos][]" value="{{ $valor }}">
-                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
-                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][submetodos_pagamento][]" value="{{ $submetodo }}">
-                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][observacoes_pagamento][]" value="{{ $observacao }}">
+                        @if($reserva->tipo_reserva === 'DAY_USE')
+                        <input type="hidden" class="valores_recebidos" name="valores_recebidos[]" value="{{ $valor }}">
+                        <input type="hidden" name="metodos_pagamento[]" value="{{ $metodoPrincipal }}">
+                        <input type="hidden" name="submetodos_pagamento[]" value="{{ $submetodo }}">
+                        <input type="hidden" name="observacoes_pagamento[]" value="{{ $observacao }}">
+                        @else
+                        <input type="hidden" class="valores_recebidos" name="quartos[{{ $reserva->quarto_id }}][valores_recebidos][]" value="{{ $valor }}">
+                        <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
+                        <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][submetodos_pagamento][]" value="{{ $submetodo }}">
+                        <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][observacoes_pagamento][]" value="{{ $observacao }}">
+                        @endif
                     </td>
                 </tr>
             @endforeach
@@ -223,7 +223,7 @@
             <x-admin.label label='<i class="fas fa-cube"></i> Valor Total' />
             <div class="input-group">
                 <x-admin.text id="valor_total" name="valor_total" class="form-control"
-                    value="{{ old('valor_total', $reserva->pagamento->valor_total ?? 0) }}" placeholder="Valor total da reserva" readonly/>
+                    value="{{ old('valor_total', optional($reserva->pagamentos->first())->valor_total ?? $reserva->total ?? 0) }}" placeholder="Valor total da reserva" readonly/>
             </div>
         </x-admin.field>
     
@@ -245,7 +245,7 @@
             <x-admin.label label="Status do Pagamento"/>
             <x-admin.select name="status_pagamento" id="status_pagamento" class="form-control"
                 :items="['PAGO' => 'Pago', 'PARCIAL' => 'Parcialmente Pago', 'PENDENTE' => 'Pendente']"
-                selectedItem="{{ old('status_pagamento', $reserva->pagamento->status_pagamento ?? 'PENDENTE') }}" />
+                selectedItem="{{ old('status_pagamento', optional($reserva->pagamentos->first())->status_pagamento ?? 'PENDENTE') }}" />
         </x-admin.field>
     </x-admin.field-group>
 
@@ -282,6 +282,11 @@
             }
         }
 
+        function isDayUse() {
+            var sel = document.querySelector('select[name="tipo_reserva"]');
+            return sel && sel.value === 'DAY_USE';
+        }
+
         addValorRecebidoButton.addEventListener('click', function () {
             const valor = parseFloat(valorRecebidoInput.value);
             if (!document.querySelector('input[name="metodo_pagamento"]:checked')) {
@@ -289,40 +294,50 @@
                 return;
             }
             const metodoPagamento = document.querySelector('input[name="metodo_pagamento"]:checked').value;
-            const submetodoPagamentoSelect = document.querySelector(`#submetodos_container_${metodoPagamento} select`);
+            const submetodoPagamentoSelect = document.querySelector('#submetodos_container_' + metodoPagamento + ' select');
             const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
             const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
             const observacoes_pagamento = document.getElementById('observacoes_pagamento').value;
 
+            const dayUse = isDayUse();
             const quartoSelect = document.getElementById('quarto-select');
-            const quartoId = quartoSelect.value;
-            const quartoLabel = quartoSelect.options[quartoSelect.selectedIndex].text;
-        
-            if (!quartoId) {
-                alert('Selecione um quarto');
-                return;
+            let quartoId = '';
+            let quartoLabel = 'Day Use';
+            if (!dayUse && quartoSelect) {
+                quartoId = quartoSelect.value;
+                quartoLabel = quartoSelect.options[quartoSelect.selectedIndex].text;
+                if (!quartoId) {
+                    alert('Selecione um quarto');
+                    return;
+                }
             }
-        
+
             if (!isNaN(valor) && valor > 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
-                    <td>${metodoPagamento} ${submetodoPagamento ? ' - ' + submetodoPagamentoLabel : ''}</td>
-                    <td>${quartoLabel}</td>
-                    <td>${observacoes_pagamento}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                        <input type="hidden" class="valores_recebidos" name="quartos[${quartoId}][valores_recebidos][]" value="${valor}">
-                        <input type="hidden" name="quartos[${quartoId}][metodos_pagamento][]" value="${metodoPagamento}">
-                        <input type="hidden" name="quartos[${quartoId}][submetodos_pagamento][]" value="${submetodoPagamento}">
-                        <input type="hidden" name="quartos[${quartoId}][observacoes_pagamento][]" value="${observacoes_pagamento}">
-                    </td>
-                `;
+                if (dayUse) {
+                    row.innerHTML = '<td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
+                        '<td>' + metodoPagamento + (submetodoPagamento ? ' - ' + submetodoPagamentoLabel : '') + '</td>' +
+                        '<td>Day Use</td><td>' + observacoes_pagamento + '</td><td>' +
+                        '<button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>' +
+                        '<input type="hidden" class="valores_recebidos" name="valores_recebidos[]" value="' + valor + '">' +
+                        '<input type="hidden" name="metodos_pagamento[]" value="' + metodoPagamento + '">' +
+                        '<input type="hidden" name="submetodos_pagamento[]" value="' + submetodoPagamento + '">' +
+                        '<input type="hidden" name="observacoes_pagamento[]" value="' + observacoes_pagamento + '">' +
+                        '</td>';
+                } else {
+                    row.innerHTML = '<td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
+                        '<td>' + metodoPagamento + (submetodoPagamento ? ' - ' + submetodoPagamentoLabel : '') + '</td>' +
+                        '<td>' + quartoLabel + '</td><td>' + observacoes_pagamento + '</td><td>' +
+                        '<button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>' +
+                        '<input type="hidden" class="valores_recebidos" name="quartos[' + quartoId + '][valores_recebidos][]" value="' + valor + '">' +
+                        '<input type="hidden" name="quartos[' + quartoId + '][metodos_pagamento][]" value="' + metodoPagamento + '">' +
+                        '<input type="hidden" name="quartos[' + quartoId + '][submetodos_pagamento][]" value="' + submetodoPagamento + '">' +
+                        '<input type="hidden" name="quartos[' + quartoId + '][observacoes_pagamento][]" value="' + observacoes_pagamento + '">' +
+                        '</td>';
+                }
                 valoresRecebidosTable.appendChild(row);
                 valorRecebidoInput.value = '';
-        
                 atualizarValores();
-        
                 row.querySelector('.remove-valor-recebido').addEventListener('click', function () {
                     row.remove();
                     atualizarValores();
@@ -370,49 +385,79 @@
         observer.observe(element, { attributes: true });
     }
 
-    // Observar mudanças na classe do elemento a#pagamento-tab
     const pagamentoTab = document.querySelector('a#pagamento-tab');
-    if (pagamentoTab) {
-        observeClassChanges(pagamentoTab, 'active', atualizarTotal);
-        observeClassChanges(pagamentoTab, 'active', gerarQuartosSelect);
-        observeClassChanges(pagamentoTab, 'active', atualizarValores);
+    function toggleQuartoSelectVisibility() {
+        var fieldQuarto = document.getElementById('field-quarto-select');
+        if (!fieldQuarto) return;
+        var isDayUse = document.querySelector('select[name="tipo_reserva"]') && document.querySelector('select[name="tipo_reserva"]').value === 'DAY_USE';
+        fieldQuarto.style.display = isDayUse ? 'none' : '';
     }
+    function atualizarTotalDayUse() {
+        var dataEntrada = document.querySelector('input[name="data_entrada"]');
+        var dataVal = dataEntrada ? dataEntrada.value : '';
+        if (!dataVal) return;
+        var adultos = parseInt(document.querySelector('input[name="adultos"]').value, 10) || 1;
+        var criancasAte7 = parseInt(document.querySelector('input[name="criancas_ate_7"]').value, 10) || 0;
+        var criancasMais7 = parseInt(document.querySelector('input[name="criancas_mais_7"]').value, 10) || 0;
+        var comCafe = (document.getElementById('com_cafe') && document.getElementById('com_cafe').checked) ? 1 : 0;
+        var urlCalcular = '{{ route("admin.reservas.calcular-day-use") }}?data_entrada=' + encodeURIComponent(dataVal) + '&adultos=' + adultos + '&criancas_ate_7=' + criancasAte7 + '&criancas_mais_7=' + criancasMais7 + '&com_cafe=' + comCafe;
+        fetch(urlCalcular).then(function(r) { return r.json(); }).then(function(data) {
+            var totalEl = document.getElementById('valor_total');
+            if (totalEl && data.total !== undefined) totalEl.value = Number(data.total).toFixed(2);
+            atualizarValores();
+        }).catch(function() {});
+    }
+    if (pagamentoTab) {
+        observeClassChanges(pagamentoTab, 'active', function() {
+            toggleQuartoSelectVisibility();
+            var tipoSel = document.querySelector('select[name="tipo_reserva"]');
+            if (!tipoSel || tipoSel.value !== 'DAY_USE') {
+                atualizarTotal();
+                gerarQuartosSelect();
+            } else {
+                var submitBtn = document.querySelector('form.edit-form button[type="submit"]:disabled');
+                if (submitBtn) submitBtn.removeAttribute('disabled');
+                var valorTotalInput = document.getElementById('valor_total');
+                if (valorTotalInput && (valorTotalInput.value === '' || parseFloat(String(valorTotalInput.value).replace(',', '.')) === 0)) {
+                    atualizarTotalDayUse();
+                }
+            }
+            atualizarValores();
+        });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleQuartoSelectVisibility();
+        var tipoSel = document.querySelector('select[name="tipo_reserva"]');
+        if (tipoSel) tipoSel.addEventListener('change', toggleQuartoSelectVisibility);
+    });
+
     function gerarQuartosSelect() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const selectElement = document.getElementById('quarto-select');
-    
-        // Remove all existing options
-        while (selectElement.firstChild) {
-            selectElement.removeChild(selectElement.firstChild);
-        }
-    
-        // Add a default option
-        const defaultOption = document.createElement('option');
+        if (document.querySelector('select[name="tipo_reserva"]') && document.querySelector('select[name="tipo_reserva"]').value === 'DAY_USE') return;
+        var selectElement = document.getElementById('quarto-select');
+        if (!selectElement) return;
+        var cart = JSON.parse(localStorage.getItem('cart')) || [];
+        while (selectElement.firstChild) selectElement.removeChild(selectElement.firstChild);
+        var defaultOption = document.createElement('option');
         defaultOption.value = '';
         defaultOption.text = 'Selecione um quarto';
         selectElement.appendChild(defaultOption);
-    
-        // Add new options from the cart
-        cart.forEach(item => {
-            const option = document.createElement('option');
+        cart.forEach(function(item) {
+            var option = document.createElement('option');
             option.value = item.quartoId;
-            option.text = `Quarto ${item.quartoNumero} - ${item.quartoClassificacao}`;
+            option.text = 'Quarto ' + item.quartoNumero + ' - ' + item.quartoClassificacao;
             selectElement.appendChild(option);
         });
     }
     function atualizarTotal() {
-        // Extrair o valor numérico do texto dentro do span
-        var valorTotalText = document.getElementById('total-cart-value').innerText;
-        var valorTotal = parseFloat(valorTotalText.replace('R$', '').replace('.', '').replace(',', '.'));
-
-        // Atualizar o campo de valor total
-        document.getElementById('valor_total').value = valorTotal.toFixed(2);
-
-         // Remover o atributo disabled do botão de envio
-         if(document.querySelector('form.edit-form button[type="submit"]:disabled')){
-            document.querySelector('form.edit-form button[type="submit"]:disabled').removeAttribute('disabled');
-
-         }
+        if (document.querySelector('select[name="tipo_reserva"]') && document.querySelector('select[name="tipo_reserva"]').value === 'DAY_USE') return;
+        var totalEl = document.getElementById('total-cart-value');
+        if (!totalEl) return;
+        var valorTotalText = totalEl.innerText;
+        var valorTotal = parseFloat(valorTotalText.replace('R$', '').replace(/\./g, '').replace(',', '.'));
+        var valorTotalInput = document.getElementById('valor_total');
+        if (valorTotalInput) valorTotalInput.value = valorTotal.toFixed(2);
+        var submitBtn = document.querySelector('form.edit-form button[type="submit"]:disabled');
+        if (submitBtn) submitBtn.removeAttribute('disabled');
     }
 </script>
 
