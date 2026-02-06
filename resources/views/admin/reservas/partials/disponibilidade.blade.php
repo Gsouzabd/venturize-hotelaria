@@ -272,26 +272,37 @@
                 var adultos = parseInt(document.getElementById('adultos_dayuse').value, 10) || 1;
                 var criancasAte7 = parseInt(document.getElementById('criancas_ate_7_dayuse').value, 10) || 0;
                 var criancasMais7 = parseInt(document.getElementById('criancas_mais_7_dayuse').value, 10) || 0;
-                var comCafe = (document.getElementById('com_cafe') && document.getElementById('com_cafe').checked) ? 1 : 0;
+                var comCafe = (document.getElementById('com_cafe') && document.getElementById('com_cafe').checked) ? true : false;
                 var urlCalcular = '{{ route("admin.reservas.calcular-day-use") }}?data_entrada=' + encodeURIComponent(dataEntrada) + '&adultos=' + adultos + '&criancas_ate_7=' + criancasAte7 + '&criancas_mais_7=' + criancasMais7 + '&com_cafe=' + comCafe;
                 avancarDayUse.disabled = true;
                 fetch(urlCalcular)
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
+                        var errMsg = data.error || (data.errors && typeof data.errors === 'object' ? (Object.values(data.errors).flat().join(' ') || data.message) : null) || data.message;
+                        if (errMsg) {
+                            alert(errMsg + (String(errMsg).indexOf('configurado') !== -1 ? '\n\nConfigure em: Admin > Day Use Preços' : ''));
+                            return;
+                        }
                         var totalEl = document.getElementById('valor_total');
-                        if (totalEl && data.total !== undefined) totalEl.value = Number(data.total).toFixed(2);
+                        if (totalEl && data.total !== undefined) {
+                            totalEl.value = Number(data.total).toFixed(2);
+                            if (typeof window.atualizarValores === 'function') window.atualizarValores();
+                        }
+                        var pagamentoTab = document.querySelector('#pagamento-tab');
+                        var disponibilidadeTab = document.querySelector('#disponibilidade-tab');
+                        if (pagamentoTab && disponibilidadeTab) {
+                            disponibilidadeTab.classList.remove('active');
+                            pagamentoTab.classList.remove('disabled');
+                            pagamentoTab.classList.add('active');
+                            document.querySelector('#disponibilidade').classList.remove('show', 'active');
+                            document.querySelector('#pagamento').classList.add('show', 'active');
+                            if (typeof $ !== 'undefined' && $('#pagamento-tab').length) $('#pagamento-tab').tab('show'); else pagamentoTab.click();
+                        }
                     })
-                    .catch(function() {})
+                    .catch(function(err) {
+                        alert('Não foi possível calcular o total. Verifique a conexão e tente novamente.');
+                    })
                     .finally(function() { avancarDayUse.disabled = false; });
-                var pagamentoTab = document.querySelector('#pagamento-tab');
-                var disponibilidadeTab = document.querySelector('#disponibilidade-tab');
-                if (!pagamentoTab || !disponibilidadeTab) return;
-                disponibilidadeTab.classList.remove('active');
-                pagamentoTab.classList.remove('disabled');
-                pagamentoTab.classList.add('active');
-                document.querySelector('#disponibilidade').classList.remove('show', 'active');
-                document.querySelector('#pagamento').classList.add('show', 'active');
-                if (typeof $ !== 'undefined' && $('#pagamento-tab').length) $('#pagamento-tab').tab('show'); else pagamentoTab.click();
             });
         }
     });

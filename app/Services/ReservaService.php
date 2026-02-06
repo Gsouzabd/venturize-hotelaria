@@ -195,7 +195,7 @@ class ReservaService
                     'observacoes' => $data['observacoes'],
                     'observacoes_internas' => $data['observacoes_internas'],
                     'cart_serialized' => $quartoCartSerialized ?? null,
-                    'com_cafe' => $data['com_cafe'] ?? false,
+                    'com_cafe' => (bool) ($data['com_cafe'] ?? false),
                     'valor_cafe' => null,
                     'total' => $quartoData['total'] ?? 0,
                     'created_at' => Carbon::now('America/Sao_Paulo'),
@@ -481,7 +481,13 @@ class ReservaService
             throw new Exception('Nenhum plano de Day Use configurado.');
         }
 
-        $precoBase = $plano->getPrecoDia($data) ?? 0.0;
+        // Diária por adulto: "com café" = preço já com café (não é adicional)
+        if ($comCafe) {
+            $precoPorAdulto = $plano->getPrecoCafeDia($data);
+        } else {
+            $precoPorAdulto = $plano->getPrecoDia($data) ?? 0.0;
+        }
+        $valorAdultos = $precoPorAdulto * max(0, $adultos);
 
         // Valores extras para crianças (Day Use)
         // Opcionalmente podemos manter até 7 anos grátis para Day Use
@@ -497,18 +503,12 @@ class ReservaService
         $totalCriancasAte7Pagas = 0; // até 7 anos permanece gratuito aqui
         $valorCriancas = ($totalCriancasAte7Pagas * $precoCriancaAte7) + ($criancasMais7 * $precoCrianca4a12);
 
-        // Café da manhã – valor por pessoa pagante (adultos + crianças pagantes)
-        $valorCafe = 0.0;
-        if ($comCafe) {
-            $pessoasPagantesCafe = max(0, $adultos) + max(0, $criancasMais7);
-            $valorCafe = $plano->getPrecoCafeDia($data) * $pessoasPagantesCafe;
-        }
-
+        // valor_cafe: quando com_cafe é true, é a diária com café (apenas para referência no registro)
         if (array_key_exists('valor_cafe', $reservaDataRef)) {
-            $reservaDataRef['valor_cafe'] = $valorCafe;
+            $reservaDataRef['valor_cafe'] = $comCafe ? ($valorAdultos + $valorCriancas) : 0.0;
         }
 
-        return floatval($precoBase + $valorCriancas + $valorCafe);
+        return floatval($valorAdultos + $valorCriancas);
     }
 
     /**

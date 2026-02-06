@@ -41,6 +41,11 @@ class ReservaController extends Controller
      */
     public function calcularDayUse(Request $request)
     {
+        // GET envia com_cafe como string "true"/"false"; normalizar para validação boolean
+        $request->merge([
+            'com_cafe' => filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+        ]);
+
         $request->validate([
             'data_entrada' => 'required|string',
             'adultos' => 'required|integer|min:0',
@@ -53,7 +58,7 @@ class ReservaController extends Controller
             $adultos = (int) $request->input('adultos', 1);
             $criancasAte7 = (int) $request->input('criancas_ate_7', 0);
             $criancasMais7 = (int) $request->input('criancas_mais_7', 0);
-            $comCafe = $request->boolean('com_cafe');
+            $comCafe = filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN);
             $total = $this->reservaService->calcularTotalDayUse($dataUso, $adultos, $criancasAte7, $criancasMais7, $comCafe);
             return response()->json(['total' => round($total, 2)]);
         } catch (\Exception $e) {
@@ -331,6 +336,7 @@ class ReservaController extends Controller
     
     function updateSituacaoReserva($id, $situacao_reserva)
     {
+
         try {
             $reserva = $this->model->findOrFail($id);
             $reserva->situacao_reserva = $situacao_reserva;
