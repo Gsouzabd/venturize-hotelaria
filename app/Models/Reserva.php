@@ -47,6 +47,10 @@ class Reserva extends Model
 
     ];
 
+    protected $casts = [
+        'com_cafe' => 'boolean',
+    ];
+
     const TIPOSRESERVA = [
         'INDIVIDUAL' => 'Individual',
         'GRUPO' => 'Grupo',

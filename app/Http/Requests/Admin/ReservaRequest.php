@@ -12,6 +12,19 @@ class ReservaRequest extends FormRequest
         return true; // Ajuste conforme necessário
     }
 
+    /**
+     * Normaliza com_cafe para 1/0 antes da validação (checkbox envia "on" quando marcado).
+     */
+    protected function prepareForValidation(): void
+    {
+        $value = $this->input('com_cafe');
+        if ($value !== null) {
+            $this->merge([
+                'com_cafe' => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
+            ]);
+        }
+    }
+
     public function rules()
     {
         $rules = [

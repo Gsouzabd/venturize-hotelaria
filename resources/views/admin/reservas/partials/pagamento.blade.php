@@ -281,6 +281,7 @@
                 statusPagamentoSelect.value = 'PENDENTE';
             }
         }
+        window.atualizarValores = atualizarValores;
 
         function isDayUse() {
             var sel = document.querySelector('select[name="tipo_reserva"]');
@@ -392,14 +393,14 @@
         var isDayUse = document.querySelector('select[name="tipo_reserva"]') && document.querySelector('select[name="tipo_reserva"]').value === 'DAY_USE';
         fieldQuarto.style.display = isDayUse ? 'none' : '';
     }
-    function atualizarTotalDayUse() {
+        function atualizarTotalDayUse() {
         var dataEntrada = document.querySelector('input[name="data_entrada"]');
         var dataVal = dataEntrada ? dataEntrada.value : '';
         if (!dataVal) return;
         var adultos = parseInt(document.querySelector('input[name="adultos"]').value, 10) || 1;
         var criancasAte7 = parseInt(document.querySelector('input[name="criancas_ate_7"]').value, 10) || 0;
         var criancasMais7 = parseInt(document.querySelector('input[name="criancas_mais_7"]').value, 10) || 0;
-        var comCafe = (document.getElementById('com_cafe') && document.getElementById('com_cafe').checked) ? 1 : 0;
+        var comCafe = (document.getElementById('com_cafe') && document.getElementById('com_cafe').checked) ? true : false;
         var urlCalcular = '{{ route("admin.reservas.calcular-day-use") }}?data_entrada=' + encodeURIComponent(dataVal) + '&adultos=' + adultos + '&criancas_ate_7=' + criancasAte7 + '&criancas_mais_7=' + criancasMais7 + '&com_cafe=' + comCafe;
         fetch(urlCalcular).then(function(r) { return r.json(); }).then(function(data) {
             var totalEl = document.getElementById('valor_total');
