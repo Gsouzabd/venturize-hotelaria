@@ -145,51 +145,41 @@ use Illuminate\Support\Str;
     })->groupBy(function($reserva) {
         return \Carbon\Carbon::parse($reserva->data_checkin)->toDateString();
     });
+
+    // Resumo de Day Use para o dia atual (caso não venha do controller)
+    $hoje = \Carbon\Carbon::now('America/Sao_Paulo')->toDateString();
+    $dayUseHoje = $dayUsePorDia->get($hoje, collect());
+    $dayUseHojeTotal = $dayUseHoje->count();
+    $dayUseHojePessoas = $dayUseHoje->sum('adultos')
+        + $dayUseHoje->sum('criancas_ate_7')
+        + $dayUseHoje->sum('criancas_mais_7');
 @endphp
 
-@if(($dayUsePorDia ?? collect())->isNotEmpty())
-    <div class="mt-5">
-        <h5>Day Uses</h5>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Day Use</th>
-                    @for($i = 0; $i < $intervaloDias; $i++)
-                        <th>{{ $dataInicial->copy()->addDays($i)->format('d/m') }}</th>
-                    @endfor
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Qtde / Clientes</td>
-                    @for($i = 0; $i < $intervaloDias; $i++)
-                        @php
-                            $diaAtual = $dataInicial->copy()->addDays($i)->toDateString();
-                            $reservasDia = $dayUsePorDia[$diaAtual] ?? collect();
-                        @endphp
-                        <td style="padding: 4px; min-width: 120px;">
-                            @if($reservasDia->isNotEmpty())
-                                <div><strong>{{ $reservasDia->count() }} Day Use(s)</strong></div>
-                                <ul class="mb-0 pl-3" style="font-size: 11px; max-height: 80px; overflow-y: auto;">
-                                    @foreach($reservasDia as $reservaDayUse)
-                                        @php
-                                            $titularDayUse = $reservaDayUse->clienteResponsavel
-                                                ? $reservaDayUse->clienteResponsavel->nome
-                                                : optional($reservaDayUse->clienteSolicitante)->nome;
-                                        @endphp
-                                        <li>
-                                            <a href="{{ route('admin.reservas.edit', ['id' => $reservaDayUse->id]) }}">
-                                                {{ \Illuminate\Support\Str::limit(ucwords(strtolower($titularDayUse ?? '')), 20) }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                        </td>
-                    @endfor
-                </tr>
-            </tbody>
-        </table>
+@if(($dayUseHoje ?? collect())->isNotEmpty())
+    <!-- Bloco de Day Use (hoje) -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-12">
+            <a href="{{ route('admin.reservas.day-use', [
+                    'data_checkin' => \Carbon\Carbon::now('America/Sao_Paulo')->format('d/m/Y'),
+                    'data_checkout' => \Carbon\Carbon::now('America/Sao_Paulo')->format('d/m/Y'),
+                ]) }}"
+               class="text-decoration-none" style="color: inherit;">
+                <div class="card shadow-sm h-100" style="cursor: pointer;">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="mr-3">
+                            <i class="fas fa-sun fa-2x" style="color: #f39c12;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Day Use (hoje)</h6>
+                            <div><strong>{{ $dayUseHojeTotal }}</strong> reserva(s) Day Use</div>
+                            <div class="text-muted" style="font-size: 0.9rem;">
+                                {{ $dayUseHojePessoas }} pessoa(s) previstas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 @endif
 
