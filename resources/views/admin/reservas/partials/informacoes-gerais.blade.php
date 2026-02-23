@@ -2,14 +2,14 @@
     <div id="informacoesGeraisForm">
         <h5><i class="fa-solid fa-1"></i>Sobre </h5>
         <x-admin.field-group>
-            <!-- Campo de Tipo -->
-            {{-- <x-admin.field cols="3">
+            <!-- Campo de Tipo de Reserva -->
+            <x-admin.field cols="3">
                 <x-admin.label label="Tipo de Reserva" required/>
-                <x-admin.select name="tipo_reserva" id="tipo" class="form-control" required
-                                :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo']"
-                                selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? '') }}">
+                <x-admin.select name="tipo_reserva" id="tipo_reserva" class="form-control" required
+                                :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo', 'DAY_USE' => 'Day Use']"
+                                selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? 'INDIVIDUAL') }}">
                 </x-admin.select>
-            </x-admin.field> --}}
+            </x-admin.field>
 
             <!-- Campo de Situação -->
             <x-admin.field cols="3">
@@ -26,6 +26,18 @@
                 <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
                                 :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
                                 selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? 'PF') }}"/>   
+            </x-admin.field>
+            
+            <!-- Campo Com Café da Manhã (apenas para Day Use) -->
+            <x-admin.field cols="3" id="field-com-cafe" style="display: none;">
+                <x-admin.label label="Opções Day Use"/>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="com_cafe" name="com_cafe"
+                           {{ old('com_cafe', $reserva->com_cafe ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label" for="com_cafe">
+                        Com Café da Manhã
+                    </label>
+                </div>
             </x-admin.field>
         </x-admin.field-group>
             
@@ -276,6 +288,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tipoSolicitanteSelect = document.querySelector('select[name="tipo_solicitante"]');
+        const tipoReservaSelect = document.querySelector('select[name="tipo_reserva"]');
         const situacaoReservaSelect = document.querySelector('select[name="situacao_reserva"]');
 
         const preReservaHide = document.getElementById('pre-reserva-hide');
@@ -315,6 +328,25 @@
     
         // Adiciona um evento de mudança ao select
         tipoSolicitanteSelect.addEventListener('change', atualizarCampos);
+
+        // Exibir/ocultar opções de Day Use
+        const fieldComCafe = document.getElementById('field-com-cafe');
+        function atualizarCamposDayUse() {
+            if (tipoReservaSelect && tipoReservaSelect.value === 'DAY_USE') {
+                fieldComCafe.style.display = 'block';
+            } else {
+                fieldComCafe.style.display = 'none';
+                const comCafeInput = document.getElementById('com_cafe');
+                if (comCafeInput) {
+                    comCafeInput.checked = false;
+                }
+            }
+        }
+
+        if (tipoReservaSelect) {
+            atualizarCamposDayUse();
+            tipoReservaSelect.addEventListener('change', atualizarCamposDayUse);
+        }
   
 
         const buscarCpfButton = document.getElementById('buscarCpfButton');

@@ -15,6 +15,7 @@ use App\Models\Pagamento;
 use App\Models\Bar\Pedido;
 use Termwind\Components\Dd;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Services\ReservaService;
 use App\Services\PagamentoService;
 use App\Http\Controllers\Controller;
@@ -35,6 +36,36 @@ class ReservaController extends Controller
         $this->pagamentoService = $pagamentoService;
     }
 
+    /**
+     * Calcula o total de uma reserva Day Use (retorno JSON para o front).
+     */
+    public function calcularDayUse(Request $request)
+    {
+        // GET envia com_cafe como string "true"/"false"; normalizar para validação boolean
+        $request->merge([
+            'com_cafe' => filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+        ]);
+
+        $request->validate([
+            'data_entrada' => 'required|string',
+            'adultos' => 'required|integer|min:0',
+            'criancas_ate_7' => 'required|integer|min:0',
+            'criancas_mais_7' => 'required|integer|min:0',
+            'com_cafe' => 'sometimes|boolean',
+        ]);
+        try {
+            $dataUso = $request->input('data_entrada');
+            $adultos = (int) $request->input('adultos', 1);
+            $criancasAte7 = (int) $request->input('criancas_ate_7', 0);
+            $criancasMais7 = (int) $request->input('criancas_mais_7', 0);
+            $comCafe = filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN);
+            $total = $this->reservaService->calcularTotalDayUse($dataUso, $adultos, $criancasAte7, $criancasMais7, $comCafe);
+            return response()->json(['total' => round($total, 2)]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage(), 'total' => 0], 422);
+        }
+    }
+
     public function index(Request $request)
     {
         $filters = $request->all();
@@ -44,6 +75,12 @@ class ReservaController extends Controller
         $filters['data_checkout'] ??= '';
         $filters['created_at'] ??= '';
         $filters['operador_id'] ??= '';
+        $filters['tipo_reserva'] ??= '';
+
+        // Se a rota for a específica de Day Use, força o filtro
+        if (Route::currentRouteName() === 'admin.reservas.day-use') {
+            $filters['tipo_reserva'] = 'DAY_USE';
+        }
     
         $query = $this->model->newQuery();
     
@@ -53,6 +90,10 @@ class ReservaController extends Controller
     
         if ($filters['quarto_id']) {
             $query->where('quarto_id', $filters['quarto_id']);
+        }
+
+        if ($filters['tipo_reserva']) {
+            $query->where('tipo_reserva', $filters['tipo_reserva']);
         }
 
         if ($filters['data_checkin']) {
@@ -211,45 +252,60 @@ class ReservaController extends Controller
         
         // Salva os pagamentos de cada reserva
         try {
-            // dd($reservas);
             foreach ($reservas as $reserva) {
-                $quartoId = $reserva->quarto_id;
-                if (isset($data['quartos'][$quartoId])) {
-                    $quartoData = $data['quartos'][$quartoId];
-        
-                    $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
-                    $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
-                    $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
-                    $observacoesPagamento = $quartoData['observacoes_pagamento'] ?? [];
-                    // dd($valoresRecebidos, $metodosPagamento, $submetodosPagamento, $observacoesPagamento);
-        
+                if ($reserva->tipo_reserva === 'DAY_USE') {
+                    // Day Use: pagamento em estrutura plana (valores_recebidos[], metodos_pagamento[], etc.)
+                    $valoresRecebidos = $data['valores_recebidos'] ?? [];
+                    $metodosPagamento = $data['metodos_pagamento'] ?? [];
+                    $submetodosPagamento = $data['submetodos_pagamento'] ?? [];
+                    $observacoesPagamento = $data['observacoes_pagamento'] ?? [];
+
                     $pagamentos = [];
                     $valorPago = 0;
-        
                     foreach ($valoresRecebidos as $index => $valor) {
                         $metodoPagamento = $metodosPagamento[$index] ?? null;
                         $submetodoPagamento = $submetodosPagamento[$index] ?? null;
                         $observacaoPagamento = $observacoesPagamento[$index] ?? null;
                         $key = "{$metodoPagamento}-{$submetodoPagamento}-{$observacaoPagamento}";
-        
                         if (!isset($pagamentos[$key])) {
                             $pagamentos[$key] = 0;
                         }
-        
                         $pagamentos[$key] += $valor;
                         $valorPago += $valor;
                     }
-        
                     $pagamentosJson = json_encode($pagamentos);
-
-                    // dd($pagamentosJson);
-        
                     $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                } else {
+                    $quartoId = $reserva->quarto_id;
+                    if (isset($data['quartos'][$quartoId])) {
+                        $quartoData = $data['quartos'][$quartoId];
+
+                        $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
+                        $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
+                        $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
+                        $observacoesPagamento = $quartoData['observacoes_pagamento'] ?? [];
+
+                        $pagamentos = [];
+                        $valorPago = 0;
+                        foreach ($valoresRecebidos as $index => $valor) {
+                            $metodoPagamento = $metodosPagamento[$index] ?? null;
+                            $submetodoPagamento = $submetodosPagamento[$index] ?? null;
+                            $observacaoPagamento = $observacoesPagamento[$index] ?? null;
+                            $key = "{$metodoPagamento}-{$submetodoPagamento}-{$observacaoPagamento}";
+                            if (!isset($pagamentos[$key])) {
+                                $pagamentos[$key] = 0;
+                            }
+                            $pagamentos[$key] += $valor;
+                            $valorPago += $valor;
+                        }
+                        $pagamentosJson = json_encode($pagamentos);
+                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                    }
                 }
             }
-            
 
-            if($reserva->situacaoReserva != 'RESERVADO' && $reserva->created_at != $reserva->updated_at) {
+            $reserva = $reservas[0] ?? null;
+            if ($reserva && $reserva->situacao_reserva != 'RESERVADO' && $reserva->created_at != $reserva->updated_at) {
                 $data['confirmCheckout'] = isset($data['confirmCheckout']) ? true : false;
 
                 // dd($data);
@@ -280,6 +336,7 @@ class ReservaController extends Controller
     
     function updateSituacaoReserva($id, $situacao_reserva)
     {
+
         try {
             $reserva = $this->model->findOrFail($id);
             $reserva->situacao_reserva = $situacao_reserva;

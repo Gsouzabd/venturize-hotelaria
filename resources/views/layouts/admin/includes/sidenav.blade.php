@@ -23,6 +23,14 @@
                     <i class="sidenav-icon fas fa-calendar-week"></i>
                     <div>Reservas</div>
                 </a>
+                <ul class="sidenav-submenu">
+                    <li class="sidenav-item{{ is_active_path('admin/reservas/day-use') ? ' active' : '' }}">
+                        <a href="{{ route('admin.reservas.day-use') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-sun"></i>
+                            <div>Day Use</div>
+                        </a>
+                    </li>
+                </ul>
             </li>
 
             <li class="sidenav-item{{ is_active_path('admin/quartos') ? ' active' : '' }}">
@@ -35,6 +43,12 @@
                         <a href="{{ route('admin.quartos-opcoes-extras.index') }}" class="sidenav-link">
                             <i class="sidenav-icon fas fa-plus"></i>
                             <div>Opções Extras</div>
+                        </a>
+                    </li>
+                    <li class="sidenav-item{{ is_active_path('admin/day-use-precos') ? ' active' : '' }}">
+                        <a href="{{ route('admin.day-use-precos.index') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-sun"></i>
+                            <div>Planos Day Use</div>
                         </a>
                     </li>
                 </ul>

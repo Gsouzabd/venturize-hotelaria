@@ -498,13 +498,37 @@ const formFields = document.querySelectorAll('#informacoes-gerais input, #inform
 const situacao_reserva = document.querySelector('select[name="situacao_reserva"]');
 
 saveInfoButton.addEventListener('click', function () {
-    if(situacao_reserva.value == 'RESERVADO'){
-        validateInformacoesGerais();
+    if (situacao_reserva && situacao_reserva.value == 'RESERVADO') {
+        if (validateInformacoesGerais()) {
+            if (disponibilidadeTabLink) disponibilidadeTabLink.classList.remove('disabled');
+            if (typeof $ !== 'undefined' && $('#disponibilidade-tab').length) {
+                $('#disponibilidade-tab').tab('show');
+            } else if (disponibilidadeTabLink) {
+                disponibilidadeTabLink.click();
+            }
+        }
     } else {
-        console.log('entrou no else');
-        disponibilidadeTabLink.classList.remove('disabled');
-        disponibilidadeTabLink.click(); // Alterna para a tab de Disponibilidade
+        if (disponibilidadeTabLink) disponibilidadeTabLink.classList.remove('disabled');
+        if (typeof $ !== 'undefined' && $('#disponibilidade-tab').length) {
+            $('#disponibilidade-tab').tab('show');
+        } else if (disponibilidadeTabLink) {
+            disponibilidadeTabLink.click();
+        }
     }
+});
+
+// Atualizar rótulo da aba Disponibilidade conforme tipo de reserva (Day Use vs Disponibilidade)
+document.addEventListener('DOMContentLoaded', function () {
+    const tipoReservaSelect = document.querySelector('select[name="tipo_reserva"]');
+    const tabLabel = document.getElementById('disponibilidade-tab-label');
+    const tabLink = document.getElementById('disponibilidade-tab');
+    function updateDisponibilidadeTabLabel() {
+        if (!tabLabel || !tipoReservaSelect || !tabLink) return;
+        const label = tipoReservaSelect.value === 'DAY_USE' ? (tabLink.getAttribute('data-label-dayuse') || 'Day Use') : (tabLink.getAttribute('data-label-default') || 'Disponibilidade');
+        tabLabel.textContent = label;
+    }
+    updateDisponibilidadeTabLabel();
+    if (tipoReservaSelect) tipoReservaSelect.addEventListener('change', updateDisponibilidadeTabLabel);
 });
 
 function validateInformacoesGerais() {

@@ -22,16 +22,27 @@
     <x-admin.form save-route="admin.quartos.save" back-route="admin.quartos.index">
         @csrf
 
+        @if($edit && $quarto->id)
+            <input type="hidden" name="id" value="{{ $quarto->id }}">
+        @endif
+
         <!-- Agrupamento de campos em linhas de 2 colunas -->
         <x-admin.field-group>
 
             <!-- Número -->
-            <x-admin.field cols="6">
+            <x-admin.field cols="4">
                 <x-admin.label label="Número" required/>
                 <x-admin.text name="numero" id="numero" :value="old('numero', $quarto->numero)" required/>
             </x-admin.field>
+
+            <!-- Referência -->
+            <x-admin.field cols="4">
+                <x-admin.label label="Referência"/>
+                <x-admin.text name="referencia" id="referencia" :value="old('referencia', $quarto->referencia)"/>
+            </x-admin.field>
+
             <!-- Andar -->
-            <x-admin.field cols="6">
+            <x-admin.field cols="4">
                 <x-admin.label label="Andar" required/>
                 <x-admin.select name="andar" id="andar" :value="old('andar', $quarto->andar)"
                     :items="['Terréo' => 'Terréo', '1o Andar' => '1o Andar']"
