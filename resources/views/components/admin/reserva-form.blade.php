@@ -32,12 +32,13 @@
 
         <div class="col-md-12" id="cart-col" style="display: none">
             @include('admin.reservas.partials.cart-preview')
-            <div class="text-right mt-3 d-flex justify-content-end">
-                <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled="$disabled"/>
-                @if($backRoute)
-                    <x-admin.cancel-btn :back-route="$backRoute" />
-                @endif
-            </div>
+        </div>
+
+        <div class="col-md-12 mt-3 text-right d-flex justify-content-end">
+            <x-admin.submit-btn :title="$submitTitle" style="width: 45%" :disabled="$disabled"/>
+            @if($backRoute)
+                <x-admin.cancel-btn :back-route="$backRoute" />
+            @endif
         </div>
 
     </div>

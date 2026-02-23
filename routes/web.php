@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DisponibilidadeController;
 use App\Http\Controllers\Admin\ImportarUsuarioController;
 use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
+use App\Http\Controllers\Admin\DayUsePlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
 use App\Http\Controllers\Admin\ImpressoraController;
 use App\Http\Controllers\Admin\FornecedorController;
@@ -44,6 +45,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/estoque/movimentacoes/{id}', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.edit');
         Route::get('/estoque/movimentacoes/create', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.create');
         Route::get('/reservas/mapa', [ReservaController::class, 'mapa'])->name('reservas.mapa');
+        Route::get('/reservas/day-use', [ReservaController::class, 'index'])->name('reservas.day-use');
+        Route::get('/reservas/calcular-day-use', [ReservaController::class, 'calcularDayUse'])->name('reservas.calcular-day-use');
 
         Route::get('/reservas/{id}/gerar-extrato', [ReservaController::class, 'gerarExtrato'])->name('reservas.gerar-extrato');
 
@@ -91,6 +94,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('quartos/{quartoId?}/planos-preco/edit/{id?}', [QuartoPlanoPrecoController::class, 'edit'])->name('quartos.planos-preco.edit');
         Route::post('quartos/planos-preco/save/{id?}', [QuartoPlanoPrecoController::class, 'save'])->name('quartos.planos-preco.save');      Route::delete('quartos/planos-preco/delete/{id}', [QuartoPlanoPrecoController::class, 'delete'])->name('quartos.planos-preco.delete');
+        
+        // Planos de preço para Day Use
+        Route::prefix('day-use-precos')->name('day-use-precos.')->controller(DayUsePlanoPrecoController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'edit')->name('create');
+            Route::match(['post', 'put'], '/', 'save')->name('save');
+            Route::get('/{id}', 'edit')->name('edit');
+            Route::delete('/{id}', 'destroy')->name('destroy');
+        });
         
         Route::get('/empresa/cnpj/cnpj', function($cpf) {
             $empresa = Empresa::where('cpf', $cpf)->firstOrFail();

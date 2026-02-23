@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Quarto extends Model
 {
     protected $fillable = [
-        'andar', 'numero', 'ramal', 'posicao_quarto', 
+        'andar', 'numero', 'ramal', 'posicao_quarto', 'referencia',
         'quantidade_cama_casal', 'quantidade_cama_solteiro', 'classificacao',
         'acessibilidade', 'inativo'
     ];
