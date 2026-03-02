@@ -497,6 +497,13 @@ const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
 const formFields = document.querySelectorAll('#informacoes-gerais input, #informacoes-gerais textarea, #informacoes-gerais select');
 const situacao_reserva = document.querySelector('select[name="situacao_reserva"]');
 
+// Garantir que RG nunca seja obrigatório no front
+const rgInput = document.getElementById('rg');
+if (rgInput) {
+    rgInput.removeAttribute('required');
+    rgInput.setCustomValidity('');
+}
+
 saveInfoButton.addEventListener('click', function () {
     if (situacao_reserva && situacao_reserva.value == 'RESERVADO') {
         if (validateInformacoesGerais()) {
@@ -534,6 +541,13 @@ document.addEventListener('DOMContentLoaded', function () {
 function validateInformacoesGerais() {
     let isValid = true;
     formFields.forEach(field => {
+        // Ignorar completamente o campo RG na validação de front
+        if (field.id === 'rg' || field.name === 'rg') {
+            field.classList.remove('is-invalid');
+            field.setCustomValidity('');
+            return;
+        }
+
         if (!field.checkValidity()) {
             isValid = false;
             field.classList.add('is-invalid');
@@ -1055,6 +1069,11 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
                 console.log('irei definir os campos como required');
                 const camposReservado = document.querySelectorAll('#pre-reserva-hide input, #pre-reserva-hide select');
                 camposReservado.forEach(campo => {
+                    // Nunca tornar RG obrigatório
+                    if (campo.id === 'rg' || campo.name === 'rg') {
+                        campo.removeAttribute('required');
+                        return;
+                    }
                     campo.setAttribute('required', 'required');
                     console.log('campo definido como required', campo);
                 });  

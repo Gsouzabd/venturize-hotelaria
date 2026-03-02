@@ -94,25 +94,38 @@ class ReservaService
 
         // Buscar ou criar o cliente solicitante
         if (!empty($data['cpf']) && !empty($data['nome'])) {
-            $clienteSolicitante = Cliente::updateOrCreate(
-                ['cpf' => $data['cpf']],
-                [
-                    'nome' => $data['nome'],
-                    'email' => $data['email'],
-                    'telefone' => $data['telefone'],
-                    'celular' => $data['celular'],
-                    'data_nascimento' => $data['data_nascimento'],
-                    'rg' => $data['rg'],
-                    'estrangeiro' => 'Não', // ou outro valor apropriado
-                    'cep' => $data['cep'],
-                    'endereco' => $data['endereco'],
-                    'cidade' => $data['cidade'],
-                    'estado' => $data['estado'],
-                    'pais' => $data['pais'],
-                    'numero' => $data['numero'],
-                    'bairro' => $data['bairro'],
-                ]
-            );
+            $cpfLimpo = preg_replace('/\D/', '', $data['cpf']);
+            $clienteData = [
+                'cpf' => $cpfLimpo,
+                'nome' => $data['nome'],
+                'email' => $data['email'],
+                'telefone' => $data['telefone'],
+                'celular' => $data['celular'],
+                'data_nascimento' => $data['data_nascimento'],
+                'rg' => $data['rg'],
+                'estrangeiro' => 'Não',
+                'cep' => $data['cep'],
+                'endereco' => $data['endereco'],
+                'cidade' => $data['cidade'],
+                'estado' => $data['estado'] ?? null,
+                'pais' => $data['pais'],
+                'numero' => $data['numero'],
+                'bairro' => $data['bairro'],
+            ];
+
+            // Primeiro tenta achar pelo CPF normalizado, para não trocar o CPF de outro registro
+            $clienteSolicitante = Cliente::where('cpf', $cpfLimpo)->first();
+
+            // Se não achou, tenta pelo CPF no formato recebido (com máscara)
+            if (!$clienteSolicitante) {
+                $clienteSolicitante = Cliente::where('cpf', $data['cpf'])->first();
+            }
+
+            if ($clienteSolicitante) {
+                $clienteSolicitante->update($clienteData);
+            } else {
+                $clienteSolicitante = Cliente::create($clienteData);
+            }
         }
 
         // Day Use sem quartos: montar um único bloco a partir dos dados do formulário

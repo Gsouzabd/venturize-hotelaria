@@ -143,37 +143,24 @@
                 </x-admin.field>
             
                 @php
-                    $estadoOriginal = old('estado', $reserva->clienteSolicitante->estado ?? '');
+                    $estadoOriginal = trim(old('estado', $reserva->clienteSolicitante->estado ?? ''));
                     $estadoMap = [
-                        'Acre' => 'AC',
-                        'Alagoas' => 'AL',
-                        'Amapá' => 'AP',
-                        'Amazonas' => 'AM',
-                        'Bahia' => 'BA',
-                        'Ceará' => 'CE',
-                        'Distrito Federal' => 'DF',
-                        'Espírito Santo' => 'ES',
-                        'Goiás' => 'GO',
-                        'Maranhão' => 'MA',
-                        'Mato Grosso' => 'MT',
-                        'Mato Grosso do Sul' => 'MS',
-                        'Minas Gerais' => 'MG',
-                        'Pará' => 'PA',
-                        'Paraíba' => 'PB',
-                        'Paraná' => 'PR',
-                        'Pernambuco' => 'PE',
-                        'Piauí' => 'PI',
-                        'Rio de Janeiro' => 'RJ',
-                        'Rio Grande do Norte' => 'RN',
-                        'Rio Grande do Sul' => 'RS',
-                        'Rondônia' => 'RO',
-                        'Roraima' => 'RR',
-                        'Santa Catarina' => 'SC',
-                        'São Paulo' => 'SP',
-                        'Sergipe' => 'SE',
-                        'Tocantins' => 'TO',
+                        'acre' => 'AC', 'alagoas' => 'AL', 'amapá' => 'AP', 'amapa' => 'AP', 'amazonas' => 'AM',
+                        'bahia' => 'BA', 'ceará' => 'CE', 'ceara' => 'CE', 'distrito federal' => 'DF',
+                        'espírito santo' => 'ES', 'espirito santo' => 'ES', 'goiás' => 'GO', 'goias' => 'GO',
+                        'maranhão' => 'MA', 'maranhao' => 'MA', 'mato grosso' => 'MT', 'mato grosso do sul' => 'MS',
+                        'minas gerais' => 'MG', 'pará' => 'PA', 'para' => 'PA', 'paraíba' => 'PB', 'paraiba' => 'PB',
+                        'paraná' => 'PR', 'parana' => 'PR', 'pernambuco' => 'PE', 'piauí' => 'PI', 'piaui' => 'PI',
+                        'rio de janeiro' => 'RJ', 'rio grande do norte' => 'RN', 'rio grande do sul' => 'RS',
+                        'rondônia' => 'RO', 'rondonia' => 'RO', 'roraima' => 'RR', 'santa catarina' => 'SC',
+                        'são paulo' => 'SP', 'sao paulo' => 'SP', 'sergipe' => 'SE', 'tocantins' => 'TO',
                     ];
-                    $estadoSelected = $estadoMap[$estadoOriginal] ?? $estadoOriginal;
+                    $estadoSelected = '';
+                    if (strlen($estadoOriginal) === 2) {
+                        $estadoSelected = strtoupper($estadoOriginal);
+                    } elseif (!empty($estadoOriginal)) {
+                        $estadoSelected = $estadoMap[mb_strtolower($estadoOriginal)] ?? strtoupper($estadoOriginal);
+                    }
                 @endphp
 
                 <x-admin.field cols="4">
@@ -501,48 +488,21 @@
 
         function mapEstadoToUF(estado) {
             if (!estado) return '';
+            estado = (estado || '').trim();
+            if (estado.length === 2) return estado.toUpperCase();
 
             const map = {
-                'Acre': 'AC',
-                'Alagoas': 'AL',
-                'Amapá': 'AP',
-                'Amazonas': 'AM',
-                'Bahia': 'BA',
-                'Ceará': 'CE',
-                'Distrito Federal': 'DF',
-                'Espírito Santo': 'ES',
-                'Goiás': 'GO',
-                'Maranhão': 'MA',
-                'Mato Grosso': 'MT',
-                'Mato Grosso do Sul': 'MS',
-                'Minas Gerais': 'MG',
-                'Pará': 'PA',
-                'Paraíba': 'PB',
-                'Paraná': 'PR',
-                'Pernambuco': 'PE',
-                'Piauí': 'PI',
-                'Rio de Janeiro': 'RJ',
-                'Rio Grande do Norte': 'RN',
-                'Rio Grande do Sul': 'RS',
-                'Rondônia': 'RO',
-                'Roraima': 'RR',
-                'Santa Catarina': 'SC',
-                'São Paulo': 'SP',
-                'Sergipe': 'SE',
-                'Tocantins': 'TO',
+                'acre': 'AC', 'alagoas': 'AL', 'amapá': 'AP', 'amapa': 'AP', 'amazonas': 'AM',
+                'bahia': 'BA', 'ceará': 'CE', 'ceara': 'CE', 'distrito federal': 'DF',
+                'espírito santo': 'ES', 'espirito santo': 'ES', 'goiás': 'GO', 'goias': 'GO',
+                'maranhão': 'MA', 'maranhao': 'MA', 'mato grosso': 'MT', 'mato grosso do sul': 'MS',
+                'minas gerais': 'MG', 'pará': 'PA', 'para': 'PA', 'paraíba': 'PB', 'paraiba': 'PB',
+                'paraná': 'PR', 'parana': 'PR', 'pernambuco': 'PE', 'piauí': 'PI', 'piaui': 'PI',
+                'rio de janeiro': 'RJ', 'rio grande do norte': 'RN', 'rio grande do sul': 'RS',
+                'rondônia': 'RO', 'rondonia': 'RO', 'roraima': 'RR', 'santa catarina': 'SC',
+                'são paulo': 'SP', 'sao paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO',
             };
-
-            estado = (estado || '').trim();
-
-            if (map[estado]) {
-                return map[estado];
-            }
-
-            if (estado.length === 2) {
-                return estado.toUpperCase();
-            }
-
-            return estado;
+            return map[estado.toLowerCase()] || estado;
         }
 
         const buscarCpfButton = document.getElementById('buscarCpfButton');

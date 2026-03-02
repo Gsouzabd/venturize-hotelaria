@@ -41,7 +41,10 @@ Route::prefix('print')->name('api.print.')->group(function () {
     // Listar impressoras configuradas (para o PrintingAgent)
     Route::get('/impressoras', function() {
         try {
-            $impressoras = \App\Models\Impressora::ativas()->ordenadas()->get();
+            $impressoras = \App\Models\Impressora::ativas()
+                ->ordenadas()
+                ->get()
+                ->filter(fn($imp) => !empty(trim($imp->ip ?? '')));
             
             return response()->json([
                 'success' => true,
@@ -49,9 +52,9 @@ Route::prefix('print')->name('api.print.')->group(function () {
                     return [
                         'name' => $imp->nome,
                         'ip' => $imp->ip,
-                        'port' => $imp->porta
+                        'port' => $imp->porta ?? 9100
                     ];
-                })
+                })->values()
             ]);
         } catch (\Exception $e) {
             return response()->json([

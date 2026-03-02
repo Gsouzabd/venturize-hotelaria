@@ -23,14 +23,18 @@ class PrinterService
                 $impressoras = \App\Models\Impressora::ativas()->ordenadas()->get();
                 
                 if ($impressoras->isNotEmpty()) {
-                    return $impressoras->map(function($imp) {
-                        return [
-                            'ip' => $imp->ip,
-                            'name' => $imp->nome,
-                            'port' => $imp->porta,
-                            'tipo' => $imp->tipo
-                        ];
-                    })->toArray();
+                    return $impressoras
+                        ->filter(fn($imp) => !empty(trim($imp->ip ?? '')))
+                        ->map(function($imp) {
+                            return [
+                                'ip' => $imp->ip,
+                                'name' => $imp->nome,
+                                'port' => $imp->porta ?? 9100,
+                                'tipo' => $imp->tipo
+                            ];
+                        })
+                        ->values()
+                        ->toArray();
                 }
             }
         } catch (\Exception $e) {
