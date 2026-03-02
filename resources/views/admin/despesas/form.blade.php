@@ -17,9 +17,12 @@
         </div>
     @endif
 
-    <x-admin.form save-route="admin.despesas.save" back-route="admin.despesas.index" id="despesa-form" :files-enctype="true">
+    <x-admin.form save-route="admin.despesas.save" :back-route="!empty($returnTo) ? '' : 'admin.despesas.index'" id="despesa-form" :files-enctype="true">
         @if($edit)
             <input type="hidden" name="id" value="{{ $despesa->id }}">
+        @endif
+        @if(!empty($returnTo))
+            <input type="hidden" name="_return_to" value="{{ $returnTo }}">
         @endif
         
         <x-admin.field-group>
@@ -30,7 +33,7 @@
 
             <x-admin.field cols="4">
                 <x-admin.label label="Data" required/>
-                <x-admin.text name="data" id="data" :value="old('data', $despesa->data ? $despesa->data->format('d/m/Y') : '')" class="date-mask" required/>
+                <x-admin.datepicker name="data" :value="old('data', $despesa->data ? $despesa->data->format('d/m/Y') : '')"/>
             </x-admin.field>
 
             <x-admin.field cols="4">
@@ -158,6 +161,12 @@
                 <button type="button" id="add-rateio-btn" class="btn btn-primary">Adicionar Rateio</button>
             </x-admin.field>
         </x-admin.field-group>
+
+        @if(!empty($returnTo))
+            <div class="text-right mt-2">
+                <a href="{{ $returnTo }}" class="btn btn-default ml-md-2">Voltar ao Relatório</a>
+            </div>
+        @endif
 
     </x-admin.form>
 </div>

@@ -16,11 +16,11 @@
                 <div class="row">
                     <div class="col-md-3">
                         <label>Data Inicial</label>
-                        <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''" required/>
+                        <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''"/>
                     </div>
                     <div class="col-md-3">
                         <label>Data Final</label>
-                        <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''" required/>
+                        <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''"/>
                     </div>
                     <div class="col-md-3">
                         <label>Categoria</label>
@@ -28,7 +28,7 @@
                             <option value="">Todas</option>
                             @foreach($categorias as $categoria)
                                 <option value="{{ $categoria->id }}" 
-                                        {{ ($filters['categoria_id'] ?? '') == $categoria->id ? 'selected' : '' }}>
+                                        {{ (string)($filters['categoria_id'] ?? '') === (string)$categoria->id ? 'selected' : '' }}>
                                     {{ $categoria->nome }}
                                 </option>
                             @endforeach
@@ -129,6 +129,9 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $returnTo = route('admin.despesas.relatorios', $filters);
+                        @endphp
                         @forelse($despesas as $despesa)
                             <tr>
                                 <td>{{ $despesa->data->format('d/m/Y') }}</td>
@@ -148,8 +151,18 @@
                                     </ul>
                                 </td>
                                 <td class="cell-nowrap">
-                                    <x-admin.edit-btn route="admin.despesas.edit" :route-params="['id' => $despesa->id]"/>
-                                    <x-admin.delete-btn route="admin.despesas.destroy" :route-params="['id' => $despesa->id]"/>
+                                    <a href="{{ route('admin.despesas.edit', ['id' => $despesa->id]) }}?_return_to={{ urlencode($returnTo) }}" 
+                                       target="_blank" class="btn btn-xs btn-secondary">Editar</a>
+                                    <form method="POST" action="{{ route('admin.despesas.destroy', ['id' => $despesa->id]) }}" class="d-inline-block delete-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="_return_to" value="{{ $returnTo }}">
+                                        <button type="submit"
+                                                class="btn btn-xs btn-outline-danger delete-btn"
+                                                onclick="return confirm('Tem certeza que deseja excluir este item?')">
+                                            <i class="fas fa-trash-alt"></i>Excluir
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

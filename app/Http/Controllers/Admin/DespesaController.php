@@ -60,7 +60,7 @@ class DespesaController extends Controller
         }
 
         $despesas = $query
-            ->orderBy('created_at', 'desc')
+            ->orderBy('data', 'desc')
             ->paginate(config('app.rows_per_page', 15));
 
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
@@ -69,16 +69,15 @@ class DespesaController extends Controller
         return view('admin.despesas.index', compact('despesas', 'filters', 'categorias', 'fornecedores'));
     }
 
-    public function edit($id = null)
+    public function edit(Request $request, $id = null)
     {
         $edit = boolval($id);
         $despesa = $edit ? $this->model->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->findOrFail($id) : $this->model->newInstance();
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
-        // Não precisamos mais carregar todos os fornecedores, pois usamos busca AJAX
-        // Mas mantemos para compatibilidade caso necessário
         $fornecedores = collect([]);
+        $returnTo = $request->get('_return_to', '');
 
-        return view('admin.despesas.form', compact('despesa', 'edit', 'categorias', 'fornecedores'));
+        return view('admin.despesas.form', compact('despesa', 'edit', 'categorias', 'fornecedores', 'returnTo'));
     }
 
     public function save(DespesaRequest $request)
@@ -165,9 +164,14 @@ class DespesaController extends Controller
             }
         }
 
-        return redirect()
-            ->route('admin.despesas.index')
-            ->with('notice', config('app.messages.' . ($id ? 'update' : 'insert')));
+        $returnTo = $request->get('_return_to');
+        $notice = config('app.messages.' . ($id ? 'update' : 'insert'));
+
+        if ($returnTo) {
+            return redirect($returnTo)->with('notice', $notice);
+        }
+
+        return redirect()->route('admin.despesas.index')->with('notice', $notice);
     }
 
     public function show($id)
@@ -177,20 +181,24 @@ class DespesaController extends Controller
         return view('admin.despesas.show', compact('despesa'));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $despesa = $this->model->findOrFail($id);
         
-        // Remover arquivo se existir
         if ($despesa->arquivo_nota) {
             Storage::disk('public')->delete($despesa->arquivo_nota);
         }
         
         $despesa->delete();
 
-        return redirect()
-            ->route('admin.despesas.index')
-            ->with('notice', config('app.messages.delete'));
+        $returnTo = $request->get('_return_to');
+        $notice = config('app.messages.delete');
+
+        if ($returnTo) {
+            return redirect($returnTo)->with('notice', $notice);
+        }
+
+        return redirect()->route('admin.despesas.index')->with('notice', $notice);
     }
 
     public function relatorios(Request $request)
@@ -211,7 +219,7 @@ class DespesaController extends Controller
             });
         }
 
-        $despesas = $query->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->get();
+        $despesas = $query->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->orderBy('data')->get();
 
         // Consolidar por categoria
         $consolidado = [];
@@ -353,17 +361,17 @@ class DespesaController extends Controller
         
         // Cabeçalhos
         $dadosExcel[] = [
+            'Data',
             'ID',
             'Número da Nota Fiscal',
             'Fornecedor',
             'Descrição',
-            'Data',
-            'Valor Total',
             'Categoria',
             'Valor Rateado',
             'Observações Rateio',
             'Cadastrado por',
-            'Data de Cadastro'
+            'Data de Cadastro',
+            'Valor Total'
         ];
         
         // Dados
@@ -371,33 +379,33 @@ class DespesaController extends Controller
             if ($despesa->despesaCategorias->count() > 0) {
                 foreach ($despesa->despesaCategorias as $index => $rateio) {
                     $dadosExcel[] = [
+                        $index === 0 ? $despesa->data->format('d/m/Y') : '',
                         $index === 0 ? $despesa->id : '',
                         $index === 0 ? $despesa->numero_nota_fiscal : '',
                         $index === 0 ? ($despesa->fornecedor->nome ?? '-') : '',
                         $index === 0 ? $despesa->descricao : '',
-                        $index === 0 ? $despesa->data->format('d/m/Y') : '',
-                        $index === 0 ? number_format($despesa->valor_total, 2, ',', '.') : '',
                         $rateio->categoriaDespesa ? $rateio->categoriaDespesa->nome : 'Sem categoria',
                         number_format($rateio->valor, 2, ',', '.'),
                         $rateio->observacoes ?? '',
                         $index === 0 ? ($despesa->usuario->nome ?? '-') : '',
-                        $index === 0 ? $despesa->created_at->format('d/m/Y H:i:s') : ''
+                        $index === 0 ? $despesa->created_at->format('d/m/Y H:i:s') : '',
+                        $index === 0 ? number_format($despesa->valor_total, 2, ',', '.') : ''
                     ];
                 }
             } else {
                 // Despesa sem rateio
                 $dadosExcel[] = [
+                    $despesa->data->format('d/m/Y'),
                     $despesa->id,
                     $despesa->numero_nota_fiscal,
                     $despesa->fornecedor->nome ?? '-',
                     $despesa->descricao,
-                    $despesa->data->format('d/m/Y'),
-                    number_format($despesa->valor_total, 2, ',', '.'),
                     'Sem rateio',
                     '',
                     '',
                     $despesa->usuario->nome ?? '-',
-                    $despesa->created_at->format('d/m/Y H:i:s')
+                    $despesa->created_at->format('d/m/Y H:i:s'),
+                    number_format($despesa->valor_total, 2, ',', '.')
                 ];
             }
         }

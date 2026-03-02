@@ -9,7 +9,7 @@
             <li class="sidenav-item{{ is_active_path('admin') ? ' active' : '' }}">
                 <a href="{{ route('admin.home') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-tachometer-alt"></i>
-                    <div>Dashboard</div>
+                    <div>Painel</div>
                 </a>
             </li>
             <li class="sidenav-item{{ is_active_path('admin/reservas/mapa') ? ' active' : '' }}">

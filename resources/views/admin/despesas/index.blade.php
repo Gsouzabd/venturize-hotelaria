@@ -19,18 +19,18 @@
         </x-admin.filter>
         <x-admin.filter cols="2">
             <x-admin.label label="Data Inicial"/>
-            <x-admin.text name="data_inicial" :value="$filters['data_inicial'] ?? ''" class="date-mask"/>
+            <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''"/>
         </x-admin.filter>
         <x-admin.filter cols="2">
             <x-admin.label label="Data Final"/>
-            <x-admin.text name="data_final" :value="$filters['data_final'] ?? ''" class="date-mask"/>
+            <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''"/>
         </x-admin.filter>
         <x-admin.filter cols="2">
             <x-admin.label label="Categoria"/>
             <x-admin.select name="categoria_id">
                 <option value="">Todas</option>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}" {{ ($filters['categoria_id'] ?? '') == $categoria->id ? 'selected' : '' }}>
+                    <option value="{{ $categoria->id }}" {{ (string)($filters['categoria_id'] ?? '') === (string)$categoria->id ? 'selected' : '' }}>
                         {{ $categoria->nome }}
                     </option>
                 @endforeach
@@ -41,7 +41,7 @@
             <select name="fornecedor_id" class="custom-select">
                 <option value="">Todos</option>
                 @foreach($fornecedores as $fornecedor)
-                    <option value="{{ $fornecedor->id }}" {{ ($filters['fornecedor_id'] ?? '') == $fornecedor->id ? 'selected' : '' }}>
+                    <option value="{{ $fornecedor->id }}" {{ (string)($filters['fornecedor_id'] ?? '') === (string)$fornecedor->id ? 'selected' : '' }}>
                         {{ $fornecedor->nome }}
                     </option>
                 @endforeach
@@ -66,6 +66,9 @@
             </tr>
             </thead>
             <tbody>
+            @php
+                $returnTo = route('admin.despesas.index', $filters);
+            @endphp
             @forelse($despesas as $despesa)
                 <tr>
                     <td>{{ $despesa->id }}</td>
@@ -104,8 +107,18 @@
                         <a href="{{ route('admin.despesas.show', $despesa->id) }}" class="btn btn-sm btn-info" title="Visualizar">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <x-admin.edit-btn route="admin.despesas.edit" :route-params="['id' => $despesa->id]"/>
-                        <x-admin.delete-btn route="admin.despesas.destroy" :route-params="['id' => $despesa->id]"/>
+                        <a href="{{ route('admin.despesas.edit', ['id' => $despesa->id]) }}?_return_to={{ urlencode($returnTo) }}" 
+                           target="_blank" class="btn btn-xs btn-secondary">Editar</a>
+                        <form method="POST" action="{{ route('admin.despesas.destroy', ['id' => $despesa->id]) }}" class="d-inline-block delete-form">
+                            @csrf
+                            @method('DELETE')
+                            <input type="hidden" name="_return_to" value="{{ $returnTo }}">
+                            <button type="submit"
+                                    class="btn btn-xs btn-outline-danger delete-btn"
+                                    onclick="return confirm('Tem certeza que deseja excluir este item?')">
+                                <i class="fas fa-trash-alt"></i>Excluir
+                            </button>
+                        </form>
                     </td>
                 </tr>
             @empty

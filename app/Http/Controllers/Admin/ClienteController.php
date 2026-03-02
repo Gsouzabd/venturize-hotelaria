@@ -91,17 +91,39 @@ class ClienteController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->get('query', '');
+        $query = $request->get('q', $request->get('query', ''));
 
         if (strlen($query) < 2) {
-            return response()->json([]);
+            return response()->json(['results' => []]);
         }
 
         $clientes = $this->model->where('nome', 'like', '%' . $query . '%')
                                 ->orWhere('cpf', 'like', '%' . $query . '%')
+                                ->limit(20)
                                 ->get();
 
-        return response()->json($clientes);
+        $results = $clientes->map(function ($cliente) {
+            return [
+                'id' => $cliente->id,
+                'text' => $cliente->nome . ($cliente->cpf ? ' - CPF: ' . $cliente->cpf : ''),
+                'nome' => $cliente->nome,
+                'cpf' => $cliente->cpf,
+                'data_nascimento' => $cliente->data_nascimento,
+                'rg' => $cliente->rg,
+                'cep' => $cliente->cep,
+                'cidade' => $cliente->cidade,
+                'endereco' => $cliente->endereco,
+                'numero' => $cliente->numero,
+                'bairro' => $cliente->bairro,
+                'estado' => $cliente->estado,
+                'pais' => $cliente->pais,
+                'email' => $cliente->email,
+                'telefone' => $cliente->telefone,
+                'celular' => $cliente->celular,
+            ];
+        });
+
+        return response()->json(['results' => $results]);
     }
     
 }

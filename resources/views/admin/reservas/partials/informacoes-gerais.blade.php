@@ -42,6 +42,20 @@
         </x-admin.field-group>
             
         <h5><i class="fa-solid fa-2"></i>Dados do Solicitante </h5>
+
+        <x-admin.field-group>
+            <x-admin.field cols="12">
+                <x-admin.label label="Buscar Cliente Cadastrado"/>
+                <x-admin.select2 
+                    name="busca_cliente" 
+                    id="buscaClienteSelect"
+                    remoteUrl="{{ route('admin.clientes.search') }}"
+                    minInputLength="2"
+                    placeholder="Digite o nome ou CPF para buscar..."
+                />
+                <small class="form-text text-muted">Selecione um cliente já cadastrado para preencher os campos automaticamente.</small>
+            </x-admin.field>
+        </x-admin.field-group>
             
         <!-- Campos Comuns -->
         <x-admin.field-group>
@@ -128,9 +142,77 @@
                     <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
                 </x-admin.field>
             
+                @php
+                    $estadoOriginal = old('estado', $reserva->clienteSolicitante->estado ?? '');
+                    $estadoMap = [
+                        'Acre' => 'AC',
+                        'Alagoas' => 'AL',
+                        'Amapá' => 'AP',
+                        'Amazonas' => 'AM',
+                        'Bahia' => 'BA',
+                        'Ceará' => 'CE',
+                        'Distrito Federal' => 'DF',
+                        'Espírito Santo' => 'ES',
+                        'Goiás' => 'GO',
+                        'Maranhão' => 'MA',
+                        'Mato Grosso' => 'MT',
+                        'Mato Grosso do Sul' => 'MS',
+                        'Minas Gerais' => 'MG',
+                        'Pará' => 'PA',
+                        'Paraíba' => 'PB',
+                        'Paraná' => 'PR',
+                        'Pernambuco' => 'PE',
+                        'Piauí' => 'PI',
+                        'Rio de Janeiro' => 'RJ',
+                        'Rio Grande do Norte' => 'RN',
+                        'Rio Grande do Sul' => 'RS',
+                        'Rondônia' => 'RO',
+                        'Roraima' => 'RR',
+                        'Santa Catarina' => 'SC',
+                        'São Paulo' => 'SP',
+                        'Sergipe' => 'SE',
+                        'Tocantins' => 'TO',
+                    ];
+                    $estadoSelected = $estadoMap[$estadoOriginal] ?? $estadoOriginal;
+                @endphp
+
                 <x-admin.field cols="4">
                     <x-admin.label label="Estado"/>
-                    <x-admin.text name="estado" id="estado" :value="old('estado', $reserva->clienteSolicitante->estado ?? '')"/>
+                    <x-admin.select2 
+                        name="estado" 
+                        id="estado"
+                        placeholder="Selecione o estado"
+                        :items="[
+                            'AC' => 'Acre',
+                            'AL' => 'Alagoas',
+                            'AP' => 'Amapá',
+                            'AM' => 'Amazonas',
+                            'BA' => 'Bahia',
+                            'CE' => 'Ceará',
+                            'DF' => 'Distrito Federal',
+                            'ES' => 'Espírito Santo',
+                            'GO' => 'Goiás',
+                            'MA' => 'Maranhão',
+                            'MT' => 'Mato Grosso',
+                            'MS' => 'Mato Grosso do Sul',
+                            'MG' => 'Minas Gerais',
+                            'PA' => 'Pará',
+                            'PB' => 'Paraíba',
+                            'PR' => 'Paraná',
+                            'PE' => 'Pernambuco',
+                            'PI' => 'Piauí',
+                            'RJ' => 'Rio de Janeiro',
+                            'RN' => 'Rio Grande do Norte',
+                            'RS' => 'Rio Grande do Sul',
+                            'RO' => 'Rondônia',
+                            'RR' => 'Roraima',
+                            'SC' => 'Santa Catarina',
+                            'SP' => 'São Paulo',
+                            'SE' => 'Sergipe',
+                            'TO' => 'Tocantins',
+                        ]"
+                        selectedItem="{{ $estadoSelected }}"
+                    />
                 </x-admin.field>
             
                 <x-admin.field cols="4">
@@ -349,6 +431,120 @@
         }
   
 
+        // Select2 AJAX para busca de cliente por nome
+        setTimeout(function() {
+            var $buscaCliente = $('#buscaClienteSelect');
+            
+            if ($buscaCliente.data('select2')) {
+                $buscaCliente.select2('destroy');
+            }
+            
+            $buscaCliente.select2({
+                dropdownParent: $buscaCliente.parent(),
+                language: 'pt-BR',
+                ajax: {
+                    url: '{{ route("admin.clientes.search") }}',
+                    dataType: 'json',
+                    delay: 400,
+                    cache: false,
+                    data: function (params) {
+                        return { q: params.term };
+                    },
+                    processResults: function (data) {
+                        return { results: data.results || [] };
+                    }
+                },
+                minimumInputLength: 2,
+                placeholder: 'Digite o nome ou CPF para buscar...',
+                allowClear: true,
+                templateResult: function(data) {
+                    if (data.loading) return data.text;
+                    return data.text;
+                },
+                templateSelection: function(data) {
+                    return data.text || data.id;
+                }
+            });
+
+            $buscaCliente.on('select2:select', function (e) {
+                var cliente = e.params.data;
+                
+                document.getElementById('nomeSolicitante').value = cliente.nome || '';
+                document.getElementById('cpf').value = cliente.cpf || '';
+                
+                var dataNascInput = document.querySelector('input[name="data_nascimento"]');
+                if (dataNascInput && cliente.data_nascimento) {
+                    var formatted = isFormattedDate(cliente.data_nascimento) 
+                        ? cliente.data_nascimento 
+                        : formatDate(cliente.data_nascimento);
+                    dataNascInput.value = formatted || '';
+                }
+                
+                document.getElementById('rg').value = cliente.rg || '';
+                document.getElementById('cep').value = cliente.cep || '';
+                document.getElementById('cidade').value = cliente.cidade || '';
+                document.getElementById('endereco').value = cliente.endereco || '';
+                document.getElementById('numero').value = cliente.numero || '';
+                document.getElementById('bairro').value = cliente.bairro || '';
+                document.getElementById('pais').value = cliente.pais || '';
+                document.getElementById('modal_email').value = cliente.email || '';
+                document.getElementById('celular').value = cliente.celular || cliente.telefone || '';
+                document.getElementById('modal_telefone').value = cliente.telefone || '';
+                
+                // Preencher estado via Select2 (aceita nome completo ou UF)
+                var $estado = $('#estado');
+                if ($estado.length && cliente.estado) {
+                    $estado.val(mapEstadoToUF(cliente.estado)).trigger('change');
+                }
+            });
+        }, 300);
+
+        function mapEstadoToUF(estado) {
+            if (!estado) return '';
+
+            const map = {
+                'Acre': 'AC',
+                'Alagoas': 'AL',
+                'Amapá': 'AP',
+                'Amazonas': 'AM',
+                'Bahia': 'BA',
+                'Ceará': 'CE',
+                'Distrito Federal': 'DF',
+                'Espírito Santo': 'ES',
+                'Goiás': 'GO',
+                'Maranhão': 'MA',
+                'Mato Grosso': 'MT',
+                'Mato Grosso do Sul': 'MS',
+                'Minas Gerais': 'MG',
+                'Pará': 'PA',
+                'Paraíba': 'PB',
+                'Paraná': 'PR',
+                'Pernambuco': 'PE',
+                'Piauí': 'PI',
+                'Rio de Janeiro': 'RJ',
+                'Rio Grande do Norte': 'RN',
+                'Rio Grande do Sul': 'RS',
+                'Rondônia': 'RO',
+                'Roraima': 'RR',
+                'Santa Catarina': 'SC',
+                'São Paulo': 'SP',
+                'Sergipe': 'SE',
+                'Tocantins': 'TO',
+            };
+
+            estado = (estado || '').trim();
+
+            if (map[estado]) {
+                return map[estado];
+            }
+
+            if (estado.length === 2) {
+                return estado.toUpperCase();
+            }
+
+            return estado;
+        }
+
         const buscarCpfButton = document.getElementById('buscarCpfButton');
         const cpfInput = document.getElementById('cpf');
         const clienteInfo = document.getElementById('clienteInfo');
@@ -388,6 +584,11 @@
                     document.getElementById('modal_email').value = data.email ?? '';
                     document.getElementById('celular').value = data.telefone ?? '';
                     document.getElementById('modal_telefone').value = data.telefone ?? '';
+                    
+                    var $estado = $('#estado');
+                    if ($estado.length && data.estado) {
+                        $estado.val(mapEstadoToUF(data.estado)).trigger('change');
+                    }
                 
                     }
                 })
