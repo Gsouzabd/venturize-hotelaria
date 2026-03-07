@@ -97,8 +97,16 @@ class ClienteController extends Controller
             return response()->json(['results' => []]);
         }
 
-        $clientes = $this->model->where('nome', 'like', '%' . $query . '%')
-                                ->orWhere('cpf', 'like', '%' . $query . '%')
+        $numericQuery = preg_replace('/[^0-9]/', '', $query);
+
+        $clientes = $this->model->where(function ($q) use ($query, $numericQuery) {
+                $q->where('nome', 'like', '%' . $query . '%');
+                if (!empty($numericQuery)) {
+                    $q->orWhereRaw("REPLACE(REPLACE(cpf, '.', ''), '-', '') LIKE ?", ['%' . $numericQuery . '%']);
+                } else {
+                    $q->orWhere('cpf', 'like', '%' . $query . '%');
+                }
+            })
                                 ->limit(20)
                                 ->get();
 

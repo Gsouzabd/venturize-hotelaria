@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "php -r \"$d=json_decode(file_get_contents('php://stdin'),true); $f=$d['tool_input']['file_path']??''; if(str_ends_with($f,'.php')&&file_exists($f)){passthru('./vendor/bin/pint '.escapeshellarg($f));}\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "php -r \"$d=json_decode(file_get_contents('php://stdin'),true); $f=$d['tool_input']['file_path']??''; if(preg_match('/\\.env$/',basename($f))){fwrite(STDERR,'Blocked: Do not edit .env directly. Edit .env.example instead.');exit(2);}\""
+          }
+        ]
+      }
+    ]
+  }
+}

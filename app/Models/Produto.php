@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Bar\ItemPedido;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Impressora;
 
 class Produto extends Model
 {
@@ -45,11 +46,10 @@ class Produto extends Model
         'TC' => 'Taça',
     ];
 
-    const IMPRESSORA = [
-        'COZINHA',
-        'BAR',
-        'RECEPCAO',
-    ];
+    public static function getImpressoras(): array
+    {
+        return Impressora::orderBy('ordem')->orderBy('nome')->pluck('nome', 'id')->toArray();
+    }
 
     public function usuarioCriador()
     {

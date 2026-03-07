@@ -293,7 +293,7 @@
             <!-- Impressora -->
             <x-admin.field cols="6">
                 <x-admin.label label="Impressora" />
-                <x-admin.select name="impressora" id="impressora" :items="\App\Models\Produto::IMPRESSORA" :selected-item="old('impressora', $produto->impressora ?? '')"/>
+                <x-admin.select name="impressora" id="impressora" :items="\App\Models\Produto::getImpressoras()" :selected-item="old('impressora', $produto->impressora ?? '')"/>
             </x-admin.field>
         </x-admin.field-group>
 

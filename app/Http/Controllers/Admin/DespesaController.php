@@ -410,6 +410,11 @@ class DespesaController extends Controller
             }
         }
 
+        // Linha de total
+        $totalGeral = $despesas->sum('valor_total');
+        $dadosExcel[] = [];
+        $dadosExcel[] = ['', '', '', '', '', '', '', '', '', 'TOTAL GERAL', number_format($totalGeral, 2, ',', '.')];
+
         // Gerar arquivo Excel
         $filename = 'relatorio_detalhado_despesas_' . $dataInicial->format('Y-m-d') . '_' . $dataFinal->format('Y-m-d') . '.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório Detalhado de Despesas');

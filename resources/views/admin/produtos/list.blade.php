@@ -32,8 +32,9 @@ use App\Models\Produto;
         <x-admin.filter cols="2">
             <x-admin.label label="Categoria"/>
             <select name="categoria_id" class="form-control">
+                <option value="">Todas</option>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria['id'] }}">{{ $categoria['nome'] }}</option>
+                    <option value="{{ $categoria['id'] }}" @selected($filters['categoria_id'] == $categoria['id'])>{{ $categoria['nome'] }}</option>
                 @endforeach
             </select>
         </x-admin.filter>
@@ -44,6 +45,10 @@ use App\Models\Produto;
             <x-admin.datepicker name="created_at" :value="$filters['created_at']"/>
         </x-admin.filter>
     </x-admin.filters>
+
+    <div class="mb-2 text-muted small">
+        Total: <strong>{{ $produtos->total() }}</strong> produto(s) encontrado(s)
+    </div>
 
     <x-admin.grid :pagination="$produtos">
         <table class="table table-striped table-bordered table-hover card-table">

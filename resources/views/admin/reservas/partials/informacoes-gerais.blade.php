@@ -458,15 +458,15 @@
                 
                 document.getElementById('nomeSolicitante').value = cliente.nome || '';
                 document.getElementById('cpf').value = cliente.cpf || '';
-                
+
                 var dataNascInput = document.querySelector('input[name="data_nascimento"]');
                 if (dataNascInput && cliente.data_nascimento) {
-                    var formatted = isFormattedDate(cliente.data_nascimento) 
-                        ? cliente.data_nascimento 
+                    var formatted = isFormattedDate(cliente.data_nascimento)
+                        ? cliente.data_nascimento
                         : formatDate(cliente.data_nascimento);
                     dataNascInput.value = formatted || '';
                 }
-                
+
                 document.getElementById('rg').value = cliente.rg || '';
                 document.getElementById('cep').value = cliente.cep || '';
                 document.getElementById('cidade').value = cliente.cidade || '';
@@ -477,12 +477,15 @@
                 document.getElementById('modal_email').value = cliente.email || '';
                 document.getElementById('celular').value = cliente.celular || cliente.telefone || '';
                 document.getElementById('modal_telefone').value = cliente.telefone || '';
-                
+
                 // Preencher estado via Select2 (aceita nome completo ou UF)
                 var $estado = $('#estado');
                 if ($estado.length && cliente.estado) {
                     $estado.val(mapEstadoToUF(cliente.estado)).trigger('change');
                 }
+
+                // Exibir campos ocultos pelo modo Pré Reserva
+                preReservaHide.style.display = 'block';
             });
         }, 300);
 
@@ -544,12 +547,15 @@
                     document.getElementById('modal_email').value = data.email ?? '';
                     document.getElementById('celular').value = data.telefone ?? '';
                     document.getElementById('modal_telefone').value = data.telefone ?? '';
-                    
+
                     var $estado = $('#estado');
                     if ($estado.length && data.estado) {
                         $estado.val(mapEstadoToUF(data.estado)).trigger('change');
                     }
-                
+
+                    // Exibir campos ocultos pelo modo Pré Reserva
+                    preReservaHide.style.display = 'block';
+
                     }
                 })
                 .catch(error => {

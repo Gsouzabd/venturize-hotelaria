@@ -240,9 +240,17 @@ use Illuminate\Support\Str;
             var uh = $el.data('reserva-uh') || '';
             var situacao = $el.data('reserva-situacao') || '';
             var situacaoCor = $el.data('reserva-situacao-cor') || '';
-            var checkin = $el.data('reserva-checkin') || '';
-            var checkout = $el.data('reserva-checkout') || '';
+            var checkinRaw = $el.data('reserva-checkin') || '';
+            var checkoutRaw = $el.data('reserva-checkout') || '';
             var adultos = $el.data('reserva-adultos') || 0;
+
+            function formatDate(dateStr, time) {
+                if (!dateStr) return '';
+                var parts = dateStr.split('-');
+                return parts[2] + '/' + parts[1] + '/' + parts[0] + ' - ' + time;
+            }
+            var checkin = formatDate(checkinRaw, '15:00');
+            var checkout = formatDate(checkoutRaw, '12:00');
             var criancasAte7 = $el.data('reserva-criancas-ate7') || 0;
             var criancasMais7 = $el.data('reserva-criancas-mais7') || 0;
             var total = $el.data('reserva-total') || '';

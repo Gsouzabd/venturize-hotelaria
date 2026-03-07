@@ -9,7 +9,7 @@ class Cliente extends Model
         'tipo', 'estrangeiro', 'sexo', 'nome', 'data_nascimento', 'cpf', 
         'rg', 'passaporte', 'orgao_expedidor', 'estado_civil', 'inscricao_estadual_pf', 
         'cep', 'cidade', 'endereco', 'numero', 'complemento', 'bairro', 'estado',
-        'pais', 'email', 'email_alternativo', 'telefone', 'celular', 'profissao'
+        'pais', 'nacionalidade', 'email', 'email_alternativo', 'telefone', 'celular', 'profissao'
     ];
 
     // Relação com Reservas

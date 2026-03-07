@@ -65,48 +65,44 @@
 
     <table>
         <tr>
-            <td class="half-width"><strong>Nome Completo / Full Name:</strong> {{ $reserva->clienteResponsavel->nome ?? '       ' }}</td>
-            <td class="half-width"><strong>Nome Social / Social Name:</strong> {{ $reserva->clienteResponsavel->nome ?? '       ' }}</td>
+            <td colspan="2" style="width:50%;"><strong>Nome Completo / Full Name:</strong> {{ $cliente->nome ?? '       ' }}</td>
+            <td style="width:50%;"><strong>Nome Social / Social Name:</strong> {{ $cliente->nome ?? '       ' }}</td>
         </tr>
         <tr>
-            <td class="half-width"><strong>E-mail:</strong> {{ $reserva->clienteResponsavel->email ?? '       ' }}</td>
-            <td class="half-width"><strong>Número de Hóspedes / Number of Guests:</strong> {{ (int)($reserva->adultos ?? 0) + (int)($reserva->criancas_ate_7 ?? 0) + (int)($reserva->criancas_mais_7 ?? 0) }}</td>
+            <td colspan="2" style="width:50%;"><strong>E-mail:</strong> {{ $cliente->email ?? '       ' }}</td>
+            <td style="width:50%;"><strong>Número de Hóspedes / Number of Guests:</strong> {{ (int)($reserva->adultos ?? 0) + (int)($reserva->criancas_ate_7 ?? 0) + (int)($reserva->criancas_mais_7 ?? 0) }}</td>
         </tr>
         <tr>
-            <td class="half-width"><strong>Telefone / Phone:</strong> {{ $reserva->clienteResponsavel->telefone ?? '       ' }}</td>
-            <td class="half-width"><strong>Celular / Cellphone:</strong> {{ $reserva->clienteResponsavel->celular ?? '       ' }}</td>
-            <td class="half-width"><strong>Profissão / Occupation:</strong> {{ $reserva->clienteResponsavel->profissao ?? '       ' }}</td>
+            <td class="third-width"><strong>Telefone / Phone:</strong> {{ $cliente->telefone ?? '       ' }}</td>
+            <td class="third-width"><strong>Celular / Cellphone:</strong> {{ $cliente->celular ?? '       ' }}</td>
+            <td class="third-width"><strong>Profissão / Occupation:</strong> {{ $cliente->profissao ?? '       ' }}</td>
         </tr>
         <tr>
-            <td class="half-width"><strong>Data Nasc. / Birth Date:</strong> {{ $reserva->clienteResponsavel->data_nascimento ? \Carbon\Carbon::parse($reserva->clienteResponsavel->data_nascimento)->format('d/m/Y') : '       ' }}</td>
-            <td class="half-width"><strong>Nacionalidade (País) / Citizenship (Country):</strong> {{ $reserva->clienteResponsavel->nacionalidade ?? '       ' }}</td>
-            <td class="half-width"><strong>Gênero / Gender:</strong> {{ $reserva->clienteResponsavel->genero ?? '       ' }}</td>
+            <td class="third-width"><strong>Data Nasc. / Birth Date:</strong> {{ $cliente->data_nascimento ? \Carbon\Carbon::parse($cliente->data_nascimento)->format('d/m/Y') : '       ' }}</td>
+            <td class="third-width"><strong>Nacionalidade (País) / Citizenship (Country):</strong> {{ $cliente->nacionalidade ?? '       ' }}</td>
+            <td class="third-width"><strong>Gênero / Gender:</strong> {{ $cliente->sexo ?? '       ' }}</td>
         </tr>
         <tr>
-            <td colspan="3" class="full-width">
+            <td colspan="3">
                 <strong>Documento de Identidade / Travel Document:</strong><br/>
-                Número / Number: {{ $reserva->clienteResponsavel->documento_identidade ?? '       ' }}<br/>
-                Tipo / Type: {{ $reserva->clienteResponsavel->documento_tipo ?? '       ' }}<br/>
-                Órgão Expedidor / Issuing Country: {{ $reserva->clienteResponsavel->orgao_expedidor ?? '       ' }}
+                Número / Number: {{ $cliente->rg ?? '       ' }}<br/>
+                Tipo / Type: RG<br/>
+                Órgão Expedidor / Issuing Country: {{ $cliente->orgao_expedidor ?? '       ' }}
             </td>
         </tr>
         <tr>
-            <td class="half-width"><strong>CPF (Brazilian Document):</strong> {{ $reserva->clienteResponsavel->cpf ?? '       ' }}</td>
-            <td colspan="2"></td> <!-- Add empty cells to balance the row -->
-        </tr>
-        
-        <tr>
-            <td class="half-width"><strong>Residência Permanente / Permanent Residence:</strong> {{ $reserva->clienteResponsavel->endereco ?? '       ' }}</td>
-
-            <td class="half-width"><strong>CEP / Zip Code:</strong> {{ $reserva->clienteResponsavel->cep ?? '       ' }}</td>
-            <td class="half-width"><strong>Bairro / District:</strong> {{ $reserva->clienteResponsavel->bairro ?? '       ' }}</td>
+            <td colspan="3"><strong>CPF (Brazilian Document):</strong> {{ $cliente->cpf ?? '       ' }}</td>
         </tr>
         <tr>
-            <td class="half-width"><strong>Cidade / City:</strong> {{ $reserva->clienteResponsavel->cidade ?? '       ' }}</td>
-            <td class="half-width"><strong>Estado / State:</strong> {{ $reserva->clienteResponsavel->estado ?? '       ' }}</td>
-            <td class="half-width"><strong>País / Country:</strong> {{ $reserva->clienteResponsavel->pais ?? '       ' }}</td>
+            <td class="third-width"><strong>Residência Permanente / Permanent Residence:</strong> {{ $cliente->endereco ?? '       ' }}</td>
+            <td class="third-width"><strong>CEP / Zip Code:</strong> {{ $cliente->cep ?? '       ' }}</td>
+            <td class="third-width"><strong>Bairro / District:</strong> {{ $cliente->bairro ?? '       ' }}</td>
         </tr>
-
+        <tr>
+            <td class="third-width"><strong>Cidade / City:</strong> {{ $cliente->cidade ?? '       ' }}</td>
+            <td class="third-width"><strong>Estado / State:</strong> {{ $cliente->estado ?? '       ' }}</td>
+            <td class="third-width"><strong>País / Country:</strong> {{ $cliente->pais ?? '       ' }}</td>
+        </tr>
     </table>
 
     <table>
