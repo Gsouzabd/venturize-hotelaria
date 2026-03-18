@@ -2,9 +2,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Cliente extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'tipo', 'estrangeiro', 'sexo', 'nome', 'data_nascimento', 'cpf', 
         'rg', 'passaporte', 'orgao_expedidor', 'estado_civil', 'inscricao_estadual_pf', 

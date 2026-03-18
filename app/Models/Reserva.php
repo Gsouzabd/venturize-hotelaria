@@ -10,9 +10,11 @@ use App\Models\Usuario;
 use App\Models\Pagamento;
 use App\Models\Bar\Pedido;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Reserva extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'tipo_reserva',
         'tipo_solicitante',
@@ -154,6 +156,11 @@ class Reserva extends Model
     public function pedidos()
     {
         return $this->hasMany(Pedido::class);
+    }
+
+    public function refeicoes()
+    {
+        return $this->hasMany(ReservaRefeicao::class);
     }
 
     /**

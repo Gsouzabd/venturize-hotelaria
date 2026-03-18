@@ -367,7 +367,7 @@ class ReservaController extends Controller
 
     public function gerarFichaNacional($id)
     {
-        $this->reservaService->gerarFichaNacional($id);
+        return $this->reservaService->gerarFichaNacional($id);
     }
 
     public function gerarExtrato($id)
@@ -422,9 +422,103 @@ class ReservaController extends Controller
         $reserva = Reserva::findOrFail($id);
         $reserva->remover_taxa_servico = 1;
         $reserva->save();
-    
-        return redirect()->back() ->with('notice', 'Taxa de Servico removido com suceeso.');
-        ;
+
+        return redirect()->back()->with('notice', 'Taxa de Servico removido com suceeso.');
+    }
+
+    public function moverReserva(Request $request, $id)
+    {
+        $request->validate([
+            'quarto_id'    => 'required|integer|exists:quartos,id',
+            'data_checkin' => 'required|date',
+            'data_checkout'=> 'required|date|after:data_checkin',
+        ]);
+
+        $reserva     = Reserva::findOrFail($id);
+        $quartoId    = $request->input('quarto_id');
+        $dataCheckin = $request->input('data_checkin');
+        $dataCheckout= $request->input('data_checkout');
+
+        $conflito = Reserva::where('quarto_id', $quartoId)
+            ->where('id', '!=', $id)
+            ->where('situacao_reserva', '!=', 'CANCELADA')
+            ->where(function ($q) use ($dataCheckin, $dataCheckout) {
+                $q->whereBetween('data_checkin', [$dataCheckin, $dataCheckout])
+                  ->orWhereBetween('data_checkout', [$dataCheckin, $dataCheckout])
+                  ->orWhere(function ($q) use ($dataCheckin, $dataCheckout) {
+                      $q->where('data_checkin', '<', $dataCheckin)
+                        ->where('data_checkout', '>', $dataCheckout);
+                  });
+            })
+            ->exists();
+
+        if ($conflito) {
+            return response()->json(['success' => false, 'message' => 'Quarto não disponível para as datas selecionadas.'], 409);
+        }
+
+        $reserva->quarto_id    = $quartoId;
+        $reserva->data_checkin = $dataCheckin;
+        $reserva->data_checkout= $dataCheckout;
+        $reserva->save();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function transferirApartamento(Request $request, $id)
+    {
+        $request->validate([
+            'quarto_id'          => 'required|integer|exists:quartos,id',
+            'data_transferencia' => 'required|date',
+        ]);
+
+        $reserva          = Reserva::findOrFail($id);
+        $novoQuartoId     = $request->input('quarto_id');
+        $dataTransferencia= Carbon::parse($request->input('data_transferencia'))->format('Y-m-d');
+        $dataCheckout     = $reserva->data_checkout;
+
+        $conflito = Reserva::where('quarto_id', $novoQuartoId)
+            ->where('id', '!=', $id)
+            ->where('situacao_reserva', '!=', 'CANCELADA')
+            ->where(function ($q) use ($dataTransferencia, $dataCheckout) {
+                $q->whereBetween('data_checkin', [$dataTransferencia, $dataCheckout])
+                  ->orWhereBetween('data_checkout', [$dataTransferencia, $dataCheckout])
+                  ->orWhere(function ($q) use ($dataTransferencia, $dataCheckout) {
+                      $q->where('data_checkin', '<', $dataTransferencia)
+                        ->where('data_checkout', '>', $dataCheckout);
+                  });
+            })
+            ->exists();
+
+        if ($conflito) {
+            return redirect()->back()->with('error', 'Quarto não disponível para as datas selecionadas.');
+        }
+
+        $reserva->quarto_id    = $novoQuartoId;
+        $reserva->data_checkin = $dataTransferencia;
+        $reserva->save();
+
+        return redirect()->back()->with('notice', 'Transferência realizada com sucesso.');
+    }
+
+    public function salvarRefeicoes(Request $request, $id)
+    {
+        Reserva::findOrFail($id);
+
+        \App\Models\ReservaRefeicao::where('reserva_id', $id)->delete();
+
+        foreach ($request->input('refeicoes', []) as $refeicao) {
+            \App\Models\ReservaRefeicao::create([
+                'reserva_id'     => $id,
+                'hospede_nome'   => $refeicao['hospede_nome'] ?? '',
+                'hospede_tipo'   => $refeicao['hospede_tipo'] ?? 'titular',
+                'acompanhante_id'=> $refeicao['acompanhante_id'] ?? null,
+                'cafe'           => isset($refeicao['cafe']) ? 1 : 0,
+                'almoco'         => isset($refeicao['almoco']) ? 1 : 0,
+                'jantar'         => isset($refeicao['jantar']) ? 1 : 0,
+            ]);
+        }
+
+        return redirect()->back()->with('notice', 'Refeições salvas com sucesso.');
     }
 }
 

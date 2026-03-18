@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Quarto extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'andar', 'numero', 'ramal', 'posicao_quarto', 'referencia',
         'quantidade_cama_casal', 'quantidade_cama_solteiro', 'classificacao',

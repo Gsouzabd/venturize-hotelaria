@@ -23,13 +23,15 @@ class DisponibilidadeController extends Controller
         $criancasMais7 = $validated['criancas_mais_7'];
         $composicaoQuarto = $request['composicao_quarto'] ?? 'Individual';
 
+        $reservaId = $request->input('reserva_id');
+
         // Busca os quartos disponíveis com base no tipo de quarto, se fornecido
-        $quartosQuery = Quarto::where('inativo', 0); // Apenas quartos que não estão inativos
+        $quartosQuery = Quarto::where('inativo', 'Não'); // Apenas quartos que não estão inativos
         if ($tipoQuarto) {
             $quartosQuery->where('classificacao', $tipoQuarto);
         }
 
-        $quartosDisponiveis = $quartosQuery->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida) {
+        $quartosDisponiveis = $quartosQuery->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida, $reservaId) {
             $query->where(function ($query) use ($dataEntrada, $dataSaida) {
                 // Verifica se a reserva está dentro do intervalo
                 $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida])
@@ -50,6 +52,9 @@ class DisponibilidadeController extends Controller
             })
             ->where('situacao_reserva', '!=', 'CANCELADA');
 
+            if ($reservaId) {
+                $query->where('id', '!=', $reservaId);
+            }
         })
         ->with('planosPrecos')
         ->get();

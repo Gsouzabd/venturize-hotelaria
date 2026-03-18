@@ -21,11 +21,13 @@ return new class extends Migration
             $table->decimal('valor_cafe', 8, 2)->nullable()->after('com_cafe');
         });
 
-        // Atualizar enum tipo_reserva para incluir DAY_USE
-        DB::statement("
-            ALTER TABLE reservas
-            MODIFY COLUMN tipo_reserva ENUM('INDIVIDUAL', 'GRUPO', 'DAY_USE') NULL
-        ");
+        // Atualizar enum tipo_reserva para incluir DAY_USE (MySQL only; SQLite usa text)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("
+                ALTER TABLE reservas
+                MODIFY COLUMN tipo_reserva ENUM('INDIVIDUAL', 'GRUPO', 'DAY_USE') NULL
+            ");
+        }
     }
 
     /**
@@ -42,11 +44,13 @@ return new class extends Migration
             $table->foreignId('quarto_id')->nullable(false)->change();
         });
 
-        // Reverter enum tipo_reserva ao estado original
-        DB::statement("
-            ALTER TABLE reservas
-            MODIFY COLUMN tipo_reserva ENUM('INDIVIDUAL', 'GRUPO') NULL
-        ");
+        // Reverter enum tipo_reserva ao estado original (MySQL only)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("
+                ALTER TABLE reservas
+                MODIFY COLUMN tipo_reserva ENUM('INDIVIDUAL', 'GRUPO') NULL
+            ");
+        }
     }
 };
 
