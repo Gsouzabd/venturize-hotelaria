@@ -22,6 +22,12 @@
 
 @section('content')
 <div class="container-fluid">
+    <style>
+        .produto-bloco .card-body {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+    </style>
     
     <!-- Exibe erros de validação, se houver -->
     @if ($errors->any())
@@ -46,6 +52,14 @@
             <div class="card bg-blue">
                 <div class="card-body">
                     <h4 class="card-title text-center">Categorias</h4>
+                    <div class="mb-3">
+                        <input
+                            type="text"
+                            id="produto-search"
+                            class="form-control"
+                            placeholder="Buscar produto por nome..."
+                        >
+                    </div>
                     <div role="group" id="categories-group">
                         @foreach($produtosAgrupados as $categoriaId => $produtos)
                             @php
@@ -474,8 +488,47 @@
     document.addEventListener('DOMContentLoaded', function () {
         const categoriaButtons = document.querySelectorAll('.categoria-btn');
         const produtoBlocos = document.querySelectorAll('.produto-bloco');
+        const produtoSearchInput = document.getElementById('produto-search');
         const itensContainer = document.getElementById('itens-container');
         const totalInput = document.getElementById('total');
+        let categoriaSelecionadaId = null;
+
+        function normalizeText(text) {
+            return (text || '')
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function aplicarFiltroProdutos() {
+            const termo = normalizeText(produtoSearchInput ? produtoSearchInput.value : '');
+
+            if (!termo) {
+                produtoBlocos.forEach(bloco => {
+                    // Restaurar estado padrão (somente categoria selecionada visível)
+                    bloco.querySelectorAll('li.list-group-item').forEach(item => {
+                        item.style.display = '';
+                    });
+                    bloco.style.display = (categoriaSelecionadaId && bloco.id === `categoria-${categoriaSelecionadaId}`) ? 'block' : 'none';
+                });
+                return;
+            }
+
+            // Com filtro ativo, mostrar apenas blocos com itens compatíveis
+            produtoBlocos.forEach(bloco => {
+                let hasAnyMatch = false;
+                bloco.querySelectorAll('li.list-group-item').forEach(item => {
+                    const btn = item.querySelector('.produto-to-add');
+                    const textoProduto = normalizeText(btn ? btn.textContent : item.textContent);
+                    const match = textoProduto.includes(termo);
+                    item.style.display = match ? '' : 'none';
+                    if (match) hasAnyMatch = true;
+                });
+                bloco.style.display = hasAnyMatch ? 'block' : 'none';
+            });
+        }
 
         function updateTotal() {
             let total = 0;
@@ -499,18 +552,25 @@
 
         categoriaButtons.forEach(button => {
             button.addEventListener('click', function () {
-                const categoriaId = this.getAttribute('data-categoria-id');
+                categoriaSelecionadaId = this.getAttribute('data-categoria-id');
 
                 produtoBlocos.forEach(bloco => {
                     bloco.style.display = 'none';
                 });
 
-                const bloco = document.getElementById(`categoria-${categoriaId}`);
+                const bloco = document.getElementById(`categoria-${categoriaSelecionadaId}`);
                 if (bloco) {
                     bloco.style.display = 'block';
                 }
+
+                // Mantém o filtro aplicado ao trocar de categoria
+                aplicarFiltroProdutos();
             });
         });
+
+        if (produtoSearchInput) {
+            produtoSearchInput.addEventListener('input', aplicarFiltroProdutos);
+        }
 
         document.querySelectorAll('.produto-to-add').forEach(button => {
             button.addEventListener('click', function () {
