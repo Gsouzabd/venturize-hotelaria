@@ -4,6 +4,15 @@ use Illuminate\Support\Str;
 
 @endphp
 
+{{-- Overlay de loading para drag-and-drop --}}
+<div id="mapa-loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:12px;">
+    <div style="width:52px; height:52px; border:5px solid #fff; border-top-color:transparent; border-radius:50%; animation:mapa-spin .7s linear infinite;"></div>
+    <span style="color:#fff; font-size:1rem; font-weight:600; letter-spacing:.5px;">Movendo reserva…</span>
+</div>
+<style>
+    @keyframes mapa-spin { to { transform: rotate(360deg); } }
+</style>
+
 <div class="filters">
     <form method="GET" action="{{ $action }}">
         <div class="row">
@@ -71,13 +80,13 @@ use Illuminate\Support\Str;
     
                             @endphp
                             @if(count($reservasNoDia) > 0)
-                                <td style="padding: 0px; height: 30px;">
+                                <td style="padding: 0px; height: 30px;" data-date="{{ $diaAtual }}" data-quarto-id="{{ $quarto->id }}">
                                     @foreach($reservasNoDia->sortBy('data_checkin') as $reservaNoDia)
-                                    
+
                                         @php
                                             $cor = '';
                                             $cor = Reserva::SITUACOESRESERVA[$reservaNoDia->situacao_reserva]['background'] ?? '';
-                   
+
                                             $dataCheckin = \Carbon\Carbon::parse($reservaNoDia->data_checkin)->toDateString();
                                             $dataCheckout = \Carbon\Carbon::parse($reservaNoDia->data_checkout)->toDateString();
 
@@ -101,22 +110,23 @@ use Illuminate\Support\Str;
                                             data-reserva-total="{{ $reservaNoDia->total }}"
                                             data-reserva-observacoes="{{ $reservaNoDia->observacoes }}"
                                             data-reserva-edit-url="{{ route('admin.reservas.edit', ['id' => $reservaNoDia->id] )}}"
+                                            {{ $diaAtual == $dataCheckin ? 'draggable="true"' : '' }}
                                             class="
-                                                reserva-dia 
+                                                reserva-dia
                                                 js-open-reserva-modal
-                                                {{$diaAtual == $dataCheckin ? 'checkin' : ''}} 
+                                                {{$diaAtual == $dataCheckin ? 'checkin js-drag-reserva' : ''}}
                                                 {{$diaAtual == $dataCheckout ? 'checkout' : ''}}
                                                 {{$diaAtual != $dataCheckin && $diaAtual != $dataCheckout ? 'intermediario' : ''}}
-                                            
                                             "
-                                            style="flex: 1; background: {{ $cor }}; color: white; ">
-                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? Str::limit(ucwords(strtolower($reservaNoDia->clienteResponsavel->nome)), 15) : "GR: " . Str::limit(ucwords(strtolower($reservaNoDia->clienteSolicitante->nome)), 20)) : '' }}                                        </a>
+                                            style="flex: 1; background: {{ $cor }}; color: white; {{ $diaAtual == $dataCheckin ? 'cursor: grab;' : '' }}">
+                                                {{ $diaAtual == $dataCheckin ? ($reservaNoDia->clienteResponsavel ? Str::limit(ucwords(strtolower($reservaNoDia->clienteResponsavel->nome)), 15) : "GR: " . Str::limit(ucwords(strtolower($reservaNoDia->clienteSolicitante->nome)), 20)) : '' }}
+                                        </a>
                                     @endforeach
                                 </td>
                             @else
                                 @php $diaAtual = \Carbon\Carbon::parse($diaAtual); @endphp
-                                <td style="padding: 0px; height: 30px;">
-                                    <a href="{{ route('admin.reservas.create', 
+                                <td style="padding: 0px; height: 30px;" data-date="{{ $diaAtual->format('Y-m-d') }}" data-quarto-id="{{ $quarto->id }}" class="js-drop-target">
+                                    <a href="{{ route('admin.reservas.create',
                                             [
                                                 'quarto_id' => $quarto->id ?? '',
                                                 'quarto_numero' => $quarto->numero ?? '',
@@ -125,7 +135,7 @@ use Illuminate\Support\Str;
                                                 'data_checkin' => $diaAtual->format('Y-m-d') ?? '',
                                                 'data_checkout' => $diaAtual->copy()->addDay()->format('Y-m-d') ?? '',
                                             ]
-                                        ) }}" 
+                                        ) }}"
                                         class="text-white"
                                         style="display:block; width: 100%; height: 100%;">
                                     </a>
@@ -229,6 +239,88 @@ use Illuminate\Support\Str;
 
 @push('scripts')
 <script>
+    // Drag-and-drop para o mapa de ocupação
+    document.addEventListener('DOMContentLoaded', function () {
+        var csrfToken = window.APP_CSRF_TOKEN || (document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '');
+
+        document.querySelectorAll('.js-drag-reserva').forEach(function (el) {
+            el.addEventListener('dragstart', function (e) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('reserva_id', el.getAttribute('data-reserva-id'));
+                e.dataTransfer.setData('checkin', el.getAttribute('data-reserva-checkin'));
+                e.dataTransfer.setData('checkout', el.getAttribute('data-reserva-checkout'));
+                el.style.opacity = '0.5';
+            });
+            el.addEventListener('dragend', function () {
+                el.style.opacity = '';
+            });
+        });
+
+        document.querySelectorAll('.js-drop-target').forEach(function (td) {
+            td.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                td.style.background = '#d0e8ff';
+            });
+            td.addEventListener('dragleave', function () {
+                td.style.background = '';
+            });
+            td.addEventListener('drop', function (e) {
+                e.preventDefault();
+                td.style.background = '';
+
+                var reservaId = e.dataTransfer.getData('reserva_id');
+                var checkin   = e.dataTransfer.getData('checkin');
+                var checkout  = e.dataTransfer.getData('checkout');
+                var newDate   = td.getAttribute('data-date');
+                var quartoId  = td.getAttribute('data-quarto-id');
+
+                if (!reservaId || !newDate) return;
+
+                var checkinDate  = new Date(checkin);
+                var checkoutDate = new Date(checkout);
+                var durationMs   = checkoutDate - checkinDate;
+                var durationDays = Math.round(durationMs / 86400000);
+
+                var newCheckin  = new Date(newDate);
+                var newCheckout = new Date(newCheckin);
+                newCheckout.setDate(newCheckout.getDate() + durationDays);
+
+                var pad = function (n) { return String(n).padStart(2, '0'); };
+                var fmt = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+
+                var overlay = document.getElementById('mapa-loading-overlay');
+                overlay.style.display = 'flex';
+
+                fetch('/admin/reservas/' + reservaId + '/mover', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        quarto_id:    quartoId,
+                        data_checkin: fmt(newCheckin),
+                        data_checkout:fmt(newCheckout)
+                    })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        overlay.style.display = 'none';
+                        alert(data.message || 'Erro ao mover reserva.');
+                    }
+                })
+                .catch(function () {
+                    overlay.style.display = 'none';
+                    alert('Erro ao mover reserva.');
+                });
+            });
+        });
+    });
+
     $(document).ready(function () {
         $(document).on('click', '.js-open-reserva-modal', function (event) {
             event.preventDefault();

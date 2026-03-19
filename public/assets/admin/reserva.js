@@ -650,7 +650,10 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
         cpf = document.getElementById('responsavelReservaCpf').value;
         document.getElementById('nomeSolicitante').value = nome;
         document.getElementById('cpf').value = cpf;
-        document.getElementById('solicitanteHospedeCheckbox').checked = solicitanteHospedeModal;
+        const solicitanteHospedeCheckbox = document.getElementById('solicitanteHospedeCheckbox');
+        if (solicitanteHospedeCheckbox) {
+            solicitanteHospedeCheckbox.checked = solicitanteHospedeModal;
+        }
         document.querySelector('select[name="situacao_reserva"]').value = situacao_reserva;
         if(!solicitanteHospedeModal){
             nome = '';
@@ -707,7 +710,8 @@ document.getElementById('verificarDisponibilidade').addEventListener('click', fu
     const criancas_ate_7 = document.getElementById('criancas_ate_7').value;
     const criancas_mais_7 = document.getElementById('criancas_mais_7').value;
 
-
+    const reservaIdEl = document.querySelector('input[name="reserva_id"]');
+    const reservaId = reservaIdEl ? reservaIdEl.value : null;
 
     const data = {
         dataEntrada,
@@ -717,7 +721,8 @@ document.getElementById('verificarDisponibilidade').addEventListener('click', fu
         adultos,
         criancas_ate_7,
         criancas_mais_7,
-        quartoComposicao
+        quartoComposicao,
+        reservaId
     };
 
     mostrarQuartosDisponiveis(data)
@@ -814,7 +819,8 @@ function mostrarQuartosDisponiveis(data) {
             adultos: data.adultos,
             criancas_ate_7: data.criancas_ate_7,
             criancas_mais_7: data.criancas_mais_7,
-            composicao_quarto : data.quartoComposicao
+            composicao_quarto : data.quartoComposicao,
+            reserva_id: data.reservaId || null
         })
     })
     .then(response => response.json())
@@ -975,7 +981,8 @@ async function montarOutputQuartosDisponiveis(quartos, dataEntrada, dataSaida) {
 
     document.querySelectorAll('.select-quarto').forEach(button => {
         button.addEventListener('click', function() {
-            const solicitanteHospede = document.getElementById('solicitanteHospedeCheckbox').checked;
+            const solicitanteHospedeCheckbox = document.getElementById('solicitanteHospedeCheckbox');
+            const solicitanteHospede = solicitanteHospedeCheckbox ? solicitanteHospedeCheckbox.checked : false;
             const quartoId = this.getAttribute('data-quarto-id');
             const quartoNumero = this.getAttribute('data-quarto-numero');
             const quartoAndar = this.getAttribute('data-quarto-andar');
@@ -1285,3 +1292,72 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
     
         return true;
     }
+
+document.addEventListener('DOMContentLoaded', function () {
+    function activateTabFallback(tabLink) {
+        const target = tabLink.getAttribute('href');
+        const targetPane = document.querySelector(target);
+        if (!targetPane) return;
+
+        const navContainer = tabLink.closest('.nav');
+        if (navContainer) {
+            navContainer.querySelectorAll('.nav-link').forEach(function (link) {
+                link.classList.remove('active');
+                link.setAttribute('aria-selected', 'false');
+            });
+        }
+
+        const tabContent = document.getElementById('reservaTabContent');
+        if (tabContent) {
+            tabContent.querySelectorAll('.tab-pane').forEach(function (pane) {
+                pane.classList.remove('show', 'active');
+            });
+        }
+
+        tabLink.classList.add('active');
+        tabLink.setAttribute('aria-selected', 'true');
+        targetPane.classList.add('show', 'active');
+    }
+
+    function showTabByHash(hash) {
+        if (!hash) return;
+        const tabLink = document.querySelector(`a[data-toggle="tab"][href="${hash}"]`);
+        if (!tabLink) return;
+
+        if (typeof $ !== 'undefined' && $(tabLink).tab) {
+            $(tabLink).tab('show');
+            return;
+        }
+
+        activateTabFallback(tabLink);
+    }
+
+    // Forca comportamento de aba (evita navegar apenas por ancora)
+    ['#refeicoes-tab', '#transferencia-tab'].forEach(function (tabId) {
+        const tabLink = document.querySelector(tabId);
+        if (!tabLink) return;
+
+        tabLink.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            if (typeof $ !== 'undefined' && $(this).tab) {
+                $(this).tab('show');
+                return;
+            }
+
+            activateTabFallback(this);
+        });
+
+        tabLink.addEventListener('shown.bs.tab', function () {
+            const target = this.getAttribute('href');
+            if (target && history.replaceState) {
+                history.replaceState(null, '', target);
+            }
+        });
+    });
+
+    // Reabre a aba correta ao voltar com hash (ex.: salvar refeicoes)
+    if (window.location.hash) {
+        showTabByHash(window.location.hash);
+    }
+});

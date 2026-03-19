@@ -57,9 +57,9 @@ class ReservaService
             if (!$empresaSolicitante) {
                 $empresaSolicitante = Empresa::create([
                     'nome_fantasia' => $data['nome_fantasia_solicitante'] ?? '',
-                    'razao_social' => $data['razao_social'] ?? '',
+                    'razao_social' => $data['razao_social_solicitante'] ?? ($data['razao_social'] ?? ''),
                     'cnpj' => $data['cnpj_solicitante'],
-                    'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
+                    'inscricao_estadual' => $data['inscricao_estadual_solicitante'] ?? ($data['inscricao_estadual'] ?? ''),
                     'email' => $data['email_solicitante'] ?? '',
                     'telefone' => $data['telefone_solicitante'] ?? '',
                 ]);
@@ -75,10 +75,10 @@ class ReservaService
             if (!$empresaFaturamento) {
                 $empresaFaturamento = Empresa::create([
                     'nome_fantasia' => $data['nome_fantasia_faturamento'] ?? '',
-                    'razao_social' => $data['razao_social'] ?? '',
+                    'razao_social' => $data['razao_social_faturamento'] ?? ($data['razao_social'] ?? ''),
                     'cnpj' => $data['cnpj_faturamento'],
                     'cep' => $data['cep_faturamento'] ?? '',
-                    'inscricao_estadual' => $data['inscricao_estadual'] ?? '',
+                    'inscricao_estadual' => $data['inscricao_estadual_faturamento'] ?? ($data['inscricao_estadual'] ?? ''),
                     'email' => $data['email_empresa_faturamento'] ?? '',
                     'telefone' => $data['telefone_faturamento'] ?? '',
                 ]);
@@ -93,24 +93,25 @@ class ReservaService
         // dd($data);
 
         // Buscar ou criar o cliente solicitante
+        $clienteSolicitante = null;
         if (!empty($data['cpf']) && !empty($data['nome'])) {
             $cpfLimpo = preg_replace('/\D/', '', $data['cpf']);
             $clienteData = [
                 'cpf' => $cpfLimpo,
                 'nome' => $data['nome'],
-                'email' => $data['email'],
-                'telefone' => $data['telefone'],
-                'celular' => $data['celular'],
-                'data_nascimento' => $data['data_nascimento'],
-                'rg' => $data['rg'],
+                'email' => $data['email'] ?? null,
+                'telefone' => $data['telefone'] ?? null,
+                'celular' => $data['celular'] ?? null,
+                'data_nascimento' => $data['data_nascimento'] ?? null,
+                'rg' => $data['rg'] ?? null,
                 'estrangeiro' => 'Não',
-                'cep' => $data['cep'],
-                'endereco' => $data['endereco'],
-                'cidade' => $data['cidade'],
+                'cep' => $data['cep'] ?? null,
+                'endereco' => $data['endereco'] ?? null,
+                'cidade' => $data['cidade'] ?? null,
                 'estado' => $data['estado'] ?? null,
-                'pais' => $data['pais'],
-                'numero' => $data['numero'],
-                'bairro' => $data['bairro'],
+                'pais' => $data['pais'] ?? null,
+                'numero' => $data['numero'] ?? null,
+                'bairro' => $data['bairro'] ?? null,
             ];
 
             // Primeiro tenta achar pelo CPF normalizado, para não trocar o CPF de outro registro
@@ -126,6 +127,10 @@ class ReservaService
             } else {
                 $clienteSolicitante = Cliente::create($clienteData);
             }
+        }
+
+        if (!$clienteSolicitante) {
+            throw new Exception('Não foi possível identificar o cliente solicitante para a reserva.');
         }
 
         // Day Use sem quartos: montar um único bloco a partir dos dados do formulário
@@ -187,7 +192,7 @@ class ReservaService
                 // Preparar os dados da reserva
                 $reservaData = [
                     'tipo_reserva' => $data['tipo_reserva'] ?? null,
-                    'tipo_solicitante' => $data['tipo_solicitante'],
+                    'tipo_solicitante' => $data['tipo_solicitante'] ?? 'PF',
                     'situacao_reserva' => $data['situacao_reserva'] ?? 'PRÉ RESERVA',
                     'data_checkin' => $this->formatCheckinDate($dataCheckin),
                     'data_checkout' => $this->formatCheckoutDate($dataCheckout),
@@ -200,13 +205,13 @@ class ReservaService
                     'criancas_mais_7' => $quartoData['criancas_mais_7'],
                     'tipo_acomodacao' => $quartoData['tipo_acomodacao'] ?? null,
                     'usuario_operador_id' => Auth::id() ?? 2,
-                    'email_solicitante' => $data['email'],
-                    'celular' => $data['celular'],
+                    'email_solicitante' => $data['email'] ?? null,
+                    'celular' => $data['celular'] ?? null,
                     'email_faturamento' => $data['email_faturamento'] ?? null,
                     'empresa_faturamento_id' => $data['empresa_faturamento_id'] ?? null,
                     'empresa_solicitante_id' => $data['empresa_solicitante_id'] ?? null,
-                    'observacoes' => $data['observacoes'],
-                    'observacoes_internas' => $data['observacoes_internas'],
+                    'observacoes' => $data['observacoes'] ?? null,
+                    'observacoes_internas' => $data['observacoes_internas'] ?? null,
                     'cart_serialized' => $quartoCartSerialized ?? null,
                     'com_cafe' => (bool) ($data['com_cafe'] ?? false),
                     'valor_cafe' => null,

@@ -468,23 +468,56 @@ class ReservaController extends Controller
     {
         $request->validate([
             'quarto_id'          => 'required|integer|exists:quartos,id',
-            'data_transferencia' => 'required|date',
+            'data_transferencia' => 'required|string',
         ]);
 
         $reserva          = Reserva::findOrFail($id);
         $novoQuartoId     = $request->input('quarto_id');
-        $dataTransferencia= Carbon::parse($request->input('data_transferencia'))->format('Y-m-d');
-        $dataCheckout     = $reserva->data_checkout;
+        $dataTransferenciaInput = trim((string) $request->input('data_transferencia'));
+        $dataTransferencia = null;
+        foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $format) {
+            try {
+                $dataTransferencia = Carbon::createFromFormat($format, $dataTransferenciaInput)->format('Y-m-d');
+                break;
+            } catch (\Exception $e) {
+                // tenta o próximo formato
+            }
+        }
+
+        if (!$dataTransferencia) {
+            return redirect()->back()->with('error', 'O campo data transferência não é uma data válida.');
+        }
+
+        $dataTransferenciaCarbon = Carbon::parse($dataTransferencia)->startOfDay();
+        $dataCheckinAtual = Carbon::parse($reserva->data_checkin);
+        $dataCheckoutAtual = Carbon::parse($reserva->data_checkout);
+
+        // Preserva a distancia entre check-in e check-out ao mover a reserva.
+        $duracaoDias = $dataCheckinAtual->copy()->startOfDay()->diffInDays($dataCheckoutAtual->copy()->startOfDay());
+        if ($duracaoDias < 1) {
+            $duracaoDias = 1;
+        }
+
+        $novoCheckin = $dataTransferenciaCarbon->copy()->setTime(
+            intval($dataCheckinAtual->format('H')),
+            intval($dataCheckinAtual->format('i')),
+            intval($dataCheckinAtual->format('s'))
+        );
+        $novoCheckout = $dataTransferenciaCarbon->copy()->addDays($duracaoDias)->setTime(
+            intval($dataCheckoutAtual->format('H')),
+            intval($dataCheckoutAtual->format('i')),
+            intval($dataCheckoutAtual->format('s'))
+        );
 
         $conflito = Reserva::where('quarto_id', $novoQuartoId)
             ->where('id', '!=', $id)
             ->where('situacao_reserva', '!=', 'CANCELADA')
-            ->where(function ($q) use ($dataTransferencia, $dataCheckout) {
-                $q->whereBetween('data_checkin', [$dataTransferencia, $dataCheckout])
-                  ->orWhereBetween('data_checkout', [$dataTransferencia, $dataCheckout])
-                  ->orWhere(function ($q) use ($dataTransferencia, $dataCheckout) {
-                      $q->where('data_checkin', '<', $dataTransferencia)
-                        ->where('data_checkout', '>', $dataCheckout);
+            ->where(function ($q) use ($novoCheckin, $novoCheckout) {
+                $q->whereBetween('data_checkin', [$novoCheckin, $novoCheckout])
+                  ->orWhereBetween('data_checkout', [$novoCheckin, $novoCheckout])
+                  ->orWhere(function ($q) use ($novoCheckin, $novoCheckout) {
+                      $q->where('data_checkin', '<', $novoCheckin)
+                        ->where('data_checkout', '>', $novoCheckout);
                   });
             })
             ->exists();
@@ -493,11 +526,31 @@ class ReservaController extends Controller
             return redirect()->back()->with('error', 'Quarto não disponível para as datas selecionadas.');
         }
 
+        $novoQuarto = Quarto::find($novoQuartoId);
         $reserva->quarto_id    = $novoQuartoId;
-        $reserva->data_checkin = $dataTransferencia;
+        $reserva->data_checkin = $novoCheckin->format('Y-m-d H:i:s');
+        $reserva->data_checkout = $novoCheckout->format('Y-m-d H:i:s');
+
+        // Mantém o carrinho serializado alinhado ao quarto/data atuais para não "desfazer" a transferência no próximo save.
+        $cart = $reserva->getCartSerializedAttribute();
+        $isCartList = is_array($cart) && isset($cart[0]) && is_array($cart[0]);
+        $cartItem = $isCartList ? $cart[0] : (is_array($cart) ? $cart : []);
+
+        if (is_array($cartItem) && !empty($cartItem)) {
+            $cartItem['quartoId'] = (string) $novoQuartoId;
+            $cartItem['quartoNumero'] = (string) ($novoQuarto->numero ?? ($cartItem['quartoNumero'] ?? ''));
+            $cartItem['quartoAndar'] = (string) ($novoQuarto->andar ?? ($cartItem['quartoAndar'] ?? ''));
+            $cartItem['quartoClassificacao'] = (string) ($novoQuarto->classificacao ?? ($cartItem['quartoClassificacao'] ?? ''));
+            $cartItem['dataCheckin'] = $novoCheckin->format('d/m/Y');
+            $cartItem['dataCheckout'] = $novoCheckout->format('d/m/Y');
+            $reserva->cart_serialized = json_encode($isCartList ? [$cartItem] : $cartItem, JSON_UNESCAPED_UNICODE);
+        }
+
         $reserva->save();
 
-        return redirect()->back()->with('notice', 'Transferência realizada com sucesso.');
+        return redirect()
+            ->to(route('admin.reservas.edit', ['id' => $id]) . '#transferencia')
+            ->with('notice', 'Transferência realizada com sucesso.');
     }
 
     public function salvarRefeicoes(Request $request, $id)
@@ -518,7 +571,9 @@ class ReservaController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('notice', 'Refeições salvas com sucesso.');
+        return redirect()
+            ->to(route('admin.reservas.edit', ['id' => $id]) . '#refeicoes')
+            ->with('notice', 'Refeições salvas com sucesso.');
     }
 }
 

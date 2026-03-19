@@ -7,22 +7,22 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 9px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
         }
         th, td {
-            padding: 8px;
+            padding: 3px 5px;
             border: 1px solid #ddd;
         }
         .header {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 20px;
+            font-size: 11px;
+            margin-bottom: 6px;
         }
         .section-title {
             font-weight: bold;
@@ -48,8 +48,8 @@
             width: 33%;
         }
         .lgpd-section {
-            margin-top: 20px;
-            font-size: 10px;
+            margin-top: 6px;
+            font-size: 9px;
         }
     </style>
 </head>
@@ -58,11 +58,7 @@
         POUSADA ALDEIA DOS CAMARAS<br>
         FICHA NACIONAL DE REGISTRO DE HÓSPEDES<br>
     </div>
-    <p style="font-size: 10px;" class="text-center">Preenchimento Obrigatório - Deliberação Normativa 429 do Ministério do Esporte e Turismo - EMBRATUR</p>
-    <p></p>
-    <p class="text-center"><strong>Código da Hospedagem:</strong> {{ $reserva->id }}</p>
-    <p class="text-center"><strong>Código da Reserva:</strong> {{ $reserva->id }}</p>
-
+    <p style="font-size: 9px;" class="text-center">Preenchimento Obrigatório - Deliberação Normativa 429 do Ministério do Esporte e Turismo - EMBRATUR &nbsp;|&nbsp; <strong>Código da Hospedagem:</strong> {{ $reserva->id }}</p>
     <table>
         <tr>
             <td colspan="2" style="width:50%;"><strong>Nome Completo / Full Name:</strong> {{ $cliente->nome ?? '       ' }}</td>
@@ -195,9 +191,6 @@
             <td>Termos LGPD</td>
         </tr>
     </table>
-
-    <p></p>
-    <p></p>
 
     <hr>
     <p class="text-center">Assinatura do Hóspede / Guest's Signature:</p>

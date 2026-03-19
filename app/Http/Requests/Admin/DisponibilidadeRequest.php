@@ -20,7 +20,7 @@ class DisponibilidadeRequest extends FormRequest
             'adultos' => 'required|integer|min:1',
             'criancas_ate_7' => 'nullable|integer|min:0',
             'criancas_mais_7' => 'nullable|integer|min:0',
-
+            'reserva_id' => 'nullable|integer',
         ];
     }
 

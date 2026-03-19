@@ -25,30 +25,23 @@ class DisponibilidadeController extends Controller
 
         $reservaId = $request->input('reserva_id');
 
-        // Busca os quartos disponíveis com base no tipo de quarto, se fornecido
-        $quartosQuery = Quarto::where('inativo', 'Não'); // Apenas quartos que não estão inativos
+        // Busca os quartos ativos (compatível com base antiga: "Não" e base nova: 0/false/null)
+        $quartosQuery = Quarto::where(function ($q) {
+            $q->where('inativo', 'Não')
+              ->orWhere('inativo', 0)
+              ->orWhere('inativo', false)
+              ->orWhereNull('inativo');
+        });
         if ($tipoQuarto) {
             $quartosQuery->where('classificacao', $tipoQuarto);
         }
 
         $quartosDisponiveis = $quartosQuery->whereDoesntHave('reservas', function ($query) use ($dataEntrada, $dataSaida, $reservaId) {
             $query->where(function ($query) use ($dataEntrada, $dataSaida) {
-                // Verifica se a reserva está dentro do intervalo
-                $query->whereBetween('data_checkin', [$dataEntrada, $dataSaida])
-                      ->orWhereBetween('data_checkout', [$dataEntrada, $dataSaida])
-                      // Verifica se a reserva cobre todo o período
-                      ->orWhere(function ($query) use ($dataEntrada, $dataSaida) {
-                          $query->where('data_checkin', '<', $dataEntrada)
-                                ->where('data_checkout', '>', $dataSaida);
-                      })
-                      // Verifica se o check-out termina no $dataEntrada
-                      ->orWhere(function ($query) use ($dataEntrada) {
-                          $query->where('data_checkout', $dataEntrada);
-                      })
-                      // Verifica se o check-in começa no $dataSaida
-                      ->orWhere(function ($query) use ($dataSaida) {
-                          $query->where('data_checkin', $dataSaida);
-                      });
+                // Conflito real de periodo: [checkin, checkout) sobrepoe [entrada, saida)
+                // Permite borda (checkout == entrada ou checkin == saida).
+                $query->where('data_checkin', '<', $dataSaida)
+                      ->where('data_checkout', '>', $dataEntrada);
             })
             ->where('situacao_reserva', '!=', 'CANCELADA');
 

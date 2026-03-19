@@ -49,6 +49,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/reservas/calcular-day-use', [ReservaController::class, 'calcularDayUse'])->name('reservas.calcular-day-use');
 
         Route::get('/reservas/{id}/gerar-extrato', [ReservaController::class, 'gerarExtrato'])->name('reservas.gerar-extrato');
+        Route::patch('/reservas/{id}/mover', [ReservaController::class, 'moverReserva'])->name('reservas.mover');
+        Route::match(['post', 'put'], '/reservas/{id}/transferir', [ReservaController::class, 'transferirApartamento'])->name('reservas.transferir');
+        Route::match(['post', 'put'], '/reservas/{id}/refeicoes', [ReservaController::class, 'salvarRefeicoes'])->name('reservas.refeicoes');
 
         // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})
         Route::get('/despesas/relatorios', [\App\Http\Controllers\Admin\DespesaController::class, 'relatorios'])->name('despesas.relatorios');

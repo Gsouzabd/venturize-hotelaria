@@ -50,10 +50,19 @@
                 @if ($reserva->situacao_reserva == 'HOSPEDADO')
                     <li class="nav-item">
                         <a class="nav-link" id="consumo-tab" href="{{ route('admin.bar.pedidos.edit', ['id' => $pedido->id]) }}">
-                            <i class="fas fa-utensils"></i> Consumo 
+                            <i class="fas fa-utensils"></i> Consumo
                         </a>
                     </li>
-
+                    <li class="nav-item">
+                        <a class="nav-link" id="refeicoes-tab" data-toggle="tab" href="#refeicoes" role="tab" aria-controls="refeicoes" aria-selected="false">
+                            <i class="fas fa-coffee"></i> Refeições
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="transferencia-tab" data-toggle="tab" href="#transferencia" role="tab" aria-controls="transferencia" aria-selected="false">
+                            <i class="fas fa-exchange-alt"></i> Transferência
+                        </a>
+                    </li>
                 @endif
                 @if ($reserva->situacao_reserva == 'HOSPEDADO' || $reserva->situacao_reserva == 'FINALIZADO')
 
@@ -92,6 +101,12 @@
                 @if ($reserva->situacao_reserva != 'FINALIZADO')
                     <!-- Tab 4: Check-in -->
                     @include('admin.reservas.partials.checkin')
+                @endif
+                @if ($reserva->situacao_reserva == 'HOSPEDADO')
+                    <!-- Tab: Refeições -->
+                    @include('admin.reservas.partials.refeicoes')
+                    <!-- Tab: Transferência -->
+                    @include('admin.reservas.partials.transferencia')
                 @endif
 
             </div>
@@ -206,5 +221,78 @@
         });
     </script>
 
-    <script src="{{ asset('assets/admin/reserva.js') }}"></script>
+    <script src="{{ asset('assets/admin/reserva.js') }}?v={{ @filemtime(public_path('assets/admin/reserva.js')) }}"></script>
+    <script>
+        (function () {
+            function activateReservaTabByLink(tabLink) {
+                if (!tabLink) return;
+
+                var target = tabLink.getAttribute('href');
+                if (!target || target.charAt(0) !== '#') return;
+
+                var targetPane = document.querySelector(target);
+                if (!targetPane) return;
+
+                var tabsContainer = document.getElementById('reservaTabs');
+                if (tabsContainer) {
+                    tabsContainer.querySelectorAll('.nav-link').forEach(function (link) {
+                        link.classList.remove('active');
+                        link.setAttribute('aria-selected', 'false');
+                    });
+                }
+
+                var contentContainer = document.getElementById('reservaTabContent');
+                if (contentContainer) {
+                    contentContainer.querySelectorAll('.tab-pane').forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+                }
+
+                tabLink.classList.add('active');
+                tabLink.setAttribute('aria-selected', 'true');
+                targetPane.classList.add('show', 'active');
+
+                if (history.replaceState) {
+                    history.replaceState(null, '', target);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var editForm = document.querySelector('form.edit-form');
+                if (editForm) {
+                    editForm.addEventListener('submit', function (event) {
+                        var submitter = event.submitter || document.activeElement;
+                        if (!submitter) return;
+
+                        var action = submitter.getAttribute('formaction') || this.getAttribute('action') || '';
+                        var isTransferencia = action.indexOf('/transferir') !== -1;
+                        var isRefeicoes = action.indexOf('/refeicoes') !== -1;
+
+                        // Submits dessas abas devem sair como POST real (sem _method=PUT do form principal)
+                        if (isTransferencia || isRefeicoes) {
+                            var methodInput = this.querySelector('input[name="_method"]');
+                            if (methodInput) {
+                                methodInput.disabled = true;
+                            }
+                        }
+                    });
+                }
+
+                var tabLinks = document.querySelectorAll('#reservaTabs .nav-link[data-toggle="tab"]');
+                tabLinks.forEach(function (tabLink) {
+                    tabLink.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        activateReservaTabByLink(this);
+                    });
+                });
+
+                if (window.location.hash) {
+                    var linkFromHash = document.querySelector('#reservaTabs .nav-link[data-toggle="tab"][href="' + window.location.hash + '"]');
+                    if (linkFromHash) {
+                        activateReservaTabByLink(linkFromHash);
+                    }
+                }
+            });
+        })();
+    </script>
 @endsection

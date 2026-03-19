@@ -58,21 +58,38 @@
         </x-admin.field-group>
             
         <!-- Campos Comuns -->
+        @php
+            $nomeSolicitanteValue = old('nome', $reserva->clienteSolicitante->nome ?? $reserva->clienteResponsavel->nome ?? '');
+            $cpfSolicitanteValue = old('cpf', $reserva->clienteSolicitante->cpf ?? $reserva->clienteResponsavel->cpf ?? '');
+            $lockSolicitante = $edit && !empty($nomeSolicitanteValue);
+        @endphp
         <x-admin.field-group>
             <x-admin.field cols="6">
                 <x-admin.label label="Nome do Solicitante" required/>
-                <x-admin.text name="nome" id="nomeSolicitante" :value="old('nome', $reserva->clienteSolicitante->nome ?? '')" required/>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
-                    <label class="form-check-label" for="solicitanteHospedeCheckbox">
-                        Solicitante será o hóspede?
-                    </label>
-                </div>
+                <x-admin.text
+                    name="nome"
+                    id="nomeSolicitante"
+                    :value="$nomeSolicitanteValue"
+                    :readonly="$lockSolicitante"
+                    required
+                />
+                @if($edit && $reserva->clienteSolicitante)
+                    <a href="{{ route('admin.clientes.edit', ['id' => $reserva->clienteSolicitante->id]) }}" target="_blank" class="small text-primary mt-1 d-inline-block">
+                        <i class="fas fa-external-link-alt"></i> Ver dados completos
+                    </a>
+                @else
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
+                        <label class="form-check-label" for="solicitanteHospedeCheckbox">
+                            Solicitante será o hóspede?
+                        </label>
+                    </div>
+                @endif
             </x-admin.field>
         
             <x-admin.field cols="6">
                 <x-admin.label label="CPF" required/>
-                <x-admin.text name="cpf" id="cpf" :value="old('cpf', $reserva->clienteSolicitante->cpf ?? '')" required placeholder="Digite o CPF"/>
+                <x-admin.text name="cpf" id="cpf" :value="$cpfSolicitanteValue" required placeholder="Digite o CPF"/>
                 <div class="d-flex">
                     <div class="col">
                         <button type="button" id="buscarCpfButton" class="btn btn-secondary mt-2">Buscar</button>
@@ -91,132 +108,15 @@
         </x-admin.field-group>
 
         <div id="pre-reserva-hide">
-
-    
-            
             <x-admin.field-group>
-                <x-admin.field cols="4">
-                    <x-admin.label label="Data de Nascimento" />
-                    <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')" required/>                        
-                </x-admin.field>
-
-                <x-admin.field cols="4">
+                <x-admin.field cols="6">
                     <x-admin.label label="Email" />
                     <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" />
                 </x-admin.field>
 
-                <x-admin.field cols="4">
+                <x-admin.field cols="6">
                     <x-admin.label label="Celular" />
-                    <x-admin.text name="telefone" id="modal_telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')"  class="phone-mask"/>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group>
-                <x-admin.field cols="2">
-                    <x-admin.label label="CEP"/>
-                    <x-admin.text name="cep" id="cep" :value="old('cep', $reserva->clienteSolicitante->cep ?? '')"/>
-                    <button type="button" id="buscarCepButton" class="btn btn-secondary mt-2">Buscar</button>
-                    <small>Buscar endereço.</small>
-                    <div id="cepError" class="text-danger mt-2" style="display: none;">Nenhum endereço encontrado com o CEP informado.</div>
-                </x-admin.field>
-            
-                <x-admin.field cols="4">
-                    <x-admin.label label="Endereço"/>
-                    <x-admin.text name="endereco" id="endereco" :value="old('endereco', $reserva->clienteSolicitante->endereco ?? '')"/>
-                </x-admin.field>
-            
-                <x-admin.field cols="2">
-                    <x-admin.label label="Número"/>
-                    <x-admin.text name="numero" id="numero" :value="old('numero', $reserva->clienteSolicitante->numero ?? '')"/>
-                </x-admin.field>
-            
-                <x-admin.field cols="4">
-                    <x-admin.label label="Bairro"/>
-                    <x-admin.text name="bairro" id="bairro" :value="old('bairro', $reserva->clienteSolicitante->bairro ?? '')"/>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group>
-                <x-admin.field cols="4">
-                    <x-admin.label label="Cidade"/>
-                    <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
-                </x-admin.field>
-            
-                @php
-                    $estadoOriginal = trim(old('estado', $reserva->clienteSolicitante->estado ?? ''));
-                    $estadoMap = [
-                        'acre' => 'AC', 'alagoas' => 'AL', 'amapá' => 'AP', 'amapa' => 'AP', 'amazonas' => 'AM',
-                        'bahia' => 'BA', 'ceará' => 'CE', 'ceara' => 'CE', 'distrito federal' => 'DF',
-                        'espírito santo' => 'ES', 'espirito santo' => 'ES', 'goiás' => 'GO', 'goias' => 'GO',
-                        'maranhão' => 'MA', 'maranhao' => 'MA', 'mato grosso' => 'MT', 'mato grosso do sul' => 'MS',
-                        'minas gerais' => 'MG', 'pará' => 'PA', 'para' => 'PA', 'paraíba' => 'PB', 'paraiba' => 'PB',
-                        'paraná' => 'PR', 'parana' => 'PR', 'pernambuco' => 'PE', 'piauí' => 'PI', 'piaui' => 'PI',
-                        'rio de janeiro' => 'RJ', 'rio grande do norte' => 'RN', 'rio grande do sul' => 'RS',
-                        'rondônia' => 'RO', 'rondonia' => 'RO', 'roraima' => 'RR', 'santa catarina' => 'SC',
-                        'são paulo' => 'SP', 'sao paulo' => 'SP', 'sergipe' => 'SE', 'tocantins' => 'TO',
-                    ];
-                    $estadoSelected = '';
-                    if (strlen($estadoOriginal) === 2) {
-                        $estadoSelected = strtoupper($estadoOriginal);
-                    } elseif (!empty($estadoOriginal)) {
-                        $estadoSelected = $estadoMap[mb_strtolower($estadoOriginal)] ?? strtoupper($estadoOriginal);
-                    }
-                @endphp
-
-                <x-admin.field cols="4">
-                    <x-admin.label label="Estado"/>
-                    <x-admin.select2 
-                        name="estado" 
-                        id="estado"
-                        placeholder="Selecione o estado"
-                        :items="[
-                            'AC' => 'Acre',
-                            'AL' => 'Alagoas',
-                            'AP' => 'Amapá',
-                            'AM' => 'Amazonas',
-                            'BA' => 'Bahia',
-                            'CE' => 'Ceará',
-                            'DF' => 'Distrito Federal',
-                            'ES' => 'Espírito Santo',
-                            'GO' => 'Goiás',
-                            'MA' => 'Maranhão',
-                            'MT' => 'Mato Grosso',
-                            'MS' => 'Mato Grosso do Sul',
-                            'MG' => 'Minas Gerais',
-                            'PA' => 'Pará',
-                            'PB' => 'Paraíba',
-                            'PR' => 'Paraná',
-                            'PE' => 'Pernambuco',
-                            'PI' => 'Piauí',
-                            'RJ' => 'Rio de Janeiro',
-                            'RN' => 'Rio Grande do Norte',
-                            'RS' => 'Rio Grande do Sul',
-                            'RO' => 'Rondônia',
-                            'RR' => 'Roraima',
-                            'SC' => 'Santa Catarina',
-                            'SP' => 'São Paulo',
-                            'SE' => 'Sergipe',
-                            'TO' => 'Tocantins',
-                        ]"
-                        selectedItem="{{ $estadoSelected }}"
-                    />
-                </x-admin.field>
-            
-                <x-admin.field cols="4">
-                    <x-admin.label label="País"/>
-                    <x-admin.text name="pais" id="pais" :value="old('pais', $reserva->clienteSolicitante->pais ?? '')"/>
-                </x-admin.field>
-            </x-admin.field-group>
-            
-            <x-admin.field-group class="pj-hide">
-                <x-admin.field cols="6">
-                    <x-admin.label label="RG"/>
-                    <x-admin.text name="rg" id="rg" :value="old('rg', $reserva->clienteSolicitante->rg ?? '')"/>
-                </x-admin.field>
-            
-                <x-admin.field cols="6">
-                    <x-admin.label label="Telefone"/>
-                    <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')"/>
+                    <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')" class="phone-mask"/>
                 </x-admin.field>
             </x-admin.field-group>
         </div>
@@ -377,24 +277,20 @@
 
         situacaoReservaSelect.addEventListener('change', esconderPreReserva);
 
-        const pjHideFields = document.querySelectorAll('.pj-hide');
         const pfHideFields = document.querySelectorAll('.pf-hide');
-    
+
         // Função para atualizar a visibilidade dos campos
         function atualizarCampos() {
             if (tipoSolicitanteSelect.value === 'PJ') {
-                pjHideFields.forEach(field => field.style.display = 'none');
                 pfHideFields.forEach(field => field.style.display = 'flex');
-            
             } else {
-                pjHideFields.forEach(field => field.style.display = 'flex');
                 pfHideFields.forEach(field => field.style.display = 'none');
             }
         }
-    
+
         // Atualiza os campos ao carregar a página
         atualizarCampos();
-    
+
         // Adiciona um evento de mudança ao select
         tipoSolicitanteSelect.addEventListener('change', atualizarCampos);
 
@@ -455,34 +351,11 @@
 
             $buscaCliente.on('select2:select', function (e) {
                 var cliente = e.params.data;
-                
+
                 document.getElementById('nomeSolicitante').value = cliente.nome || '';
                 document.getElementById('cpf').value = cliente.cpf || '';
-
-                var dataNascInput = document.querySelector('input[name="data_nascimento"]');
-                if (dataNascInput && cliente.data_nascimento) {
-                    var formatted = isFormattedDate(cliente.data_nascimento)
-                        ? cliente.data_nascimento
-                        : formatDate(cliente.data_nascimento);
-                    dataNascInput.value = formatted || '';
-                }
-
-                document.getElementById('rg').value = cliente.rg || '';
-                document.getElementById('cep').value = cliente.cep || '';
-                document.getElementById('cidade').value = cliente.cidade || '';
-                document.getElementById('endereco').value = cliente.endereco || '';
-                document.getElementById('numero').value = cliente.numero || '';
-                document.getElementById('bairro').value = cliente.bairro || '';
-                document.getElementById('pais').value = cliente.pais || '';
                 document.getElementById('modal_email').value = cliente.email || '';
                 document.getElementById('celular').value = cliente.celular || cliente.telefone || '';
-                document.getElementById('modal_telefone').value = cliente.telefone || '';
-
-                // Preencher estado via Select2 (aceita nome completo ou UF)
-                var $estado = $('#estado');
-                if ($estado.length && cliente.estado) {
-                    $estado.val(mapEstadoToUF(cliente.estado)).trigger('change');
-                }
 
                 // Exibir campos ocultos pelo modo Pré Reserva
                 preReservaHide.style.display = 'block';
@@ -516,7 +389,7 @@
         $('#cpf').mask('000.000.000-00', {reverse: true});
         $('#responsavelCpf').mask('000.000.000-00', {reverse: true});
         $('#responsavelReservaCpf').mask('000.000.000-00', {reverse: true});
-        $('#modal_telefone').mask('00 00000-0000', {reverse: true});
+        $('#celular').mask('00 00000-0000', {reverse: true});
 
 
 
@@ -528,30 +401,11 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data) {
-                         // Verificar e formatar as datas se necessário
-                         if( data.data_nascimento !== null){
-                            var formattedDataNascimento= isFormattedDate(data.data_nascimento) ? data.data_nascimento : formatDate(data.data_nascimento);
-                         }
-
                     // Preenche os campos do cliente se encontrado
                     document.getElementById('nomeSolicitante').value = data.nome ?? '';
                     document.getElementById('cpf').value = data.cpf ?? '';
-                    document.querySelector('input[name="data_nascimento"]').value = formattedDataNascimento ?? '';
-                    document.getElementById('rg').value = data.rg ?? '';
-                    document.getElementById('cep').value = data.cep ?? '';
-                    document.getElementById('cidade').value = data.cidade ?? '';
-                    document.getElementById('endereco').value = data.endereco ?? '';
-                    document.getElementById('numero').value = data.numero ?? '';
-                    document.getElementById('bairro').value = data.bairro ?? '';
-                    document.getElementById('pais').value = data.pais ?? '';
                     document.getElementById('modal_email').value = data.email ?? '';
-                    document.getElementById('celular').value = data.telefone ?? '';
-                    document.getElementById('modal_telefone').value = data.telefone ?? '';
-
-                    var $estado = $('#estado');
-                    if ($estado.length && data.estado) {
-                        $estado.val(mapEstadoToUF(data.estado)).trigger('change');
-                    }
+                    document.getElementById('celular').value = data.celular || data.telefone || '';
 
                     // Exibir campos ocultos pelo modo Pré Reserva
                     preReservaHide.style.display = 'block';
@@ -559,10 +413,8 @@
                     }
                 })
                 .catch(error => {
-                    // console.error('Erro ao buscar o cliente:', error);
                     cpfError.style.display = 'block'; // Mostra a mensagem de erro
                     console.log(error);
-                    
 
                     // Esconde a mensagem de erro após 5 segundos
                     setTimeout(() => {
