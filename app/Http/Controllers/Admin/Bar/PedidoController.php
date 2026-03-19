@@ -58,10 +58,15 @@ class PedidoController extends Controller
         $pedido = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
         $mesas = Mesa::all();
         $clientes = Cliente::all();
-        // Obter os IDs das categorias "Bebidas" e "Alimentos"
-        $categoriaIds = Categoria::whereIn('nome', ['Alimentos', 'Bebidas', 'Drinks', 'Gelo'])->pluck('id');
         
-        // Obter os produtos que pertencem às categorias "Bebidas" e "Alimentos"
+        // Consumo de reserva (pedido_apartamento): exibir produtos da Recepção e Frigobar.
+        // Pedidos de mesa: manter conjunto padrão atual.
+        $categoriasPermitidas = $pedido->pedido_apartamento
+            ? ['Recepção', 'Recepcao', 'Frigobar']
+            : ['Alimentos', 'Bebidas', 'Drinks', 'Gelo'];
+
+        $categoriaIds = Categoria::whereIn('nome', $categoriasPermitidas)->pluck('id');
+        
         $produtos = Produto::whereIn('categoria_produto', $categoriaIds)->get();
 
         $produtosAgrupados = $produtos->groupBy('categoria_produto');
