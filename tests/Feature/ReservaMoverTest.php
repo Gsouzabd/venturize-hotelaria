@@ -104,6 +104,92 @@ class ReservaMoverTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * Simula o cenário "Editar Período" do tab Transferência:
+     * PATCH com o mesmo quarto_id e novas datas (sem troca de apartamento).
+     */
+    public function test_editar_periodo_mesmo_quarto_sem_conflito(): void
+    {
+        $this->adminLogin();
+
+        $quarto  = Quarto::factory()->create();
+        $reserva = Reserva::factory()->create([
+            'quarto_id'        => $quarto->id,
+            'data_checkin'     => '2026-07-01',
+            'data_checkout'    => '2026-07-05',
+            'situacao_reserva' => 'HOSPEDADO',
+        ]);
+
+        $response = $this->patchJson("/admin/reservas/{$reserva->id}/mover", [
+            'quarto_id'    => $quarto->id,   // mesmo quarto
+            'data_checkin' => '2026-07-01',
+            'data_checkout'=> '2026-07-10',  // apenas estende o checkout
+        ]);
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('reservas', [
+            'id'           => $reserva->id,
+            'data_checkout'=> '2026-07-10',
+        ]);
+    }
+
+    public function test_editar_periodo_checkout_igual_checkin_retorna_422(): void
+    {
+        $this->adminLogin();
+
+        $quarto  = Quarto::factory()->create();
+        $reserva = Reserva::factory()->create([
+            'quarto_id'     => $quarto->id,
+            'data_checkin'  => '2026-07-01',
+            'data_checkout' => '2026-07-05',
+        ]);
+
+        $response = $this->patchJson("/admin/reservas/{$reserva->id}/mover", [
+            'quarto_id'    => $quarto->id,
+            'data_checkin' => '2026-07-05',
+            'data_checkout'=> '2026-07-05',  // igual ao checkin
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_editar_periodo_checkout_antes_checkin_retorna_422(): void
+    {
+        $this->adminLogin();
+
+        $quarto  = Quarto::factory()->create();
+        $reserva = Reserva::factory()->create([
+            'quarto_id'     => $quarto->id,
+            'data_checkin'  => '2026-07-01',
+            'data_checkout' => '2026-07-05',
+        ]);
+
+        $response = $this->patchJson("/admin/reservas/{$reserva->id}/mover", [
+            'quarto_id'    => $quarto->id,
+            'data_checkin' => '2026-07-10',
+            'data_checkout'=> '2026-07-05',  // checkout antes do checkin
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_editar_periodo_sem_data_checkin_retorna_422(): void
+    {
+        $this->adminLogin();
+
+        $reserva = Reserva::factory()->create();
+        $quarto  = Quarto::factory()->create();
+
+        $response = $this->patchJson("/admin/reservas/{$reserva->id}/mover", [
+            'quarto_id'    => $quarto->id,
+            'data_checkout'=> '2026-07-10',
+            // data_checkin omitido
+        ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_reserva_nao_encontrada(): void
     {
         $this->adminLogin();

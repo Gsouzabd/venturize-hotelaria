@@ -553,6 +553,57 @@ class ReservaController extends Controller
             ->with('notice', 'Transferência realizada com sucesso.');
     }
 
+    public function adicionarAcompanhante(Request $request, $id)
+    {
+        $reserva = Reserva::findOrFail($id);
+
+        $request->validate([
+            'nome'           => 'required|string|max:255',
+            'cpf'            => 'nullable|string|max:20',
+            'tipo'           => 'required|in:Adulto,Criança mais de 7 anos,Criança até 7 anos',
+            'data_nascimento'=> 'nullable|date',
+            'email'          => 'nullable|email|max:255',
+            'telefone'       => 'nullable|string|max:20',
+        ]);
+
+        // Tenta vincular a um cliente existente pelo CPF
+        $clienteId = null;
+        if ($request->filled('cpf')) {
+            $cpfLimpo = preg_replace('/\D/', '', $request->cpf);
+            $cliente = \App\Models\Cliente::where('cpf', 'like', "%{$cpfLimpo}%")->first();
+            if ($cliente) {
+                $clienteId = $cliente->id;
+            }
+        }
+
+        $acompanhante = \App\Models\Acompanhante::create([
+            'reserva_id'     => $reserva->id,
+            'cliente_id'     => $clienteId,
+            'nome'           => $request->nome,
+            'cpf'            => $request->cpf,
+            'tipo'           => $request->tipo,
+            'data_nascimento'=> $request->data_nascimento,
+            'email'          => $request->email,
+            'telefone'       => $request->telefone,
+        ]);
+
+        return response()->json([
+            'success'      => true,
+            'acompanhante' => $acompanhante,
+            'cliente_id'   => $clienteId,
+            'edit_url'     => $clienteId ? route('admin.clientes.edit', ['id' => $clienteId]) : null,
+        ]);
+    }
+
+    public function removerAcompanhante($id, $aid)
+    {
+        Reserva::findOrFail($id);
+        $acompanhante = \App\Models\Acompanhante::where('reserva_id', $id)->findOrFail($aid);
+        $acompanhante->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     public function salvarRefeicoes(Request $request, $id)
     {
         Reserva::findOrFail($id);

@@ -8,7 +8,7 @@
         <!-- Conteúdo da aba de check-in -->
         @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'cancelado']))
             <div class="alert alert-info" style="background: {{Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}}; color: white">
-                O status da reserva já foi atualizado para: <strong>{{ $reserva->situacao_reserva }}.<strong>
+                O status da reserva já foi atualizado para: <strong>{{ $reserva->situacao_reserva }}.</strong>
                     <br/><br/>
                     @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'cancelado']))
 

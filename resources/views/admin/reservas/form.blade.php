@@ -47,6 +47,13 @@
                     @endif
                 @endif
                 
+                @if ($edit)
+                    <li class="nav-item">
+                        <a class="nav-link" id="acompanhantes-tab" data-toggle="tab" href="#acompanhantes" role="tab" aria-controls="acompanhantes" aria-selected="false">
+                            <i class="fas fa-users"></i> Acompanhantes
+                        </a>
+                    </li>
+                @endif
                 @if ($reserva->situacao_reserva == 'HOSPEDADO')
                     <li class="nav-item">
                         <a class="nav-link" id="consumo-tab" href="{{ route('admin.bar.pedidos.edit', ['id' => $pedido->id]) }}">
@@ -101,6 +108,10 @@
                 @if ($reserva->situacao_reserva != 'FINALIZADO')
                     <!-- Tab 4: Check-in -->
                     @include('admin.reservas.partials.checkin')
+                @endif
+                @if ($edit)
+                    <!-- Tab: Acompanhantes -->
+                    @include('admin.reservas.partials.acompanhantes')
                 @endif
                 @if ($reserva->situacao_reserva == 'HOSPEDADO')
                     <!-- Tab: Refeições -->

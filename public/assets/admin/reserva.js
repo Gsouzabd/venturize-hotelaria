@@ -21,7 +21,7 @@ async function adicionarQuartoAoCart(
     console.log('adicionarQuartoAoCart', quartoId, quartoNumero, quartoAndar, quartoClassificacao, tipoAcomodacao, nome, cpf, dataCheckin, dataCheckout, precosDiariosSelect, totalSelect);
  
 
-    const precosData = await obterPlanosPrecos(quartoId, dataCheckin, dataCheckout, criancas_ate_7, criancas_mais_7);
+    const precosData = await obterPlanosPrecos(quartoId, dataCheckin, dataCheckout, quartoComposicao);
     var precosDiarios = precosDiariosSelect ?? precosData.precosDiarios;
     const totalf = totalSelect || precosData.total;
     const total = parseFloat(totalf); // Garantir que total seja um número
@@ -282,17 +282,19 @@ async function adicionarQuartoAoCart(
             <div class="col-md-6">
                 <div class="info">
                     <i class="icon fas fa-calendar-check"></i>
-                    <strong>Check-in:</strong> 
-                    <span style="float:right;">${formattedCheckin}</span>
-                    <input type="hidden" name="quartos[${quartoId}][data_checkin]" value="${formattedCheckin}">
+                    <strong>Check-in:</strong>
+                    <input type="date" class="form-control mt-1 cart-date-checkin" data-quarto-id="${quartoId}"
+                        name="quartos[${quartoId}][data_checkin]"
+                        value="${(function(d){ var p=d.split('-'); return p.length===3&&p[0].length===2 ? p[2]+'-'+p[1]+'-'+p[0] : d; })(formattedCheckin)}">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="info">
                     <i class="icon fas fa-calendar-check"></i>
                     <strong>Check-out:</strong>
-                    <span style="float:right;">${formattedCheckout}</span>
-                    <input type="hidden" name="quartos[${quartoId}][data_checkout]" value="${formattedCheckout}">
+                    <input type="date" class="form-control mt-1 cart-date-checkout" data-quarto-id="${quartoId}"
+                        name="quartos[${quartoId}][data_checkout]"
+                        value="${(function(d){ var p=d.split('-'); return p.length===3&&p[0].length===2 ? p[2]+'-'+p[1]+'-'+p[0] : d; })(formattedCheckout)}">
                 </div>
             </div>
         </div>
@@ -302,7 +304,9 @@ async function adicionarQuartoAoCart(
                 <div class="info">
                     <i class="icon fas fa-calendar-alt"></i>
                     <strong>Preços Diários:</strong>
-                    ${renderPrecosDiarios(precosDiarios, quartoId, dataCheckin, dataCheckout)}
+                    <div id="precos-diarios-container-${quartoId}">
+                        ${renderPrecosDiarios(precosDiarios, quartoId, dataCheckin, dataCheckout)}
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,6 +486,85 @@ async function adicionarQuartoAoCart(
     });
 
     atualizarValorTotal();
+
+    // Event listeners para editar as datas diretamente no cart
+    const cartCheckinInput  = cartItem.querySelector('.cart-date-checkin');
+    const cartCheckoutInput = cartItem.querySelector('.cart-date-checkout');
+
+    let recalcDebounceTimer = null;
+    async function recalcularAoMudarDatas() {
+        const newCheckinIso  = cartCheckinInput  ? cartCheckinInput.value  : '';
+        const newCheckoutIso = cartCheckoutInput ? cartCheckoutInput.value : '';
+        if (!newCheckinIso || !newCheckoutIso || newCheckoutIso <= newCheckinIso) return;
+
+        // Converter yyyy-mm-dd → dd-mm-yyyy para a API
+        const toFmt = (iso) => { const [y,m,d] = iso.split('-'); return `${d}-${m}-${y}`; };
+        const checkinFmt  = toFmt(newCheckinIso);
+        const checkoutFmt = toFmt(newCheckoutIso);
+
+        const precosDiariosContainer = document.getElementById(`precos-diarios-container-${quartoId}`);
+        if (precosDiariosContainer) {
+            precosDiariosContainer.innerHTML = '<div class="text-muted py-1"><small>Recalculando preços...</small></div>';
+        }
+
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const cartEntry = cart.find(item => String(item.quartoId) === String(quartoId));
+
+        try {
+            const precosData = await obterPlanosPrecos(quartoId, checkinFmt, checkoutFmt, quartoComposicao);
+            if (!precosData || !precosData.precosDiarios) {
+                if (precosDiariosContainer) precosDiariosContainer.innerHTML = '<div class="text-danger"><small>Erro ao buscar preços.</small></div>';
+                return;
+            }
+            const novosPrecoDiarios = Array.isArray(precosData.precosDiarios)
+                ? precosData.precosDiarios
+                : Object.entries(precosData.precosDiarios).map(([data, preco]) => ({ data, preco }));
+            const novoTotal = parseFloat(precosData.total) || 0;
+
+            // Atualizar container de preços diários diretamente pelo ID
+            if (precosDiariosContainer) {
+                precosDiariosContainer.innerHTML = renderPrecosDiarios(novosPrecoDiarios, quartoId, checkinFmt, checkoutFmt);
+                // Re-attach event listeners nos novos inputs
+                precosDiariosContainer.querySelectorAll('.preco-diario').forEach(inp => {
+                    inp.addEventListener('input', function () {
+                        let t = 0;
+                        cartItem.querySelectorAll('.preco-diario').forEach(i => { t += parseFloat(i.value) || 0; });
+                        valorTotalSpan.textContent = `R$ ${t.toFixed(2).replace('.', ',')}`;
+                        inputValorTotal.value = t.toFixed(2);
+                        atualizarValorTotalDoCart();
+                    });
+                });
+            }
+
+            // Atualizar total display
+            valorTotalSpan.textContent = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
+            inputValorTotal.value = novoTotal.toFixed(2);
+
+            // Atualizar localStorage
+            if (cartEntry) {
+                cartEntry.dataCheckin  = checkinFmt;
+                cartEntry.dataCheckout = checkoutFmt;
+                cartEntry.precosDiarios = novosPrecoDiarios;
+                cartEntry.total = novoTotal.toFixed(2);
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+            atualizarValorTotalDoCart();
+        } catch (e) {
+            console.error('Erro ao recalcular preços para novas datas:', e);
+            if (precosDiariosContainer) precosDiariosContainer.innerHTML = '<div class="text-danger"><small>Erro ao buscar preços.</small></div>';
+        }
+    }
+
+    function recalcDebounced() {
+        clearTimeout(recalcDebounceTimer);
+        recalcDebounceTimer = setTimeout(recalcularAoMudarDatas, 400);
+    }
+
+    if (cartCheckinInput)  { cartCheckinInput.addEventListener('change',  recalcularAoMudarDatas); cartCheckinInput.addEventListener('input',   recalcDebounced); }
+    if (cartCheckoutInput) { cartCheckoutInput.addEventListener('change', recalcularAoMudarDatas); cartCheckoutInput.addEventListener('input',  recalcDebounced); }
+
+    // Recalcular preços ao carregar o cart (garante consistência com datas atuais)
+    recalcularAoMudarDatas();
 
     // Exibir o Cart Preview com animação
     const cartColumn = document.getElementById('cart-col');
@@ -730,8 +813,10 @@ document.getElementById('verificarDisponibilidade').addEventListener('click', fu
 
 
 // Função para obter planos de preços de um quarto
-async function obterPlanosPrecos(quartoId, dataEntrada, dataSaida) {
-    const response = await fetch(`/admin/quartos/${quartoId}/planos-preco?data_entrada=${dataEntrada}&data_saida=${dataSaida}`);                    
+async function obterPlanosPrecos(quartoId, dataEntrada, dataSaida, composicaoQuarto) {
+    let url = `/admin/quartos/${quartoId}/planos-preco?data_entrada=${dataEntrada}&data_saida=${dataSaida}`;
+    if (composicaoQuarto) url += `&composicao_quarto=${encodeURIComponent(composicaoQuarto)}`;
+    const response = await fetch(url);
     const data = await response.json();
     return data;
 }

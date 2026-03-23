@@ -90,8 +90,6 @@ class ReservaService
         if (!empty($data['data_nascimento'])) {
             $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
         }
-        // dd($data);
-
         // Buscar ou criar o cliente solicitante
         $clienteSolicitante = null;
         if (!empty($data['cpf']) && !empty($data['nome'])) {
@@ -335,13 +333,13 @@ class ReservaService
 
     private function formatCheckinDate($date)
     {
-        $formats = ['d-m-Y', 'd/m/Y'];
+        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d'];
         return $this->formatDate($date, $formats, [14, 0]);
     }
 
     private function formatCheckoutDate($date)
     {
-        $formats = ['d-m-Y', 'd/m/Y'];
+        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d'];
         return $this->formatDate($date, $formats, [12, 0]);
     }
 

@@ -52,6 +52,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/reservas/{id}/mover', [ReservaController::class, 'moverReserva'])->name('reservas.mover');
         Route::match(['post', 'put'], '/reservas/{id}/transferir', [ReservaController::class, 'transferirApartamento'])->name('reservas.transferir');
         Route::match(['post', 'put'], '/reservas/{id}/refeicoes', [ReservaController::class, 'salvarRefeicoes'])->name('reservas.refeicoes');
+        Route::post('/reservas/{id}/acompanhantes', [ReservaController::class, 'adicionarAcompanhante'])->name('reservas.acompanhantes.add');
+        Route::delete('/reservas/{id}/acompanhantes/{aid}', [ReservaController::class, 'removerAcompanhante'])->name('reservas.acompanhantes.remove');
 
         // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})
         Route::get('/despesas/relatorios', [\App\Http\Controllers\Admin\DespesaController::class, 'relatorios'])->name('despesas.relatorios');
