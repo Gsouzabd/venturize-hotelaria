@@ -114,9 +114,99 @@
                     <x-admin.text name="email" id="modal_email" :value="old('email', $reserva->clienteSolicitante->email ?? '')" />
                 </x-admin.field>
 
-                <x-admin.field cols="6">
+                <x-admin.field cols="3">
                     <x-admin.label label="Celular" />
                     <x-admin.text name="celular" id="celular" :value="old('celular', $reserva->clienteSolicitante->celular ?? '')" class="phone-mask"/>
+                </x-admin.field>
+
+                <x-admin.field cols="3">
+                    <x-admin.label label="Telefone" />
+                    <x-admin.text name="telefone" id="telefone" :value="old('telefone', $reserva->clienteSolicitante->telefone ?? '')" class="phone-mask"/>
+                </x-admin.field>
+            </x-admin.field-group>
+
+            <x-admin.field-group>
+                <x-admin.field cols="3">
+                    <x-admin.label label="RG" />
+                    <x-admin.text name="rg" id="rg" :value="old('rg', $reserva->clienteSolicitante->rg ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Passaporte" />
+                    <x-admin.text name="passaporte" id="passaporte" :value="old('passaporte', $reserva->clienteSolicitante->passaporte ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Órgão Expedidor" />
+                    <x-admin.text name="orgao_expedidor" id="orgao_expedidor" :value="old('orgao_expedidor', $reserva->clienteSolicitante->orgao_expedidor ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Profissão" />
+                    <x-admin.text name="profissao" id="profissao" :value="old('profissao', $reserva->clienteSolicitante->profissao ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+
+            <x-admin.field-group>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Data de Nascimento" />
+                    <x-admin.datepicker name="data_nascimento" id="data_nascimento"
+                        :value="old('data_nascimento', ($reserva->clienteSolicitante && $reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Sexo" />
+                    <x-admin.select name="sexo" id="sexo"
+                        :items="['M' => 'Masculino', 'F' => 'Feminino']"
+                        :selectedItem="old('sexo', $reserva->clienteSolicitante->sexo ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Estado Civil" />
+                    <x-admin.select name="estado_civil" id="estado_civil"
+                        :items="['Solteiro' => 'Solteiro', 'Casado' => 'Casado', 'Divorciado' => 'Divorciado', 'Viúvo' => 'Viúvo']"
+                        :selectedItem="old('estado_civil', $reserva->clienteSolicitante->estado_civil ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="3">
+                    <x-admin.label label="Nacionalidade" />
+                    <x-admin.text name="nacionalidade" id="nacionalidade" :value="old('nacionalidade', $reserva->clienteSolicitante->nacionalidade ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+
+            <x-admin.field-group>
+                <x-admin.field cols="3">
+                    <x-admin.label label="CEP" />
+                    <x-admin.text name="cep" id="cep_pf" :value="old('cep', $reserva->clienteSolicitante->cep ?? '')">
+                        <x-slot name="append">
+                            <button type="button" id="buscarCepButton" class="btn btn-secondary">Buscar</button>
+                        </x-slot>
+                    </x-admin.text>
+                </x-admin.field>
+                <x-admin.field cols="5">
+                    <x-admin.label label="Endereço" />
+                    <x-admin.text name="endereco" id="endereco" :value="old('endereco', $reserva->clienteSolicitante->endereco ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="2">
+                    <x-admin.label label="Número" />
+                    <x-admin.text name="numero" id="numero_pf" :value="old('numero', $reserva->clienteSolicitante->numero ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="2">
+                    <x-admin.label label="Compl." />
+                    <x-admin.text name="complemento" id="complemento" :value="old('complemento', $reserva->clienteSolicitante->complemento ?? '')"/>
+                </x-admin.field>
+            </x-admin.field-group>
+
+            <x-admin.field-group>
+                <x-admin.field cols="4">
+                    <x-admin.label label="Bairro" />
+                    <x-admin.text name="bairro" id="bairro" :value="old('bairro', $reserva->clienteSolicitante->bairro ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="4">
+                    <x-admin.label label="Cidade" />
+                    <x-admin.text name="cidade" id="cidade" :value="old('cidade', $reserva->clienteSolicitante->cidade ?? '')"/>
+                </x-admin.field>
+                <x-admin.field cols="2">
+                    <x-admin.label label="Estado (UF)" />
+                    <x-admin.text name="estado" id="estado_pf" :value="old('estado', $reserva->clienteSolicitante->estado ?? '')" maxlength="2" placeholder="SP"/>
+                </x-admin.field>
+                <x-admin.field cols="2">
+                    <x-admin.label label="País" />
+                    <x-admin.text name="pais" id="pais" :value="old('pais', $reserva->clienteSolicitante->pais ?? '')"/>
                 </x-admin.field>
             </x-admin.field-group>
         </div>
@@ -352,10 +442,30 @@
             $buscaCliente.on('select2:select', function (e) {
                 var cliente = e.params.data;
 
-                document.getElementById('nomeSolicitante').value = cliente.nome || '';
-                document.getElementById('cpf').value = cliente.cpf || '';
-                document.getElementById('modal_email').value = cliente.email || '';
-                document.getElementById('celular').value = cliente.celular || cliente.telefone || '';
+                document.getElementById('nomeSolicitante').value   = cliente.nome || '';
+                document.getElementById('cpf').value               = cliente.cpf || '';
+                document.getElementById('modal_email').value       = cliente.email || '';
+                document.getElementById('celular').value           = cliente.celular || '';
+                document.getElementById('telefone').value          = cliente.telefone || '';
+                document.getElementById('rg').value                = cliente.rg || '';
+                document.getElementById('passaporte').value        = cliente.passaporte || '';
+                document.getElementById('orgao_expedidor').value   = cliente.orgao_expedidor || '';
+                document.getElementById('profissao').value         = cliente.profissao || '';
+                document.getElementById('sexo').value              = cliente.sexo || '';
+                document.getElementById('estado_civil').value      = cliente.estado_civil || '';
+                document.getElementById('nacionalidade').value     = cliente.nacionalidade || '';
+                if (cliente.data_nascimento) {
+                    var p = cliente.data_nascimento.split('-');
+                    document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : cliente.data_nascimento;
+                }
+                document.getElementById('cep_pf').value            = cliente.cep || '';
+                document.getElementById('endereco').value          = cliente.endereco || '';
+                document.getElementById('numero_pf').value         = cliente.numero || '';
+                document.getElementById('complemento').value       = cliente.complemento || '';
+                document.getElementById('bairro').value            = cliente.bairro || '';
+                document.getElementById('cidade').value            = cliente.cidade || '';
+                document.getElementById('estado_pf').value         = cliente.estado || '';
+                document.getElementById('pais').value              = cliente.pais || '';
 
                 // Exibir campos ocultos pelo modo Pré Reserva
                 preReservaHide.style.display = 'block';
@@ -401,15 +511,32 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data) {
-                    // Preenche os campos do cliente se encontrado
-                    document.getElementById('nomeSolicitante').value = data.nome ?? '';
-                    document.getElementById('cpf').value = data.cpf ?? '';
-                    document.getElementById('modal_email').value = data.email ?? '';
-                    document.getElementById('celular').value = data.celular || data.telefone || '';
+                        document.getElementById('nomeSolicitante').value   = data.nome ?? '';
+                        document.getElementById('cpf').value               = data.cpf ?? '';
+                        document.getElementById('modal_email').value       = data.email ?? '';
+                        document.getElementById('celular').value           = data.celular ?? '';
+                        document.getElementById('telefone').value          = data.telefone ?? '';
+                        document.getElementById('rg').value                = data.rg ?? '';
+                        document.getElementById('passaporte').value        = data.passaporte ?? '';
+                        document.getElementById('orgao_expedidor').value   = data.orgao_expedidor ?? '';
+                        document.getElementById('profissao').value         = data.profissao ?? '';
+                        document.getElementById('sexo').value              = data.sexo ?? '';
+                        document.getElementById('estado_civil').value      = data.estado_civil ?? '';
+                        document.getElementById('nacionalidade').value     = data.nacionalidade ?? '';
+                        if (data.data_nascimento) {
+                            var p = data.data_nascimento.split('-');
+                            document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : data.data_nascimento;
+                        }
+                        document.getElementById('cep_pf').value            = data.cep ?? '';
+                        document.getElementById('endereco').value          = data.endereco ?? '';
+                        document.getElementById('numero_pf').value         = data.numero ?? '';
+                        document.getElementById('complemento').value       = data.complemento ?? '';
+                        document.getElementById('bairro').value            = data.bairro ?? '';
+                        document.getElementById('cidade').value            = data.cidade ?? '';
+                        document.getElementById('estado_pf').value         = data.estado ?? '';
+                        document.getElementById('pais').value              = data.pais ?? '';
 
-                    // Exibir campos ocultos pelo modo Pré Reserva
-                    preReservaHide.style.display = 'block';
-
+                        preReservaHide.style.display = 'block';
                     }
                 })
                 .catch(error => {
@@ -557,6 +684,38 @@
             }
         });
 
+
+        // Busca de CEP via ViaCEP
+        function preencherEnderecoPorCep(cep) {
+            cep = cep.replace(/\D/g, '');
+            if (cep.length !== 8) return;
+            fetch('https://viacep.com.br/ws/' + cep + '/json/')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.erro) { alert('CEP não encontrado.'); return; }
+                    document.getElementById('endereco').value  = d.logradouro || '';
+                    document.getElementById('bairro').value    = d.bairro     || '';
+                    document.getElementById('cidade').value    = d.localidade || '';
+                    document.getElementById('estado_pf').value = d.uf         || '';
+                    if (!document.getElementById('pais').value) {
+                        document.getElementById('pais').value = 'Brasil';
+                    }
+                })
+                .catch(function() { alert('Erro ao buscar CEP.'); });
+        }
+
+        var buscarCepBtn = document.getElementById('buscarCepButton');
+        var cepInput     = document.getElementById('cep_pf');
+        if (buscarCepBtn) {
+            buscarCepBtn.addEventListener('click', function() {
+                preencherEnderecoPorCep(cepInput.value);
+            });
+        }
+        if (cepInput) {
+            cepInput.addEventListener('blur', function() {
+                preencherEnderecoPorCep(this.value);
+            });
+        }
 
         const isFormattedDate = (dateStr) => {
                 const regex = /^\d{2}-\d{2}-\d{4}$/;

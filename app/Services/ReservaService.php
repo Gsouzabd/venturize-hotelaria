@@ -88,7 +88,12 @@ class ReservaService
         }
 
         if (!empty($data['data_nascimento'])) {
-            $data['data_nascimento'] = Carbon::createFromFormat('d/m/Y', $data['data_nascimento'])->format('Y-m-d');
+            foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $fmt) {
+                try {
+                    $data['data_nascimento'] = Carbon::createFromFormat($fmt, $data['data_nascimento'])->format('Y-m-d');
+                    break;
+                } catch (\Exception $e) { /* tenta próximo */ }
+            }
         }
         // Buscar ou criar o cliente solicitante
         $clienteSolicitante = null;
@@ -101,15 +106,22 @@ class ReservaService
                 'telefone' => $data['telefone'] ?? null,
                 'celular' => $data['celular'] ?? null,
                 'data_nascimento' => $data['data_nascimento'] ?? null,
-                'rg' => $data['rg'] ?? null,
-                'estrangeiro' => 'Não',
-                'cep' => $data['cep'] ?? null,
-                'endereco' => $data['endereco'] ?? null,
-                'cidade' => $data['cidade'] ?? null,
-                'estado' => $data['estado'] ?? null,
-                'pais' => $data['pais'] ?? null,
-                'numero' => $data['numero'] ?? null,
-                'bairro' => $data['bairro'] ?? null,
+                'rg'              => $data['rg'] ?? null,
+                'passaporte'      => $data['passaporte'] ?? null,
+                'orgao_expedidor' => $data['orgao_expedidor'] ?? null,
+                'sexo'            => $data['sexo'] ?? null,
+                'estado_civil'    => $data['estado_civil'] ?? null,
+                'profissao'       => $data['profissao'] ?? null,
+                'nacionalidade'   => $data['nacionalidade'] ?? null,
+                'estrangeiro'     => 'Não',
+                'cep'             => $data['cep'] ?? null,
+                'endereco'        => $data['endereco'] ?? null,
+                'numero'          => $data['numero'] ?? null,
+                'complemento'     => $data['complemento'] ?? null,
+                'bairro'          => $data['bairro'] ?? null,
+                'cidade'          => $data['cidade'] ?? null,
+                'estado'          => $data['estado'] ?? null,
+                'pais'            => $data['pais'] ?? null,
             ];
 
             // Primeiro tenta achar pelo CPF normalizado, para não trocar o CPF de outro registro
