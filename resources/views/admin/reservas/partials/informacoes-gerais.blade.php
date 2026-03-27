@@ -339,6 +339,58 @@
         </x-admin.field-group>
         
         <button type="button" id="saveInfoButton" class="btn btn-primary">Salvar Informações Gerais</button>
+
+        @if ($edit && !in_array($reserva->situacao_reserva, ['CANCELADA', 'FINALIZADO']))
+            <hr class="mt-4"/>
+            <h5><i class="fas fa-sign-in-alt"></i> Check-in</h5>
+
+            @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'cancelado']))
+                <div class="alert alert-info" style="background: {{\App\Models\Reserva::SITUACOESRESERVA[$reserva->situacao_reserva]['background']}}; color: white">
+                    O status da reserva já foi atualizado para: <strong>{{ $reserva->situacao_reserva }}.</strong>
+                    <br/><br/>
+                    <strong>Data da operação: </strong> {{$reserva->checkin ? timestamp_br($reserva->checkin->checkin_at) : '' }}
+                    <input class="form-check-input" type="hidden" name="situacao_reserva" id="confirmarCheckin" value={{ $reserva->situacao_reserva }}>
+                </div>
+            @else
+                <div class="d-flex justify-content-start mt-2" style="gap: 20px">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="situacao_reserva" id="confirmarCheckin" value="hospedado" {{ $reserva->situacao_reserva == 'hospedado' ? 'checked' : '' }}>
+                        <label class="form-check-label btn btn-success" for="confirmarCheckin">
+                            <i class="fas fa-check"></i> Check-in
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="situacao_reserva" id="noShow" value="no show" {{ $reserva->situacao_reserva == 'no show' ? 'checked' : '' }}>
+                        <label class="form-check-label btn btn-warning" for="noShow">
+                            <i class="fas fa-times-circle"></i> No Show
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="situacao_reserva" id="cancelado" value="cancelada" {{ $reserva->situacao_reserva == 'cancelada' ? 'checked' : '' }}>
+                        <label class="form-check-label btn btn-danger" for="cancelado">
+                            <i class="fas fa-ban"></i> Cancelado
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button id="confirmCheckinButton" class="btn btn-primary" style="display: none;">Confirmar</button>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const checkinRadios = document.querySelectorAll('input[name="situacao_reserva"][type="radio"]');
+                        const confirmCheckinButton = document.getElementById('confirmCheckinButton');
+
+                        checkinRadios.forEach(radio => {
+                            radio.addEventListener('change', function () {
+                                confirmCheckinButton.style.display = 'block';
+                            });
+                        });
+                    });
+                </script>
+            @endif
+        @endif
     </div>
 </div>
 

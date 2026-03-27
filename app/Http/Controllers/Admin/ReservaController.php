@@ -318,9 +318,16 @@ class ReservaController extends Controller
             dd($e->getMessage());
         }
         
+        $reservaId = $request->get('reserva_id');
+        if ($reservaId) {
+            return redirect()
+                ->route('admin.reservas.edit', ['id' => $reservaId])
+                ->with('notice', config('app.messages.update'));
+        }
+
         return redirect()
                     ->route('admin.reservas.mapa')
-                    ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
+                    ->with('notice', config('app.messages.insert'));
     }
 
     public function destroy($id)
@@ -356,11 +363,11 @@ class ReservaController extends Controller
             }
     
             return redirect()
-                ->route('admin.reservas.index')
+                ->route('admin.reservas.edit', ['id' => $reserva->id])
                 ->with('notice', 'Situação da reserva atualizada com sucesso.');
         } catch (\Exception $e) {
             return redirect()
-                ->route('admin.reservas.index')
+                ->route('admin.reservas.edit', ['id' => $id])
                 ->with('error', 'Erro ao atualizar a situação da reserva: ' . $e->getMessage());
         }
     }

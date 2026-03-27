@@ -31,21 +31,6 @@
                         </a>
                     </li>
                 @endif
-                @if ($reserva->situacao_reserva != 'CANCELADA' && $reserva->situacao_reserva != 'FINALIZADO')
-                    @if (in_array($reserva->situacao_reserva, ['HOSPEDADO', 'NO SHOW', 'CANCELADO']))
-                        <li class="nav-item">
-                            <a class="nav-link {{$edit ? '' : 'disabled'}} checkin-done" id="checkin-tab" data-toggle="tab" href="#checkin" role="tab" aria-controls="checkin" aria-selected="false">
-                                </i> Check-in <i class="fas fa-check-circle"></i>
-                            </a>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="nav-link {{$edit ? '' : 'disabled'}}" id="checkin-tab" data-toggle="tab" href="#checkin" role="tab" aria-controls="checkin" aria-selected="false">
-                                <i class="fas fa-sign-in-alt"></i> Check-in
-                            </a>
-                        </li>
-                    @endif
-                @endif
                 
                 @if ($edit)
                     <li class="nav-item">
@@ -104,10 +89,6 @@
                 @if ($reserva->situacao_reserva == 'HOSPEDADO' || $reserva->situacao_reserva == 'FINALIZADO')
                     <!-- Tab 5: Check-out -->
                     @include('admin.reservas.partials.checkout')
-                @endif
-                @if ($reserva->situacao_reserva != 'FINALIZADO')
-                    <!-- Tab 4: Check-in -->
-                    @include('admin.reservas.partials.checkin')
                 @endif
                 @if ($edit)
                     <!-- Tab: Acompanhantes -->
