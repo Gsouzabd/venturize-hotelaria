@@ -12,6 +12,8 @@
                     <div>Painel</div>
                 </a>
             </li>
+
+            @can('visualizar_reservas')
             <li class="sidenav-item{{ is_active_path('admin/reservas/mapa') ? ' active' : '' }}">
                 <a href="{{ route('admin.reservas.mapa') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-calendar-check"></i>
@@ -32,7 +34,9 @@
                     </li>
                 </ul>
             </li>
+            @endcan
 
+            @can('visualizar_quartos')
             <li class="sidenav-item{{ is_active_path('admin/quartos') ? ' active' : '' }}">
                 <a href="{{ route('admin.quartos.index') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-bed"></i>
@@ -53,7 +57,10 @@
                     </li>
                 </ul>
             </li>
-                <!-- Produtos Menu -->
+            @endcan
+
+            @can('visualizar_produtos')
+            <!-- Produtos Menu -->
             <li class="sidenav-item{{ is_active_path('admin/produtos') ? ' active' : '' }}">
                 <a href="{{ route('admin.produtos.index') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-box"></i>
@@ -69,7 +76,9 @@
                     </li>
                 </ul>
             </li>
-            
+            @endcan
+
+            @can('visualizar_estoque')
             <!-- Estoque Menu -->
             <li class="sidenav-item{{ is_active_path('admin/estoque') ? ' active' : '' }}">
                 <a href="{{ route('admin.estoque.index') }}" class="sidenav-link">
@@ -93,25 +102,44 @@
                     </li>
                 </ul>
             </li>
+            @endcan
+
+            @can('visualizar_clientes')
             <li class="sidenav-item{{ is_active_path('admin/clientes') ? ' active' : '' }}">
                 <a href="{{ route('admin.clientes.index') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-user-tie"></i>
                     <div>Clientes</div>
                 </a>
             </li>
-            <li class="sidenav-item{{ is_active_path('admin/usuarios') ? ' active' : '' }}">
+            @endcan
+
+            @can('gerenciar_usuarios')
+            <li class="sidenav-item{{ is_active_path('admin/usuarios') || is_active_path('admin/grupos-usuarios') ? ' active open' : '' }}">
                 <a href="{{ route('admin.usuarios.index') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-users"></i>
                     <div>Usuários</div>
                 </a>
+                <ul class="sidenav-submenu">
+                    <li class="sidenav-item{{ is_active_path('admin/grupos-usuarios') ? ' active' : '' }}">
+                        <a href="{{ route('admin.grupos-usuarios.index') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-users-cog"></i>
+                            <span>Grupos de Usuários</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
+            @endcan
+
+            @can('gerenciar_impressoras')
             <li class="sidenav-item{{ is_active_path('admin/impressoras') ? ' active' : '' }}">
                 <a href="{{ route('admin.impressoras.index') }}" class="sidenav-link">
                     <i class="sidenav-icon fas fa-print"></i>
                     <div>Impressoras</div>
                 </a>
             </li>
-            
+            @endcan
+
+            @can('visualizar_despesas')
             <!-- Despesas Menu -->
             <li class="sidenav-item{{ is_active_path('admin/despesas') ? ' active' : '' }}">
                 <a href="{{ route('admin.despesas.index') }}" class="sidenav-link">
@@ -135,7 +163,9 @@
                     </li>
                 </ul>
             </li>
-        @else  
+            @endcan
+
+        @else
 
         <li class="sidenav-item{{ is_active_path('admin') ? ' active' : '' }}">
             <a href="{{ route('admin.bar.home') }}" class="sidenav-link">
@@ -143,7 +173,8 @@
                 <div>Dashboard</div>
             </a>
         </li>
-            
+
+        @can('visualizar_bar')
         <li class="sidenav-item{{ is_active_path('admin/mesas') ? ' active' : '' }}">
             <a href="{{ route('admin.bar.mesas.index') }}" class="sidenav-link">
                 <i class="sidenav-icon fas fa-utensils"></i>
@@ -156,6 +187,8 @@
                 <div>Pedidos</div>
             </a>
         </li>
+        @endcan
+
         @endif
 
     </ul>

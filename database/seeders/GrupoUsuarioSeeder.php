@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Permissao;
 use App\Models\GrupoUsuario;
-use App\Models\Usuario; // Certifique-se de importar o model Usuario
+use App\Models\Usuario;
 use Illuminate\Database\Seeder;
 
 class GrupoUsuarioSeeder extends Seeder
@@ -12,44 +12,29 @@ class GrupoUsuarioSeeder extends Seeder
     public function run()
     {
         // Criar Grupos de Usuários
-        $administrador = GrupoUsuario::create(['nome' => 'Administrador']);
-        $gerente = GrupoUsuario::create(['nome' => 'Gerente']);
+        $administrador = GrupoUsuario::firstOrCreate(['nome' => 'Administrador']);
+        $gerente = GrupoUsuario::firstOrCreate(['nome' => 'Gerente']);
 
-        // Verificar se os grupos foram criados corretamente
-        if (!$administrador || !$gerente) {
-            dd('Erro ao criar grupos de usuários!');
+        // Criar todas as permissões definidas no config
+        $permissoesConfig = config('app.enums.permissoes_plano', []);
+        $permissaoIds = [];
+
+        foreach ($permissoesConfig as $nome => $label) {
+            $permissao = Permissao::firstOrCreate(['nome' => $nome]);
+            $permissaoIds[] = $permissao->id;
         }
 
-        // Definir Permissões
-        $permissoes = [
-            'visualizar_relatorios',
-            'gerenciar_reservas',
-            'gerenciar_usuarios',
-        ];
+        // Associar todas as permissões ao grupo Administrador
+        $administrador->permissoes()->sync($permissaoIds);
 
-        foreach ($permissoes as $permissaoNome) {
-            // Criar a permissão
-            $permissao = Permissao::create(['nome' => $permissaoNome]);
+        // Associar todas as permissões ao grupo Gerente
+        $gerente->permissoes()->sync($permissaoIds);
 
-            // Verificar se a permissão foi criada corretamente
-            if (!$permissao) {
-                dd('Erro ao criar permissão: ' . $permissaoNome);
-            }
-
-            // Associar permissões ao grupo Administrador
-            $administrador->permissoes()->attach($permissao->id);
-
-            // Associar ao grupo Gerente (agora incluindo 'gerenciar_usuarios')
-            $gerente->permissoes()->attach($permissao->id);
-        }
-
-        // Relacionar o usuário de ID 1 ao grupo Gerente
+        // Relacionar o usuário de ID 1 ao grupo Administrador
         $usuario = Usuario::find(1);
         if ($usuario) {
-            $usuario->grupo_usuario_id = $gerente->id;
+            $usuario->grupo_usuario_id = $administrador->id;
             $usuario->save();
-        } else {
-            dd('Usuário com ID 1 não encontrado.');
         }
     }
 }

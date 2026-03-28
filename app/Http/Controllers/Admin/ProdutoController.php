@@ -20,6 +20,8 @@ class ProdutoController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_produtos');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
         $filters['categoria_id'] ??= '';
@@ -60,6 +62,8 @@ class ProdutoController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_produtos');
+
         $edit = boolval($id);
         $produto = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
         $categorias = Categoria::all();
@@ -69,8 +73,10 @@ class ProdutoController extends Controller
 
     public function save(Request $request)
     {
+        $this->authorize('gerenciar_produtos');
+
         $data = $request->all();
-    
+
         // Save the main product data
         if ($id = $request->get('id')) {
             $produto = $this->model->findOrFail($id);
@@ -104,6 +110,8 @@ class ProdutoController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_produtos');
+
         $produto = $this->model->findOrFail($id);
         $produto->delete();
 
@@ -115,6 +123,8 @@ class ProdutoController extends Controller
 
     public function search(Request $request)
     {
+        $this->authorize('visualizar_produtos');
+
         $query = $request->get('query');
         $produtos = Produto::where('descricao', 'like', "%{$query}%")->get(['id', 'descricao', 'unidade']);
     

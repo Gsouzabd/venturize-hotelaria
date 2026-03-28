@@ -18,6 +18,8 @@ class QuartoController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_quartos');
+
         $filters = $request->all();
         $filters['andar'] ??= '';
         $filters['numero'] ??= '';
@@ -41,6 +43,8 @@ class QuartoController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_quartos');
+
         $edit = boolval($id);
         $quarto = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -51,6 +55,8 @@ class QuartoController extends Controller
 
     public function save(Request $request)
     {
+        $this->authorize('gerenciar_quartos');
+
         $id = $request->get('id');
 
         // Validação para não permitir dois quartos com o mesmo número
@@ -88,6 +94,8 @@ class QuartoController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_quartos');
+
         $quarto = $this->model->findOrFail($id);
         $quarto->delete();
 

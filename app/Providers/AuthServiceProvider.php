@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Models\Usuario;
-use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -23,10 +22,9 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('usar-admin', fn(Usuario $usuario) => $usuario->fl_ativo && $usuario->tipo == 'administrador');
+        Gate::define('usar-admin', fn(Usuario $usuario) => $usuario->fl_ativo && $usuario->grupo_usuario_id !== null);
         $this->registerPolicies();
 
-        Passport::routes();
         foreach (array_keys(config('app.enums.permissoes_plano')) as $permissao) {
             Gate::define($permissao, fn(Usuario $usuario) => $usuario->temPermissao($permissao));
         }

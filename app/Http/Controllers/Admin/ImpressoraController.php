@@ -21,6 +21,8 @@ class ImpressoraController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('gerenciar_impressoras');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
         $filters['ativo'] ??= '';
@@ -45,6 +47,8 @@ class ImpressoraController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_impressoras');
+
         $edit = boolval($id);
         $impressora = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -53,6 +57,8 @@ class ImpressoraController extends Controller
 
     public function save(ImpressoraRequest $request)
     {
+        $this->authorize('gerenciar_impressoras');
+
         $data = $request->all();
         
         // Converter checkbox ativo
@@ -83,6 +89,8 @@ class ImpressoraController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_impressoras');
+
         $impressora = $this->model->findOrFail($id);
         $impressora->delete();
 
@@ -105,6 +113,8 @@ class ImpressoraController extends Controller
      */
     public function testar($id): JsonResponse
     {
+        $this->authorize('gerenciar_impressoras');
+
         try {
             $impressora = $this->model->findOrFail($id);
             

@@ -18,6 +18,8 @@ class FornecedorController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('gerenciar_fornecedores');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
         $filters['cnpj'] ??= '';
@@ -41,6 +43,8 @@ class FornecedorController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_fornecedores');
+
         $edit = boolval($id);
         $fornecedor = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -49,6 +53,8 @@ class FornecedorController extends Controller
 
     public function save(FornecedorRequest $request)
     {
+        $this->authorize('gerenciar_fornecedores');
+
         $data = $request->validated();
 
         if ($id = $request->get('id')) {
@@ -74,6 +80,8 @@ class FornecedorController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_fornecedores');
+
         $fornecedor = $this->model->findOrFail($id);
         
         // Verificar se o fornecedor está em uso
@@ -92,6 +100,8 @@ class FornecedorController extends Controller
 
     public function search(Request $request)
     {
+        $this->authorize('gerenciar_fornecedores');
+
         $query = $request->get('q', '');
 
         if (strlen($query) < 3) {

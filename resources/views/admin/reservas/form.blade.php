@@ -102,6 +102,14 @@
                 @endif
 
             </div>
+
+            @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+                <div class="mt-3 p-3 bg-light border rounded" style="position: sticky; bottom: 0; z-index: 10;">
+                    <button type="submit" class="btn btn-success btn-lg btn-block">
+                        <i class="fas fa-save"></i> Salvar Alterações da Reserva
+                    </button>
+                </div>
+            @endif
         </div>
 
     </x-admin.reserva-form>

@@ -26,6 +26,8 @@ class DespesaController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_despesas');
+
         $filters = $request->all();
         $filters['numero_nota_fiscal'] ??= '';
         $filters['data_inicial'] ??= '';
@@ -71,6 +73,8 @@ class DespesaController extends Controller
 
     public function edit(Request $request, $id = null)
     {
+        $this->authorize('gerenciar_despesas');
+
         $edit = boolval($id);
         $despesa = $edit ? $this->model->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->findOrFail($id) : $this->model->newInstance();
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
@@ -82,6 +86,8 @@ class DespesaController extends Controller
 
     public function save(DespesaRequest $request)
     {
+        $this->authorize('gerenciar_despesas');
+
         $data = $request->validated();
         $edit = $request->has('id');
         $despesa = null;
@@ -171,6 +177,8 @@ class DespesaController extends Controller
 
     public function show($id)
     {
+        $this->authorize('visualizar_despesas');
+
         $despesa = $this->model->with(['usuario', 'fornecedor', 'despesaCategorias.categoriaDespesa'])->findOrFail($id);
         
         return view('admin.despesas.show', compact('despesa'));
@@ -178,6 +186,8 @@ class DespesaController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $this->authorize('gerenciar_despesas');
+
         $despesa = $this->model->findOrFail($id);
         
         if ($despesa->arquivo_nota) {
@@ -198,6 +208,8 @@ class DespesaController extends Controller
 
     public function relatorios(Request $request)
     {
+        $this->authorize('visualizar_despesas');
+
         $filters = $request->all();
         $filters['data_inicial'] ??= Carbon::now()->startOfMonth()->format('d/m/Y');
         $filters['data_final'] ??= Carbon::now()->format('d/m/Y');
@@ -246,6 +258,8 @@ class DespesaController extends Controller
 
     public function exportarConsolidado(Request $request)
     {
+        $this->authorize('visualizar_despesas');
+
         $filters = $request->all();
         $filters['data_inicial'] ??= Carbon::now()->startOfMonth()->format('d/m/Y');
         $filters['data_final'] ??= Carbon::now()->format('d/m/Y');
@@ -328,6 +342,8 @@ class DespesaController extends Controller
 
     public function exportarDetalhado(Request $request)
     {
+        $this->authorize('visualizar_despesas');
+
         $filters = $request->all();
         $filters['data_inicial'] ??= Carbon::now()->startOfMonth()->format('d/m/Y');
         $filters['data_final'] ??= Carbon::now()->format('d/m/Y');

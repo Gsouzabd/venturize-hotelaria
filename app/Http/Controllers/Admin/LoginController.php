@@ -32,11 +32,12 @@ class LoginController extends Controller
                 throw new Exception('Usuário inativo.');
             }
 
-            if ($usuario->tipo != 'administrador'&& $usuario->tipo != 'gerente') {
-                throw new Exception('Usuário sem permissão para acessar o recurso.');
+            if (!$usuario->grupo_usuario_id) {
+                throw new Exception('Usuário sem grupo de acesso definido.');
             }
 
             Auth::guard('admin')->login($usuario);
+            $usuario->load('grupoUsuario.permissoes');
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }

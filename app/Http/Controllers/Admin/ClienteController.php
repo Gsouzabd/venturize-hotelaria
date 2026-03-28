@@ -17,6 +17,8 @@ class ClienteController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_clientes');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
         $filters['email'] ??= '';
@@ -40,6 +42,8 @@ class ClienteController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_clientes');
+
         $edit = boolval($id);
         $cliente = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -48,6 +52,8 @@ class ClienteController extends Controller
 
     public function save(Request $request)
     {
+        $this->authorize('gerenciar_clientes');
+
         $data = $request->all();
 
         $data['data_nascimento']  = parseDateVenturize($data['data_nascimento']);
@@ -64,6 +70,8 @@ class ClienteController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_clientes');
+
         $cliente = $this->model->findOrFail($id);
         $cliente->delete();
 
@@ -75,12 +83,16 @@ class ClienteController extends Controller
 
     public function findById($id)
     {
+        $this->authorize('visualizar_clientes');
+
         $cliente = $this->model->findOrFail($id);
         return response()->json($cliente);
     } 
 
     public function findByCpf($cpf)
     {
+        $this->authorize('visualizar_clientes');
+
         $cliente = $this->model->where('cpf', $cpf)->firstOrFail();
         if(!$cliente) {
             return response()->json(['message' => 'Cliente não encontrado'], 404);
@@ -91,6 +103,8 @@ class ClienteController extends Controller
 
     public function search(Request $request)
     {
+        $this->authorize('visualizar_clientes');
+
         $query = $request->get('q', $request->get('query', ''));
 
         if (strlen($query) < 2) {

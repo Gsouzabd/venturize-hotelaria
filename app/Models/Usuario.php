@@ -40,6 +40,9 @@ class Usuario extends Authenticatable
     // Verificar permissões
     public function temPermissao(string $permissao): bool
     {
+        if (!$this->grupoUsuario) {
+            return false;
+        }
         return $this->grupoUsuario->permissoes->contains('nome', $permissao);
     }
 

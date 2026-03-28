@@ -18,6 +18,8 @@ class CategoriaDespesaController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_despesas');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
         $filters['fl_ativo'] ??= '';
@@ -41,6 +43,8 @@ class CategoriaDespesaController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_despesas');
+
         $edit = boolval($id);
         $categoria = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -49,6 +53,8 @@ class CategoriaDespesaController extends Controller
 
     public function save(CategoriaDespesaRequest $request)
     {
+        $this->authorize('gerenciar_despesas');
+
         $data = $request->validated();
         $data['fl_ativo'] = $request->has('fl_ativo') ? true : false;
 
@@ -65,8 +71,10 @@ class CategoriaDespesaController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_despesas');
+
         $categoria = $this->model->findOrFail($id);
-        
+
         // Verificar se a categoria está em uso
         if ($categoria->despesaCategorias()->count() > 0) {
             return redirect()

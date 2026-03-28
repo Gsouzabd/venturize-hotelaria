@@ -21,7 +21,8 @@ class UsuarioController extends Controller
     }
 
     public function index(Request $request)
-    {  
+    {
+        $this->authorize('gerenciar_usuarios');
 
         $filters = $request->all();
         $filters['nome'] ??= '';
@@ -56,6 +57,8 @@ class UsuarioController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_usuarios');
+
         $edit = boolval($id);
         $usuario = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -67,6 +70,8 @@ class UsuarioController extends Controller
 
     public function save(UsuarioRequest $request)
     {
+        $this->authorize('gerenciar_usuarios');
+
         $data = $request->all();
         $data['fl_ativo'] ??= 0;
 
@@ -87,6 +92,8 @@ class UsuarioController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_usuarios');
+
         $usuario = $this->model->findOrFail($id);
         abort_if($usuario->reservas()->exists(), 403, 'Não é possível excluir porque está vinculado a uma reserva.');
 
@@ -99,6 +106,8 @@ class UsuarioController extends Controller
 
     public function resendPassword($id)
     {
+        $this->authorize('gerenciar_usuarios');
+
         $usuario = $this->model->findOrFail($id);
 
         $usuario->senha = $senha = Str::random(8);

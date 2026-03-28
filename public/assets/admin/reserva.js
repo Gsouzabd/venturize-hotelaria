@@ -169,7 +169,7 @@ async function adicionarQuartoAoCart(
     } else {
         // Renderizar acompanhantes calculados dinamicamente
         acompanhantesHtml += renderAcompanhantes(Array(adultos).fill({ tipo: 'Adulto' }), quartoId);
-        acompanhantesHtml += renderAcompanhantes(Array(criancas_mais_7).fill({ tipo: 'Criança mais de 7 anos' }), quartoId);
+        acompanhantesHtml += renderAcompanhantes(Array(criancas_mais_7).fill({ tipo: 'Criança 8 a 12 anos' }), quartoId);
         acompanhantesHtml += renderAcompanhantes(Array(criancas_ate_7).fill({ tipo: 'Criança até 7 anos' }), quartoId);
     }
 
@@ -1160,14 +1160,13 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
             if (situacao_reserva.value == 'RESERVADO') {
                 console.log('irei definir os campos como required');
                 const camposReservado = document.querySelectorAll('#pre-reserva-hide input, #pre-reserva-hide select');
+                const camposNaoObrigatorios = ['rg', 'telefone', 'passaporte', 'orgao_expedidor', 'profissao', 'estado_civil', 'nacionalidade', 'complemento'];
                 camposReservado.forEach(campo => {
-                    // Nunca tornar RG obrigatório
-                    if (campo.id === 'rg' || campo.name === 'rg') {
+                    if (camposNaoObrigatorios.includes(campo.id) || camposNaoObrigatorios.includes(campo.name)) {
                         campo.removeAttribute('required');
                         return;
                     }
                     campo.setAttribute('required', 'required');
-                    console.log('campo definido como required', campo);
                 });  
             }     
         }  

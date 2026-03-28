@@ -22,6 +22,8 @@ class MovimentacaoEstoqueController extends Controller
 
     public function index()
     {
+        $this->authorize('visualizar_estoque');
+
         // Carregar locais de estoque com movimentações de origem e destino
         $locaisEstoque = LocalEstoque::with(['movimentacoesOrigem.produto', 'movimentacoesOrigem.usuario', 'movimentacoesDestino.produto', 'movimentacoesDestino.usuario'])->get();
         
@@ -30,6 +32,8 @@ class MovimentacaoEstoqueController extends Controller
     
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_estoque');
+
         $transferencia = false;
 
         if (strpos(url()->current(), 'transf') !== false) {
@@ -52,7 +56,9 @@ class MovimentacaoEstoqueController extends Controller
 
     // Método unificado para movimentações
     public function save(Request $request)
-    {    
+    {
+        $this->authorize('gerenciar_estoque');
+
         // Processar movimentações
         $result = $this->movimentacaoEstoqueService->handleMovimentacoes($request);
     

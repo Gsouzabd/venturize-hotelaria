@@ -41,6 +41,8 @@ class ReservaController extends Controller
      */
     public function calcularDayUse(Request $request)
     {
+        $this->authorize('visualizar_reservas');
+
         // GET envia com_cafe como string "true"/"false"; normalizar para validação boolean
         $request->merge([
             'com_cafe' => filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
@@ -68,6 +70,8 @@ class ReservaController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_reservas');
+
         $filters = $request->all();
         $filters['cliente_id'] ??= '';
         $filters['quarto_id'] ??= '';
@@ -159,6 +163,8 @@ class ReservaController extends Controller
 
     public function mapa(Request $request)
     {
+        $this->authorize('visualizar_reservas');
+
         // Validação e filtragem dos parâmetros
         $dataInicial = $request->input('data_inicial')
         ? Carbon::parse($request->input('data_inicial'))->startOfWeek() 
@@ -193,6 +199,8 @@ class ReservaController extends Controller
     }
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_reservas');
+
         $edit = boolval($id);
         $reserva = $edit ? $this->model->with(['pagamentos', 'acompanhantes'])->findOrFail($id) : $this->model->newInstance();
         $clientes = Cliente::pluck('nome', 'id')->toArray();
@@ -244,6 +252,8 @@ class ReservaController extends Controller
 
     public function save(ReservaRequest $request)
     {
+        $this->authorize('gerenciar_reservas');
+
         // dd($request->all());
         $data = $request->all();
         
@@ -332,6 +342,8 @@ class ReservaController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $reserva = $this->model->findOrFail($id);
         $reserva->delete();
 
@@ -343,6 +355,7 @@ class ReservaController extends Controller
     
     function updateSituacaoReserva($id, $situacao_reserva)
     {
+        $this->authorize('gerenciar_reservas');
 
         try {
             $reserva = $this->model->findOrFail($id);
@@ -374,11 +387,15 @@ class ReservaController extends Controller
 
     public function gerarFichaNacional($id)
     {
+        $this->authorize('gerenciar_reservas');
+
         return $this->reservaService->gerarFichaNacional($id);
     }
 
     public function gerarExtrato($id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $reserva = Reserva::with(['quarto', 'pedidos' => function ($query) {
             $query->orderBy('created_at', 'desc');
         }])->findOrFail($id);
@@ -426,6 +443,8 @@ class ReservaController extends Controller
 
     public function removerTaxaServico($id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $reserva = Reserva::findOrFail($id);
         $reserva->remover_taxa_servico = 1;
         $reserva->save();
@@ -435,6 +454,8 @@ class ReservaController extends Controller
 
     public function moverReserva(Request $request, $id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $request->validate([
             'quarto_id'    => 'required|integer|exists:quartos,id',
             'data_checkin' => 'required|date',
@@ -473,6 +494,8 @@ class ReservaController extends Controller
 
     public function transferirApartamento(Request $request, $id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $request->validate([
             'quarto_id'          => 'required|integer|exists:quartos,id',
             'data_transferencia' => 'required|string',
@@ -562,25 +585,48 @@ class ReservaController extends Controller
 
     public function adicionarAcompanhante(Request $request, $id)
     {
+        $this->authorize('gerenciar_reservas');
+
         $reserva = Reserva::findOrFail($id);
 
         $request->validate([
             'nome'           => 'required|string|max:255',
             'cpf'            => 'nullable|string|max:20',
-            'tipo'           => 'required|in:Adulto,Criança mais de 7 anos,Criança até 7 anos',
+            'tipo'           => 'required|in:Adulto,Criança 8 a 12 anos,Criança até 7 anos',
             'data_nascimento'=> 'nullable|date',
             'email'          => 'nullable|email|max:255',
             'telefone'       => 'nullable|string|max:20',
         ]);
 
-        // Tenta vincular a um cliente existente pelo CPF
+        // Tenta vincular a um cliente existente pelo CPF ou cria um novo
         $clienteId = null;
         if ($request->filled('cpf')) {
             $cpfLimpo = preg_replace('/\D/', '', $request->cpf);
             $cliente = \App\Models\Cliente::where('cpf', 'like', "%{$cpfLimpo}%")->first();
             if ($cliente) {
                 $clienteId = $cliente->id;
+            } else {
+                // Auto-criar cliente para o acompanhante
+                $cliente = \App\Models\Cliente::create([
+                    'nome'           => $request->nome,
+                    'cpf'            => $request->cpf,
+                    'email'          => $request->email,
+                    'telefone'       => $request->telefone,
+                    'data_nascimento'=> $request->data_nascimento,
+                    'fl_ativo'       => true,
+                ]);
+                $clienteId = $cliente->id;
             }
+        } elseif ($request->filled('nome')) {
+            // Criar cliente mesmo sem CPF para permitir edição
+            $cliente = \App\Models\Cliente::create([
+                'nome'           => $request->nome,
+                'email'          => $request->email,
+                'telefone'       => $request->telefone,
+                'data_nascimento'=> $request->data_nascimento,
+                'fl_ativo'       => true,
+            ]);
+            $clienteId = $cliente->id;
         }
 
         $acompanhante = \App\Models\Acompanhante::create([
@@ -604,6 +650,8 @@ class ReservaController extends Controller
 
     public function removerAcompanhante($id, $aid)
     {
+        $this->authorize('gerenciar_reservas');
+
         Reserva::findOrFail($id);
         $acompanhante = \App\Models\Acompanhante::where('reserva_id', $id)->findOrFail($aid);
         $acompanhante->delete();
@@ -613,6 +661,8 @@ class ReservaController extends Controller
 
     public function salvarRefeicoes(Request $request, $id)
     {
+        $this->authorize('gerenciar_reservas');
+
         Reserva::findOrFail($id);
 
         \App\Models\ReservaRefeicao::where('reserva_id', $id)->delete();

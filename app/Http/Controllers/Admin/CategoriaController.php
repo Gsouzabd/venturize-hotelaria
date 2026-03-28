@@ -17,6 +17,8 @@ class CategoriaController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_produtos');
+
         $filters = $request->all();
         $filters['nome'] ??= '';
 
@@ -35,6 +37,8 @@ class CategoriaController extends Controller
 
     public function edit($id = null)
     {
+        $this->authorize('gerenciar_produtos');
+
         $edit = boolval($id);
         $categoria = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
@@ -43,6 +47,8 @@ class CategoriaController extends Controller
 
     public function save(Request $request)
     {
+        $this->authorize('gerenciar_produtos');
+
         $data = $request->all();
 
         if ($id = $request->get('id')) {
@@ -58,6 +64,8 @@ class CategoriaController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_produtos');
+
         $categoria = $this->model->findOrFail($id);
         $categoria->delete();
 

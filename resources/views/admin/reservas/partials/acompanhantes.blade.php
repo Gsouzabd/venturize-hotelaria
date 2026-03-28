@@ -65,7 +65,7 @@
                     <label>Tipo <span class="text-danger">*</span></label>
                     <select id="acomp_tipo" class="form-control">
                         <option value="Adulto">Adulto</option>
-                        <option value="Criança mais de 7 anos">Criança mais de 7 anos</option>
+                        <option value="Criança 8 a 12 anos">Criança 8 a 12 anos</option>
                         <option value="Criança até 7 anos">Criança até 7 anos</option>
                     </select>
                 </div>
@@ -75,7 +75,7 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <label>Data de Nascimento</label>
-                    <input type="date" id="acomp_nascimento" class="form-control">
+                    <input type="text" id="acomp_nascimento" class="form-control" placeholder="dd/mm/aaaa">
                 </div>
             </div>
             <div class="col-md-4">
@@ -104,9 +104,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
         || '{{ csrf_token() }}';
 
-    // Máscara CPF
+    // Máscaras
     if (typeof $ !== 'undefined' && $.fn.mask) {
         $('#acomp_cpf').mask('000.000.000-00', { reverse: true });
+        $('#acomp_nascimento').mask('00/00/0000');
     }
 
     // Remover acompanhante
@@ -152,11 +153,22 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Converter dd/mm/yyyy para yyyy-mm-dd
+        let nascimentoFormatted = '';
+        if (nascimento) {
+            const parts = nascimento.split('/');
+            if (parts.length === 3) {
+                nascimentoFormatted = parts[2] + '-' + parts[1] + '-' + parts[0];
+            } else {
+                nascimentoFormatted = nascimento;
+            }
+        }
+
         const body = new URLSearchParams({
             nome, cpf, tipo, email, telefone,
             _token: csrfToken,
         });
-        if (nascimento) body.append('data_nascimento', nascimento);
+        if (nascimentoFormatted) body.append('data_nascimento', nascimentoFormatted);
 
         fetch(addUrl, {
             method: 'POST',

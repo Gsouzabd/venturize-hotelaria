@@ -21,6 +21,8 @@ class EstoqueController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('visualizar_estoque');
+
         $filters = $request->all();
         $filters['produto_id'] ??= '';
         $filters['local_estoque_id'] ??= '';
@@ -56,6 +58,7 @@ class EstoqueController extends Controller
 
     public function edit($id = null, $local_estoque_id = null)
     {
+        $this->authorize('gerenciar_estoque');
 
         $edit = boolval($id);
         $estoque = $edit ? $this->model->findOrFail($id) : new Estoque();
@@ -68,6 +71,8 @@ class EstoqueController extends Controller
     
     public function save(Request $request)
     {
+        $this->authorize('gerenciar_estoque');
+
         $data = $request->all();
 
         if ($id = $request->get('id')) {
@@ -83,6 +88,8 @@ class EstoqueController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('gerenciar_estoque');
+
         $estoque = $this->model->findOrFail($id);
         $estoque->delete();
 

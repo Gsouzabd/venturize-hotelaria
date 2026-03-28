@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\DayUsePlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
 use App\Http\Controllers\Admin\ImpressoraController;
 use App\Http\Controllers\Admin\FornecedorController;
+use App\Http\Controllers\Admin\GrupoUsuarioController;
 // SEMPRE RODAR O COMANDO:
 //php artisan cache:clear; php artisan route:cache;
 include 'bar/routes.php';
@@ -71,6 +72,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'categorias-despesas' => \App\Http\Controllers\Admin\CategoriaDespesaController::class,
             'fornecedores' => \App\Http\Controllers\Admin\FornecedorController::class,
             'impressoras' => ImpressoraController::class,
+            'grupos-usuarios' => GrupoUsuarioController::class,
         ];
 
         

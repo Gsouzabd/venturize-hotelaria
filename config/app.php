@@ -132,6 +132,43 @@ return [
             'administrador' => 'Administrador',
             'cliente' => 'Cliente',
         ],
+        'permissoes_plano' => [
+            // Reservas
+            'visualizar_reservas' => 'Visualizar Reservas',
+            'gerenciar_reservas' => 'Gerenciar Reservas',
+            // Quartos
+            'visualizar_quartos' => 'Visualizar Quartos',
+            'gerenciar_quartos' => 'Gerenciar Quartos',
+            // Clientes
+            'visualizar_clientes' => 'Visualizar Clientes',
+            'gerenciar_clientes' => 'Gerenciar Clientes',
+            // Usuários
+            'visualizar_usuarios' => 'Visualizar Usuários',
+            'gerenciar_usuarios' => 'Gerenciar Usuários',
+            // Grupos de Usuários
+            'gerenciar_grupos' => 'Gerenciar Grupos de Usuários',
+            // Produtos
+            'visualizar_produtos' => 'Visualizar Produtos',
+            'gerenciar_produtos' => 'Gerenciar Produtos',
+            // Estoque
+            'visualizar_estoque' => 'Visualizar Estoque',
+            'gerenciar_estoque' => 'Gerenciar Estoque',
+            // Despesas
+            'visualizar_despesas' => 'Visualizar Despesas',
+            'gerenciar_despesas' => 'Gerenciar Despesas',
+            // Relatórios
+            'visualizar_relatorios' => 'Visualizar Relatórios',
+            // Impressoras
+            'gerenciar_impressoras' => 'Gerenciar Impressoras',
+            // Fornecedores
+            'gerenciar_fornecedores' => 'Gerenciar Fornecedores',
+            // Bar
+            'visualizar_bar' => 'Visualizar Bar',
+            'gerenciar_bar' => 'Gerenciar Bar',
+            // Financeiro
+            'visualizar_financeiro' => 'Visualizar Financeiro',
+            'gerenciar_financeiro' => 'Gerenciar Financeiro',
+        ],
     ],
 
 

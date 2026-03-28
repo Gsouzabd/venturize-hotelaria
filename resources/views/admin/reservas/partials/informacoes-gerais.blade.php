@@ -1,62 +1,155 @@
 <div class="tab-pane fade show active" id="informacoes-gerais" role="tabpanel" aria-labelledby="informacoes-gerais-tab">
-    <div id="informacoesGeraisForm">
-        <h5><i class="fa-solid fa-1"></i>Sobre </h5>
-        <x-admin.field-group>
-            <!-- Campo de Tipo de Reserva -->
-            <x-admin.field cols="3">
-                <x-admin.label label="Tipo de Reserva" required/>
-                <x-admin.select name="tipo_reserva" id="tipo_reserva" class="form-control" required
-                                :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo', 'DAY_USE' => 'Day Use']"
-                                selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? 'INDIVIDUAL') }}">
-                </x-admin.select>
-            </x-admin.field>
 
-            <!-- Campo de Situação -->
-            <x-admin.field cols="3">
-                <x-admin.label label="Situação da Reserva" required/>
-                <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
-                                :items="['RESERVADO' => 'Reservado', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
-                                
-                                selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? 'PRÉ RESERVA') }}">
-                </x-admin.select>
-            </x-admin.field>
-
-            <x-admin.field cols="3">
-                <x-admin.label label="Tipo de Solicitante" required/>
-                <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
-                                :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
-                                selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? 'PF') }}"/>   
-            </x-admin.field>
-            
-            <!-- Campo Com Café da Manhã (apenas para Day Use) -->
-            <x-admin.field cols="3" id="field-com-cafe" style="display: none;">
-                <x-admin.label label="Opções Day Use"/>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="com_cafe" name="com_cafe"
-                           {{ old('com_cafe', $reserva->com_cafe ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="com_cafe">
-                        Com Café da Manhã
-                    </label>
+    {{-- Resumo da Reserva Atual (fixo no topo quando editando) --}}
+    @if($edit && $reserva->quarto_id)
+        <div id="resumo-reserva-atual" class="card mb-3" style="position: sticky; top: 0; z-index: 10; background: #fff; border: 2px solid #007bff;">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><i class="fas fa-bed"></i> Reserva Atual</strong>
+                        @if($reserva->quarto)
+                            — UH {{ $reserva->quarto->numero }}
+                            ({{ $reserva->quarto->referencia ?? $reserva->quarto->classificacao }})
+                        @endif
+                    </div>
+                    <div>
+                        @if($reserva->data_checkin && $reserva->data_checkout)
+                            <span class="badge badge-info">
+                                {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') }}
+                                → {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') }}
+                            </span>
+                        @endif
+                        <span class="badge badge-{{ $reserva->situacao_reserva == 'HOSPEDADO' ? 'success' : ($reserva->situacao_reserva == 'RESERVADO' ? 'primary' : 'secondary') }}">
+                            {{ $reserva->situacao_reserva }}
+                        </span>
+                    </div>
                 </div>
-            </x-admin.field>
-        </x-admin.field-group>
-            
-        <h5><i class="fa-solid fa-2"></i>Dados do Solicitante </h5>
+                @if($reserva->clienteResponsavel || $reserva->clienteSolicitante)
+                    <small class="text-muted">
+                        Hóspede: {{ $reserva->clienteResponsavel->nome ?? $reserva->clienteSolicitante->nome ?? '-' }}
+                        @if($reserva->adultos || $reserva->criancas_ate_7 || $reserva->criancas_mais_7)
+                            | {{ $reserva->adultos ?? 0 }} adulto(s)
+                            @if($reserva->criancas_ate_7), {{ $reserva->criancas_ate_7 }} criança(s) até 7 @endif
+                            @if($reserva->criancas_mais_7), {{ $reserva->criancas_mais_7 }} criança(s) 8-12 @endif
+                        @endif
+                    </small>
+                @endif
+            </div>
+        </div>
+    @endif
 
-        <x-admin.field-group>
-            <x-admin.field cols="12">
-                <x-admin.label label="Buscar Cliente Cadastrado"/>
-                <x-admin.select2 
-                    name="busca_cliente" 
-                    id="buscaClienteSelect"
-                    remoteUrl="{{ route('admin.clientes.search') }}"
-                    minInputLength="2"
-                    placeholder="Digite o nome ou CPF para buscar..."
-                />
-                <small class="form-text text-muted">Selecione um cliente já cadastrado para preencher os campos automaticamente.</small>
-            </x-admin.field>
-        </x-admin.field-group>
-            
+    <div id="informacoesGeraisForm">
+
+        @if($edit && in_array($reserva->situacao_reserva, ['HOSPEDADO', 'FINALIZADO']))
+            {{-- Modo somente leitura: resumo do hóspede --}}
+            <h5><i class="fa-solid fa-1"></i> Dados do Hóspede</h5>
+            @php
+                $cliente = $reserva->clienteSolicitante ?? $reserva->clienteResponsavel;
+            @endphp
+            @if($cliente)
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Nome:</strong>
+                                <a href="{{ route('admin.clientes.edit', ['id' => $cliente->id]) }}" target="_blank">
+                                    {{ $cliente->nome }} <i class="fas fa-external-link-alt fa-xs"></i>
+                                </a>
+                            </div>
+                            <div class="col-md-3"><strong>CPF:</strong> {{ $cliente->cpf ?? '-' }}</div>
+                            <div class="col-md-3"><strong>Telefone:</strong> {{ $cliente->celular ?? $cliente->telefone ?? '-' }}</div>
+                            <div class="col-md-2"><strong>Email:</strong> {{ $cliente->email ?? '-' }}</div>
+                        </div>
+                        @if($reserva->quarto)
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <strong>Apartamento:</strong> UH {{ $reserva->quarto->numero }}
+                                ({{ $reserva->quarto->referencia ?? $reserva->quarto->classificacao }})
+                                — {{ $reserva->quarto->composicao ?? '' }}
+                            </div>
+                            <div class="col-md-3"><strong>Check-in:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') }}</div>
+                            <div class="col-md-3"><strong>Check-out:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') }}</div>
+                            <div class="col-md-2">
+                                <strong>Hóspedes:</strong> {{ $reserva->adultos ?? 0 }} ad.
+                                @if($reserva->criancas_ate_7) + {{ $reserva->criancas_ate_7 }} cr. @endif
+                                @if($reserva->criancas_mais_7) + {{ $reserva->criancas_mais_7 }} cr.8-12 @endif
+                            </div>
+                        </div>
+                        @endif
+                        @if($reserva->observacoes)
+                            <div class="row mt-2">
+                                <div class="col-md-12"><strong>Observações:</strong> {{ $reserva->observacoes }}</div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            {{-- Hidden fields necessários para o form submit --}}
+            <input type="hidden" name="tipo_reserva" value="{{ $reserva->tipo_reserva }}">
+            <input type="hidden" name="situacao_reserva" id="confirmarCheckin" value="{{ $reserva->situacao_reserva }}">
+            <input type="hidden" name="tipo_solicitante" value="{{ $reserva->tipo_solicitante }}">
+            <input type="hidden" name="nome" value="{{ $cliente->nome ?? '' }}">
+            <input type="hidden" name="cpf" value="{{ $cliente->cpf ?? '' }}">
+        @else
+            {{-- Modo edição: formulário completo --}}
+            <h5><i class="fa-solid fa-1"></i>Sobre </h5>
+            <x-admin.field-group>
+                <!-- Campo de Tipo de Reserva -->
+                <x-admin.field cols="3">
+                    <x-admin.label label="Tipo de Reserva" required/>
+                    <x-admin.select name="tipo_reserva" id="tipo_reserva" class="form-control" required
+                                    :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo', 'DAY_USE' => 'Day Use']"
+                                    selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? 'INDIVIDUAL') }}">
+                    </x-admin.select>
+                </x-admin.field>
+
+                <!-- Campo de Situação -->
+                <x-admin.field cols="3">
+                    <x-admin.label label="Situação da Reserva" required/>
+                    <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
+                                    :items="['RESERVADO' => 'Reservado', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
+                                    
+                                    selectedItem="{{ old('situacao_reserva', $reserva->situacao_reserva ?? 'PRÉ RESERVA') }}">
+                    </x-admin.select>
+                </x-admin.field>
+
+                <x-admin.field cols="3">
+                    <x-admin.label label="Tipo de Solicitante" required/>
+                    <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
+                                    :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
+                                    selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? 'PF') }}"/>   
+                </x-admin.field>
+                
+                <!-- Campo Com Café da Manhã (apenas para Day Use) -->
+                <x-admin.field cols="3" id="field-com-cafe" style="display: none;">
+                    <x-admin.label label="Opções Day Use"/>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="com_cafe" name="com_cafe"
+                            {{ old('com_cafe', $reserva->com_cafe ?? false) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="com_cafe">
+                            Com Café da Manhã
+                        </label>
+                    </div>
+                </x-admin.field>
+            </x-admin.field-group>
+                
+            <h5><i class="fa-solid fa-2"></i>Dados do Solicitante </h5>
+
+            <x-admin.field-group>
+                <x-admin.field cols="12">
+                    <x-admin.label label="Buscar Cliente Cadastrado"/>
+                    <x-admin.select2 
+                        name="busca_cliente" 
+                        id="buscaClienteSelect"
+                        remoteUrl="{{ route('admin.clientes.search') }}"
+                        minInputLength="2"
+                        placeholder="Digite o nome ou CPF para buscar..."
+                    />
+                    <small class="form-text text-muted">Selecione um cliente já cadastrado para preencher os campos automaticamente.</small>
+                </x-admin.field>
+            </x-admin.field-group>
+                
         <!-- Campos Comuns -->
         @php
             $nomeSolicitanteValue = old('nome', $reserva->clienteSolicitante->nome ?? $reserva->clienteResponsavel->nome ?? '');
@@ -339,6 +432,8 @@
         </x-admin.field-group>
         
         <button type="button" id="saveInfoButton" class="btn btn-primary">Salvar Informações Gerais</button>
+        @endif
+        {{-- Fim do @else (modo edição) --}}
 
         @if ($edit && !in_array($reserva->situacao_reserva, ['CANCELADA', 'FINALIZADO']))
             <hr class="mt-4"/>
@@ -391,6 +486,37 @@
                 </script>
             @endif
         @endif
+
+        @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
+            <hr class="mt-4"/>
+            <h5><i class="fas fa-calendar-alt"></i> Período da Reserva</h5>
+            <p class="text-muted">Altere as datas de check-in e check-out sem trocar o apartamento.</p>
+
+            <div id="editar-periodo-form">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Data de Check-in</label>
+                            <input type="date" id="periodo_checkin" class="form-control"
+                                value="{{ \Carbon\Carbon::parse($reserva->data_checkin)->format('Y-m-d') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Data de Check-out</label>
+                            <input type="date" id="periodo_checkout" class="form-control"
+                                value="{{ \Carbon\Carbon::parse($reserva->data_checkout)->format('Y-m-d') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary mb-3 w-100" id="btn-salvar-periodo">
+                            <i class="fas fa-save"></i> Salvar Período
+                        </button>
+                    </div>
+                </div>
+                <div id="periodo-msg" style="display:none;"></div>
+            </div>
+        @endif
     </div>
 </div>
 
@@ -403,26 +529,28 @@
         const situacaoReservaSelect = document.querySelector('select[name="situacao_reserva"]');
 
         const preReservaHide = document.getElementById('pre-reserva-hide');
-        const preReservaHideRequired = preReservaHide.querySelectorAll('input, select, textarea');
+        const preReservaHideRequired = preReservaHide ? preReservaHide.querySelectorAll('input, select, textarea') : [];
 
 
         function esconderPreReserva() {
+            if (!preReservaHide || !situacaoReservaSelect) return;
             if (situacaoReservaSelect.value === 'PRÉ RESERVA') {
                 preReservaHide.style.display = 'none';
-                // preReservaHideRequired.forEach(field => field.removeAttribute('required'));
             } else {
                 preReservaHide.style.display = 'block';
-                // preReservaHideRequired.forEach(field => field.setAttribute('required', ''));1
             }
         }
         esconderPreReserva();
 
-        situacaoReservaSelect.addEventListener('change', esconderPreReserva);
+        if (situacaoReservaSelect) {
+            situacaoReservaSelect.addEventListener('change', esconderPreReserva);
+        }
 
         const pfHideFields = document.querySelectorAll('.pf-hide');
 
         // Função para atualizar a visibilidade dos campos
         function atualizarCampos() {
+            if (!tipoSolicitanteSelect) return;
             if (tipoSolicitanteSelect.value === 'PJ') {
                 pfHideFields.forEach(field => field.style.display = 'flex');
             } else {
@@ -434,11 +562,14 @@
         atualizarCampos();
 
         // Adiciona um evento de mudança ao select
-        tipoSolicitanteSelect.addEventListener('change', atualizarCampos);
+        if (tipoSolicitanteSelect) {
+            tipoSolicitanteSelect.addEventListener('change', atualizarCampos);
+        }
 
         // Exibir/ocultar opções de Day Use
         const fieldComCafe = document.getElementById('field-com-cafe');
         function atualizarCamposDayUse() {
+            if (!fieldComCafe) return;
             if (tipoReservaSelect && tipoReservaSelect.value === 'DAY_USE') {
                 fieldComCafe.style.display = 'block';
             } else {
@@ -548,14 +679,14 @@
         const clienteInfo = document.getElementById('clienteInfo');
         const modalElement = document.getElementById('criarClienteModal');
         const modal = modalElement ? new bootstrap.Modal(modalElement) : null;
-        $('#cpf').mask('000.000.000-00', {reverse: true});
-        $('#responsavelCpf').mask('000.000.000-00', {reverse: true});
-        $('#responsavelReservaCpf').mask('000.000.000-00', {reverse: true});
-        $('#celular').mask('00 00000-0000', {reverse: true});
+        if (typeof $ !== 'undefined' && $.fn.mask) {
+            $('#cpf').mask('000.000.000-00', {reverse: true});
+            $('#responsavelCpf').mask('000.000.000-00', {reverse: true});
+            $('#responsavelReservaCpf').mask('000.000.000-00', {reverse: true});
+            $('#celular').mask('00 00000-0000', {reverse: true});
+        }
 
-
-
-        buscarCpfButton.addEventListener('click', function () {
+        if (buscarCpfButton) buscarCpfButton.addEventListener('click', function () {
             const cpf = cpfInput.value;
 
             // Faz uma requisição AJAX para buscar o cliente pelo CPF
@@ -608,7 +739,7 @@
 
         const cnpjSolicitanteError = document.getElementById('cnpjSolicitanteError');
 
-        verificarCnpjFaturamentoButton.addEventListener('click', function () {
+        if (verificarCnpjFaturamentoButton) verificarCnpjFaturamentoButton.addEventListener('click', function () {
             let cnpj = document.getElementById('cnpj_faturamento').value;
             cnpj = cnpj.replace(/[^\d]+/g, '');
 
@@ -641,7 +772,7 @@
                 });
         });
 
-        verificarCnpjSolicitanteButton.addEventListener('click', function () {
+        if (verificarCnpjSolicitanteButton) verificarCnpjSolicitanteButton.addEventListener('click', function () {
             let cnpj = document.getElementById('cnpj_solicitante').value;
             console.log(cnpj);
             
@@ -724,7 +855,8 @@
         }
 
 
-        document.getElementById('copy_faturamento_to_solicitante').addEventListener('change', function() {
+        var copyFaturamentoEl = document.getElementById('copy_faturamento_to_solicitante');
+        if (copyFaturamentoEl) copyFaturamentoEl.addEventListener('change', function() {
             if (this.checked) {
                 document.getElementById('nome_fantasia_faturamento').value = document.getElementById('nome_fantasia_solicitante').value;
                 document.getElementById('cnpj_faturamento').value = document.getElementById('cnpj_solicitante').value;
@@ -786,5 +918,68 @@
             }
             return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
         };
+
+        // === Editar Período da Reserva ===
+        const btnSalvarPeriodo = document.getElementById('btn-salvar-periodo');
+        if (btnSalvarPeriodo) {
+            const moverUrl = '{{ $edit ? route("admin.reservas.mover", ["id" => $reserva->id]) : "" }}';
+            const csrfTokenPeriodo = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+            btnSalvarPeriodo.addEventListener('click', function () {
+                const checkin  = document.getElementById('periodo_checkin').value;
+                const checkout = document.getElementById('periodo_checkout').value;
+                const msgEl    = document.getElementById('periodo-msg');
+
+                msgEl.style.display = 'none';
+                msgEl.className = '';
+
+                if (!checkin || !checkout) {
+                    msgEl.textContent = 'Informe as duas datas.';
+                    msgEl.className = 'alert alert-danger';
+                    msgEl.style.display = 'block';
+                    return;
+                }
+                if (checkout <= checkin) {
+                    msgEl.textContent = 'A data de check-out deve ser posterior ao check-in.';
+                    msgEl.className = 'alert alert-danger';
+                    msgEl.style.display = 'block';
+                    return;
+                }
+
+                btnSalvarPeriodo.disabled = true;
+
+                const body = new URLSearchParams({
+                    _token: csrfTokenPeriodo,
+                    _method: 'PATCH',
+                    quarto_id: '{{ $reserva->quarto_id ?? "" }}',
+                    data_checkin: checkin,
+                    data_checkout: checkout,
+                });
+
+                fetch(moverUrl, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body,
+                })
+                .then(r => r.json())
+                .then(data => {
+                    btnSalvarPeriodo.disabled = false;
+                    if (data.success) {
+                        msgEl.textContent = 'Período atualizado com sucesso!';
+                        msgEl.className = 'alert alert-success';
+                    } else {
+                        msgEl.textContent = data.message || 'Erro ao atualizar período.';
+                        msgEl.className = 'alert alert-danger';
+                    }
+                    msgEl.style.display = 'block';
+                })
+                .catch(() => {
+                    btnSalvarPeriodo.disabled = false;
+                    msgEl.textContent = 'Erro de comunicação.';
+                    msgEl.className = 'alert alert-danger';
+                    msgEl.style.display = 'block';
+                });
+            });
+        }
     });
 </script>

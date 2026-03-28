@@ -85,7 +85,11 @@
 
                     <x-admin.field cols="4">
                         <x-admin.label label="CEP"/>
-                        <x-admin.text name="cep" :value="old('cep', $cliente->cep)"/>
+                        <x-admin.text name="cep" id="cep_cliente" :value="old('cep', $cliente->cep)">
+                            <x-slot name="append">
+                                <button type="button" id="buscarCepCliente" class="btn btn-secondary">Buscar</button>
+                            </x-slot>
+                        </x-admin.text>
                     </x-admin.field>
                 </x-admin.field-group>
 
@@ -176,4 +180,47 @@
             </div>
         </div>
     </x-admin.form>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function buscarCep(cep, callback) {
+        cep = cep.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+        fetch('https://viacep.com.br/ws/' + cep + '/json/')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.erro) { alert('CEP não encontrado.'); return; }
+                callback(d);
+            })
+            .catch(function() { alert('Erro ao buscar CEP.'); });
+    }
+
+    var btnCep = document.getElementById('buscarCepCliente');
+    var cepInput = document.getElementById('cep_cliente');
+
+    function preencherCampos(d) {
+        var endereco = document.querySelector('input[name="endereco"]');
+        var bairro = document.querySelector('input[name="bairro"]');
+        var cidade = document.querySelector('input[name="cidade"]');
+        var estado = document.querySelector('input[name="estado"]');
+        var pais = document.querySelector('input[name="pais"]');
+        if (endereco) endereco.value = d.logradouro || '';
+        if (bairro) bairro.value = d.bairro || '';
+        if (cidade) cidade.value = d.localidade || '';
+        if (estado) estado.value = d.uf || '';
+        if (pais && !pais.value) pais.value = 'Brasil';
+    }
+
+    if (btnCep && cepInput) {
+        btnCep.addEventListener('click', function() {
+            buscarCep(cepInput.value, preencherCampos);
+        });
+        cepInput.addEventListener('blur', function() {
+            buscarCep(this.value, preencherCampos);
+        });
+    }
+});
+</script>
+@endpush
 @endsection

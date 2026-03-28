@@ -27,7 +27,7 @@
                         <input type="hidden" name="refeicoes[{{ $i }}][hospede_nome]" value="{{ $titularNome }}">
                         <input type="hidden" name="refeicoes[{{ $i }}][hospede_tipo]" value="titular">
                         <input type="checkbox" name="refeicoes[{{ $i }}][cafe]" value="1"
-                            {{ $titularRefeicao && $titularRefeicao->cafe ? 'checked' : '' }}>
+                            {{ !$titularRefeicao || $titularRefeicao->cafe ? 'checked' : '' }}>
                     </td>
                     <td class="text-center">
                         <input type="checkbox" name="refeicoes[{{ $i }}][almoco]" value="1"
@@ -53,7 +53,7 @@
                             <input type="hidden" name="refeicoes[{{ $i }}][hospede_tipo]" value="acompanhante">
                             <input type="hidden" name="refeicoes[{{ $i }}][acompanhante_id]" value="{{ $acompanhante->id }}">
                             <input type="checkbox" name="refeicoes[{{ $i }}][cafe]" value="1"
-                                {{ $acompRefeicao && $acompRefeicao->cafe ? 'checked' : '' }}>
+                                {{ !$acompRefeicao || $acompRefeicao->cafe ? 'checked' : '' }}>
                         </td>
                         <td class="text-center">
                             <input type="checkbox" name="refeicoes[{{ $i }}][almoco]" value="1"
