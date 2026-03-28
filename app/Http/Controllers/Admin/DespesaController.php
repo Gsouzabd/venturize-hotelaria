@@ -119,11 +119,6 @@ class DespesaController extends Controller
             $data['data'] = Carbon::createFromFormat('d/m/Y', $data['data'])->format('Y-m-d');
         }
 
-        // Tratar fornecedor_id vazio como null
-        if (isset($data['fornecedor_id']) && empty($data['fornecedor_id'])) {
-            $data['fornecedor_id'] = null;
-        }
-
         // Tratar numero_nota_fiscal vazio como null
         if (isset($data['numero_nota_fiscal']) && empty($data['numero_nota_fiscal'])) {
             $data['numero_nota_fiscal'] = null;

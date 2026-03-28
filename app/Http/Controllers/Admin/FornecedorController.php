@@ -52,9 +52,19 @@ class FornecedorController extends Controller
         $data = $request->validated();
 
         if ($id = $request->get('id')) {
-            $this->model->findOrFail($id)->update($data);
+            $fornecedor = $this->model->findOrFail($id);
+            $fornecedor->update($data);
         } else {
-            $this->model->fill($data)->save();
+            $fornecedor = $this->model->fill($data);
+            $fornecedor->save();
+        }
+
+        // Retornar JSON se for requisição AJAX (ex: modal de nova despesa)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'id' => $fornecedor->id,
+                'nome' => $fornecedor->nome,
+            ]);
         }
 
         return redirect()
