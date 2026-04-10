@@ -503,12 +503,44 @@ async function adicionarQuartoAoCart(
         const checkoutFmt = toFmt(newCheckoutIso);
 
         const precosDiariosContainer = document.getElementById(`precos-diarios-container-${quartoId}`);
-        if (precosDiariosContainer) {
-            precosDiariosContainer.innerHTML = '<div class="text-muted py-1"><small>Recalculando preços...</small></div>';
-        }
 
         const cart = JSON.parse(localStorage.getItem('cart')) || [];
         const cartEntry = cart.find(item => String(item.quartoId) === String(quartoId));
+
+        // Ajuste imediato client-side: recalcular quantidade de diárias pelo número de dias
+        const numDias = Math.round((new Date(newCheckoutIso) - new Date(newCheckinIso)) / 86400000);
+        if (precosDiariosContainer && numDias > 0) {
+            const precosExistentes = {};
+            (cartEntry?.precosDiarios || []).forEach(p => { precosExistentes[p.data] = p.preco; });
+            const ultimoPreco = cartEntry?.precosDiarios?.slice(-1)[0]?.preco ?? 0;
+
+            const tempPrecos = [];
+            for (let i = 0; i < numDias; i++) {
+                const d = new Date(newCheckinIso);
+                d.setDate(d.getDate() + i);
+                const iso = d.toISOString().split('T')[0];
+                const fmt = toFmt(iso);
+                tempPrecos.push({ data: fmt, preco: precosExistentes[fmt] ?? ultimoPreco });
+            }
+            precosDiariosContainer.innerHTML = renderPrecosDiarios(tempPrecos, quartoId, checkinFmt, checkoutFmt);
+
+            // Atualizar localStorage imediatamente com a contagem correta
+            if (cartEntry) {
+                cartEntry.dataCheckin  = checkinFmt;
+                cartEntry.dataCheckout = checkoutFmt;
+                cartEntry.precosDiarios = tempPrecos;
+                cartEntry.total = tempPrecos.reduce((acc, p) => acc + parseFloat(p.preco), 0).toFixed(2);
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+            atualizarValorTotalDoCart();
+        }
+
+        if (precosDiariosContainer) {
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'text-muted py-1 recalc-loading';
+            loadingEl.innerHTML = '<small>Atualizando preços...</small>';
+            precosDiariosContainer.prepend(loadingEl);
+        }
 
         try {
             const precosData = await obterPlanosPrecos(quartoId, checkinFmt, checkoutFmt, quartoComposicao);
@@ -523,6 +555,8 @@ async function adicionarQuartoAoCart(
 
             // Atualizar container de preços diários diretamente pelo ID
             if (precosDiariosContainer) {
+                const loadingEl = precosDiariosContainer.querySelector('.recalc-loading');
+                if (loadingEl) loadingEl.remove();
                 precosDiariosContainer.innerHTML = renderPrecosDiarios(novosPrecoDiarios, quartoId, checkinFmt, checkoutFmt);
                 // Re-attach event listeners nos novos inputs
                 precosDiariosContainer.querySelectorAll('.preco-diario').forEach(inp => {
@@ -551,7 +585,10 @@ async function adicionarQuartoAoCart(
             atualizarValorTotalDoCart();
         } catch (e) {
             console.error('Erro ao recalcular preços para novas datas:', e);
-            if (precosDiariosContainer) precosDiariosContainer.innerHTML = '<div class="text-danger"><small>Erro ao buscar preços.</small></div>';
+            if (precosDiariosContainer) {
+                const loadingEl = precosDiariosContainer.querySelector('.recalc-loading');
+                if (loadingEl) loadingEl.remove();
+            }
         }
     }
 

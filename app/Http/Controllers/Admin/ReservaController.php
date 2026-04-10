@@ -598,9 +598,11 @@ class ReservaController extends Controller
             'telefone'       => 'nullable|string|max:20',
         ]);
 
-        // Tenta vincular a um cliente existente pelo CPF ou cria um novo
+        // Tenta vincular a um cliente existente (por ID direto, CPF ou cria um novo)
         $clienteId = null;
-        if ($request->filled('cpf')) {
+        if ($request->filled('cliente_id')) {
+            $clienteId = (int) $request->cliente_id;
+        } elseif ($request->filled('cpf')) {
             $cpfLimpo = preg_replace('/\D/', '', $request->cpf);
             $cliente = \App\Models\Cliente::where('cpf', 'like', "%{$cpfLimpo}%")->first();
             if ($cliente) {

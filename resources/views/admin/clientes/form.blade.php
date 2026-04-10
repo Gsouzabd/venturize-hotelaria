@@ -10,6 +10,21 @@
     <x-admin.form save-route="admin.clientes.save"
                   back-route="admin.clientes.index"
                   :is-edit="$edit">
+        @if(!empty($reservaId))
+            <input type="hidden" name="reserva_id" value="{{ $reservaId }}">
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                Este hóspede será adicionado como acompanhante da reserva <strong>#{{ $reservaId }}</strong>.
+                <div class="mt-2">
+                    <label class="mr-2 mb-0"><strong>Tipo de Acompanhante:</strong></label>
+                    <select name="tipo_acompanhante" class="form-control d-inline-block w-auto">
+                        <option value="Adulto">Adulto</option>
+                        <option value="Criança 8 a 12 anos">Criança 8 a 12 anos</option>
+                        <option value="Criança até 7 anos">Criança até 7 anos</option>
+                    </select>
+                </div>
+            </div>
+        @endif
         <div class="card">
             <div class="card-body pb-2">
                 @if($edit)

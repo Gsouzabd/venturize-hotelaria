@@ -47,6 +47,15 @@
     <hr>
     <h6><i class="fas fa-user-plus"></i> Adicionar Acompanhante</h6>
     <div id="form-add-acomp">
+        <div class="form-group">
+            <label>Buscar Cliente Cadastrado</label>
+            <select id="acomp_busca_cliente" style="width:100%">
+                <option value=""></option>
+            </select>
+            <small class="form-text text-muted">Digite o nome ou CPF para buscar um cliente já cadastrado e preencher os campos automaticamente.</small>
+        </div>
+        <input type="hidden" id="acomp_cliente_id">
+
         <div class="row">
             <div class="col-md-4">
                 <div class="form-group">
@@ -57,7 +66,13 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <label>CPF</label>
-                    <input type="text" id="acomp_cpf" class="form-control" placeholder="000.000.000-00">
+                    <div class="input-group">
+                        <input type="text" id="acomp_cpf" class="form-control" placeholder="000.000.000-00">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-secondary" id="btn-buscar-cpf-acomp">Buscar</button>
+                        </div>
+                    </div>
+                    <div id="acomp-cpf-error" class="text-danger mt-1" style="display:none;">Nenhum cliente encontrado com este CPF.</div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -95,6 +110,9 @@
         <button type="button" class="btn btn-success" id="btn-salvar-acomp">
             <i class="fas fa-save"></i> Salvar Acompanhante
         </button>
+        <a href="{{ route('admin.clientes.create') }}?reserva_id={{ $reserva->id }}" target="_blank" class="btn btn-outline-primary ml-2">
+            <i class="fas fa-id-card"></i> Ficha Completa
+        </a>
     </div>
 </div>
 
@@ -109,6 +127,62 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#acomp_cpf').mask('000.000.000-00', { reverse: true });
         $('#acomp_nascimento').mask('00/00/0000');
     }
+
+    // Preenche os campos com dados de um cliente
+    function preencherCamposAcomp(cliente) {
+        document.getElementById('acomp_cliente_id').value = cliente.id || '';
+        document.getElementById('acomp_nome').value       = cliente.nome || '';
+        document.getElementById('acomp_cpf').value        = cliente.cpf || '';
+        document.getElementById('acomp_email').value      = cliente.email || '';
+        document.getElementById('acomp_telefone').value   = cliente.telefone || cliente.celular || '';
+        if (cliente.data_nascimento) {
+            const p = cliente.data_nascimento.split('-');
+            document.getElementById('acomp_nascimento').value = p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : cliente.data_nascimento;
+        } else {
+            document.getElementById('acomp_nascimento').value = '';
+        }
+    }
+
+    // Select2 AJAX busca por nome/CPF
+    setTimeout(function () {
+        if (typeof $ === 'undefined' || !$.fn.select2) return;
+        var $busca = $('#acomp_busca_cliente');
+        $busca.select2({
+            dropdownParent: $busca.parent(),
+            language: 'pt-BR',
+            ajax: {
+                url: '{{ route("admin.clientes.search") }}',
+                dataType: 'json',
+                delay: 400,
+                cache: false,
+                data: function (params) { return { q: params.term }; },
+                processResults: function (data) { return { results: data.results || [] }; }
+            },
+            minimumInputLength: 2,
+            placeholder: 'Digite o nome ou CPF para buscar...',
+            allowClear: true,
+        });
+        $busca.on('select2:select', function (e) {
+            preencherCamposAcomp(e.params.data);
+        });
+        $busca.on('select2:clear', function () {
+            document.getElementById('acomp_cliente_id').value = '';
+        });
+    }, 300);
+
+    // Busca por CPF
+    document.getElementById('btn-buscar-cpf-acomp').addEventListener('click', function () {
+        const cpf = document.getElementById('acomp_cpf').value.trim();
+        const errEl = document.getElementById('acomp-cpf-error');
+        errEl.style.display = 'none';
+        if (!cpf) return;
+        fetch('/admin/clientes/cpf/' + encodeURIComponent(cpf), {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => preencherCamposAcomp(data))
+        .catch(() => { errEl.style.display = 'block'; });
+    });
 
     // Remover acompanhante
     document.getElementById('tabela-acompanhantes').addEventListener('click', function (e) {
@@ -164,11 +238,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        const clienteId = document.getElementById('acomp_cliente_id').value;
         const body = new URLSearchParams({
             nome, cpf, tipo, email, telefone,
             _token: csrfToken,
         });
         if (nascimentoFormatted) body.append('data_nascimento', nascimentoFormatted);
+        if (clienteId) body.append('cliente_id', clienteId);
 
         fetch(addUrl, {
             method: 'POST',
@@ -212,12 +288,16 @@ document.addEventListener('DOMContentLoaded', function () {
             tbody.appendChild(tr);
 
             // Limpar campos
+            document.getElementById('acomp_cliente_id').value = '';
             document.getElementById('acomp_nome').value = '';
             document.getElementById('acomp_cpf').value = '';
             document.getElementById('acomp_tipo').value = 'Adulto';
             document.getElementById('acomp_nascimento').value = '';
             document.getElementById('acomp_email').value = '';
             document.getElementById('acomp_telefone').value = '';
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('#acomp_busca_cliente').val(null).trigger('change');
+            }
         })
         .catch(() => {
             errorEl.textContent = 'Erro de comunicação.';

@@ -31,7 +31,9 @@
         </div>
 
         <div class="col-md-12" id="cart-col" style="display: none">
-            @include('admin.reservas.partials.cart-preview')
+            @if(!$isEdit)
+                @include('admin.reservas.partials.cart-preview')
+            @endif
         </div>
 
         <div class="col-md-12 mt-3 text-right d-flex justify-content-end">

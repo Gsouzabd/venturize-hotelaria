@@ -46,8 +46,9 @@ class ClienteController extends Controller
 
         $edit = boolval($id);
         $cliente = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
+        $reservaId = request('reserva_id');
 
-        return view('admin.clientes.form', compact('cliente', 'edit'));
+        return view('admin.clientes.form', compact('cliente', 'edit', 'reservaId'));
     }
 
     public function save(Request $request)
@@ -56,16 +57,36 @@ class ClienteController extends Controller
 
         $data = $request->all();
 
-        $data['data_nascimento']  = parseDateVenturize($data['data_nascimento']);
+        $data['data_nascimento'] = parseDateVenturize($data['data_nascimento']);
+
         if ($id = $request->get('id')) {
             $this->model->findOrFail($id)->update($data);
         } else {
-            $this->model->fill($data)->save();
+            $cliente = $this->model->fill($data);
+            $cliente->save();
+            $id = $cliente->id;
+
+            if ($reservaId = $request->get('reserva_id')) {
+                \App\Models\Acompanhante::create([
+                    'reserva_id'      => $reservaId,
+                    'cliente_id'      => $id,
+                    'nome'            => $cliente->nome,
+                    'cpf'             => $cliente->cpf,
+                    'tipo'            => $request->get('tipo_acompanhante', 'Adulto'),
+                    'data_nascimento' => $cliente->data_nascimento,
+                    'email'           => $cliente->email,
+                    'telefone'        => $cliente->telefone,
+                ]);
+
+                return redirect()
+                    ->to(route('admin.reservas.edit', ['id' => $reservaId]) . '#acompanhantes')
+                    ->with('notice', 'Hóspede cadastrado e adicionado como acompanhante.');
+            }
         }
 
         return redirect()
             ->route('admin.clientes.index')
-            ->with('notice', config('app.messages.' . ($id ? 'update' : 'insert')));
+            ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
     }
 
     public function destroy($id)

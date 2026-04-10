@@ -34,6 +34,10 @@
                         @endif
                     </small>
                 @endif
+                <div id="cart-items" class="mt-2"></div>
+                <div class="d-flex justify-content-end mt-1">
+                    <small><strong>Total da Reserva:</strong> <span id="total-cart-value">R$ 0,00</span></small>
+                </div>
             </div>
         </div>
     @endif
