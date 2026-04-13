@@ -1192,20 +1192,23 @@ document.getElementById('saveResponsavel').addEventListener('click', function() 
 // ---> CHECKIN  <--- //
     document.addEventListener('DOMContentLoaded', function () {
         const situacao_reserva = document.querySelector('select[name="situacao_reserva"]');
+        const camposNuncaObrigatorios = ['rg', 'telefone', 'passaporte', 'orgao_expedidor', 'profissao', 'estado_civil', 'nacionalidade', 'complemento'];
+
         function definirRequireds(){
             console.log('situacao_reserva.value', situacao_reserva.value);
+            const camposReservado = document.querySelectorAll('#pre-reserva-hide input, #pre-reserva-hide select');
             if (situacao_reserva.value == 'RESERVADO') {
                 console.log('irei definir os campos como required');
-                const camposReservado = document.querySelectorAll('#pre-reserva-hide input, #pre-reserva-hide select');
-                const camposNaoObrigatorios = ['rg', 'telefone', 'passaporte', 'orgao_expedidor', 'profissao', 'estado_civil', 'nacionalidade', 'complemento'];
                 camposReservado.forEach(campo => {
-                    if (camposNaoObrigatorios.includes(campo.id) || camposNaoObrigatorios.includes(campo.name)) {
+                    if (camposNuncaObrigatorios.includes(campo.id) || camposNuncaObrigatorios.includes(campo.name)) {
                         campo.removeAttribute('required');
                         return;
                     }
                     campo.setAttribute('required', 'required');
-                });  
-            }     
+                });
+            } else {
+                camposReservado.forEach(campo => campo.removeAttribute('required'));
+            }
         }  
     
         definirRequireds();
