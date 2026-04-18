@@ -78,7 +78,7 @@ class DespesaController extends Controller
         $edit = boolval($id);
         $despesa = $edit ? $this->model->with(['despesaCategorias.categoriaDespesa', 'fornecedor'])->findOrFail($id) : $this->model->newInstance();
         $categorias = CategoriaDespesa::ativas()->orderBy('nome')->get();
-        $fornecedores = collect([]);
+        $fornecedores = Fornecedor::orderBy('nome')->get();
         $returnTo = $request->get('_return_to', '');
 
         return view('admin.despesas.form', compact('despesa', 'edit', 'categorias', 'fornecedores', 'returnTo'));
