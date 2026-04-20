@@ -1,5 +1,6 @@
 @props([
     'name',
+    'id' => null,
     'class' => '',
     'value' => '',
     'disabled' => false,
@@ -8,6 +9,7 @@
 <div class="input-group">
     <input type="text"
            name="{{ $name }}"
+           @if($id) id="{{ $id }}" @endif
            class="form-datepicker form-control date-mask{{ $class ? ' ' . $class : '' }}"
            value="{{ $value }}"{{ $disabled ? ' disabled' : '' }}>
     <div class="input-group-append">
@@ -28,6 +30,7 @@
         $(function () {
             $('.form-datepicker').datepicker({
                 language: "pt-BR",
+                format: "dd/mm/yyyy",
                 todayBtn: "linked",
                 clearBtn: true,
                 autoclose: true,

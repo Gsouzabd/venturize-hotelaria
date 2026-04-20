@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\QuartoOpcaoExtraController;
 use App\Http\Controllers\Admin\QuartoPlanoPrecoController;
 use App\Http\Controllers\Admin\DayUsePlanoPrecoController;
 use App\Http\Controllers\Admin\MovimentacaoEstoqueController;
+use App\Http\Controllers\Admin\RelatorioController;
 use App\Http\Controllers\Admin\ImpressoraController;
 use App\Http\Controllers\Admin\FornecedorController;
 use App\Http\Controllers\Admin\GrupoUsuarioController;
@@ -55,6 +56,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::match(['post', 'put'], '/reservas/{id}/refeicoes', [ReservaController::class, 'salvarRefeicoes'])->name('reservas.refeicoes');
         Route::post('/reservas/{id}/acompanhantes', [ReservaController::class, 'adicionarAcompanhante'])->name('reservas.acompanhantes.add');
         Route::delete('/reservas/{id}/acompanhantes/{aid}', [ReservaController::class, 'removerAcompanhante'])->name('reservas.acompanhantes.remove');
+
+        Route::prefix('relatorios')->name('relatorios.')->controller(RelatorioController::class)->group(function () {
+            Route::get('/estoque', 'estoque')->name('estoque');
+            Route::get('/estoque/exportar', 'exportarEstoque')->name('estoque.exportar');
+            Route::get('/cafe', 'cafe')->name('cafe');
+            Route::get('/cafe/exportar', 'exportarCafe')->name('cafe.exportar');
+        });
 
         // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})
         Route::get('/despesas/relatorios', [\App\Http\Controllers\Admin\DespesaController::class, 'relatorios'])->name('despesas.relatorios');

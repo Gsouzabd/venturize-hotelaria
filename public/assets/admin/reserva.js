@@ -451,8 +451,8 @@ async function adicionarQuartoAoCart(
                 }
                 console.log('cartItem.precosDiariosDepois', cartItem.precosDiarios);
 
-                // Atualiza o valor diário no objeto precosDiarios
-                const precoDiario = { data: formatDate(data), preco: valorDiario.toFixed(2) };
+                // Atualiza o valor diário no objeto precosDiarios, marcando como override manual
+                const precoDiario = { data: formatDate(data), preco: valorDiario.toFixed(2), precoManual: true };
                 cartItem.precosDiarios[dataIndex] = precoDiario;
 
                 // Recalcula o total do item
@@ -511,7 +511,7 @@ async function adicionarQuartoAoCart(
         const numDias = Math.round((new Date(newCheckoutIso) - new Date(newCheckinIso)) / 86400000);
         if (precosDiariosContainer && numDias > 0) {
             const precosExistentes = {};
-            (cartEntry?.precosDiarios || []).forEach(p => { precosExistentes[p.data] = p.preco; });
+            (cartEntry?.precosDiarios || []).forEach(p => { if (p && p.data) precosExistentes[p.data] = p; });
             const ultimoPreco = cartEntry?.precosDiarios?.slice(-1)[0]?.preco ?? 0;
 
             const tempPrecos = [];
@@ -520,7 +520,12 @@ async function adicionarQuartoAoCart(
                 d.setDate(d.getDate() + i);
                 const iso = d.toISOString().split('T')[0];
                 const fmt = toFmt(iso);
-                tempPrecos.push({ data: fmt, preco: precosExistentes[fmt] ?? ultimoPreco });
+                const existente = precosExistentes[fmt];
+                if (existente) {
+                    tempPrecos.push({ data: fmt, preco: existente.preco, ...(existente.precoManual ? { precoManual: true } : {}) });
+                } else {
+                    tempPrecos.push({ data: fmt, preco: ultimoPreco });
+                }
             }
             precosDiariosContainer.innerHTML = renderPrecosDiarios(tempPrecos, quartoId, checkinFmt, checkoutFmt);
 
@@ -548,10 +553,22 @@ async function adicionarQuartoAoCart(
                 if (precosDiariosContainer) precosDiariosContainer.innerHTML = '<div class="text-danger"><small>Erro ao buscar preços.</small></div>';
                 return;
             }
-            const novosPrecoDiarios = Array.isArray(precosData.precosDiarios)
+            let novosPrecoDiarios = Array.isArray(precosData.precosDiarios)
                 ? precosData.precosDiarios
                 : Object.entries(precosData.precosDiarios).map(([data, preco]) => ({ data, preco }));
-            const novoTotal = parseFloat(precosData.total) || 0;
+
+            // Preservar dias com preço editado manualmente (precoManual: true)
+            const manuaisExistentes = {};
+            (cartEntry?.precosDiarios || []).forEach(p => {
+                if (p && p.precoManual) manuaisExistentes[p.data] = p.preco;
+            });
+            novosPrecoDiarios = novosPrecoDiarios.map(p => {
+                if (manuaisExistentes[p.data] !== undefined) {
+                    return { data: p.data, preco: manuaisExistentes[p.data], precoManual: true };
+                }
+                return p;
+            });
+            const novoTotal = novosPrecoDiarios.reduce((acc, p) => acc + parseFloat(p.preco), 0);
 
             // Atualizar container de preços diários diretamente pelo ID
             if (precosDiariosContainer) {
@@ -600,8 +617,11 @@ async function adicionarQuartoAoCart(
     if (cartCheckinInput)  { cartCheckinInput.addEventListener('change',  recalcularAoMudarDatas); cartCheckinInput.addEventListener('input',   recalcDebounced); }
     if (cartCheckoutInput) { cartCheckoutInput.addEventListener('change', recalcularAoMudarDatas); cartCheckoutInput.addEventListener('input',  recalcDebounced); }
 
-    // Recalcular preços ao carregar o cart (garante consistência com datas atuais)
-    recalcularAoMudarDatas();
+    // Recalcular preços ao carregar o cart apenas em reservas novas.
+    // Em edição, os preços salvos (incluindo override manual) são autoritativos.
+    if (isEdit !== '1') {
+        recalcularAoMudarDatas();
+    }
 
     // Exibir o Cart Preview com animação
     const cartColumn = document.getElementById('cart-col');

@@ -1,3 +1,12 @@
+@pushonce('styles')
+    <link rel="stylesheet" href="{{ asset('assets/admin/vendor/select2/select2.css') }}">
+@endpushonce
+
+@pushonce('scripts')
+    <script src="{{ asset('assets/admin/vendor/select2/select2.js') }}"></script>
+    <script src="{{ asset('assets/admin/vendor/select2/select2.pt-BR.js') }}"></script>
+@endpushonce
+
 <div class="tab-pane fade" id="acompanhantes" role="tabpanel" aria-labelledby="acompanhantes-tab">
     <h5><i class="fas fa-users"></i> Acompanhantes</h5>
 
@@ -90,13 +99,13 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <label>Data de Nascimento</label>
-                    <input type="text" id="acomp_nascimento" class="form-control" placeholder="dd/mm/aaaa">
+                    <x-admin.datepicker name="acomp_nascimento_field" id="acomp_nascimento" :value="''" />
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="acomp_email" class="form-control" placeholder="email@exemplo.com">
+                    <input type="email" id="acomp_email" class="form-control" placeholder="email@@exemplo.com">
                 </div>
             </div>
             <div class="col-md-4">
@@ -125,7 +134,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Máscaras
     if (typeof $ !== 'undefined' && $.fn.mask) {
         $('#acomp_cpf').mask('000.000.000-00', { reverse: true });
-        $('#acomp_nascimento').mask('00/00/0000');
     }
 
     // Preenche os campos com dados de um cliente
@@ -143,12 +151,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Select2 AJAX busca por nome/CPF
-    setTimeout(function () {
+    // Select2 AJAX busca por nome/CPF (assets do Select2 podem não existir na aba Informações
+    // quando a reserva está HOSPEDADO/FINALIZADO — @@pushonce acima garante o plugin aqui.)
+    function initAcompBuscaClienteSelect2() {
         if (typeof $ === 'undefined' || !$.fn.select2) return;
         var $busca = $('#acomp_busca_cliente');
+        if (!$busca.length || $busca.data('select2')) return;
+
         $busca.select2({
-            dropdownParent: $busca.parent(),
+            width: '100%',
+            dropdownParent: $('body'),
             language: 'pt-BR',
             ajax: {
                 url: '{{ route("admin.clientes.search") }}',
@@ -168,7 +180,16 @@ document.addEventListener('DOMContentLoaded', function () {
         $busca.on('select2:clear', function () {
             document.getElementById('acomp_cliente_id').value = '';
         });
-    }, 300);
+    }
+
+    setTimeout(initAcompBuscaClienteSelect2, 300);
+    // As abas da reserva usam activateReservaTabByLink + preventDefault, então shown.bs.tab não dispara.
+    var acompTabLink = document.querySelector('a#acompanhantes-tab[href="#acompanhantes"]');
+    if (acompTabLink) {
+        acompTabLink.addEventListener('click', function () {
+            setTimeout(initAcompBuscaClienteSelect2, 50);
+        });
+    }
 
     // Busca por CPF
     document.getElementById('btn-buscar-cpf-acomp').addEventListener('click', function () {

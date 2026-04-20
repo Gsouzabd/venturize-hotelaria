@@ -21,6 +21,9 @@
 @endsection
 
 @section('content')
+@php
+    $podeTransferirConsumo = $pedido->pedido_apartamento && $pedido->status === 'aberto';
+@endphp
 <div class="container-fluid">
     <style>
         .produto-bloco .card-body {
@@ -111,13 +114,30 @@
                     <h5>Itens do pedido:</h5>
                     <div id="cart-container" class="mb-4">
                         @foreach($pedido->itens as $item)
-                            <div class="cart-item-row row align-items-center mb-2 p-2 border rounded" data-produto-id="{{ $item->produto_id }}" data-produto-preco="{{ $item->produto->preco_venda }}">
-                                <div class="col-md-8">
-                                    <span class="font-weight-bold">{{ $item->produto->descricao }}</span> - R$ {{ number_format($item->produto->preco_venda, 2, ',', '.') }}
-                                </div>
-                                <div class="col-md-2">
-                                    <input type="number" class="form-control item-quantidade" name="itens_cart[{{ $item->produto_id }}][quantidade]" value="{{ $item->quantidade }}" min="1" readonly>
-                                </div>
+                            <div class="cart-item-row row align-items-center mb-2 p-2 border rounded" data-produto-id="{{ $item->produto_id }}" data-produto-preco="{{ $podeTransferirConsumo ? $item->preco : $item->produto->preco_venda }}" data-qtd-max="{{ $item->quantidade }}">
+                                @if($podeTransferirConsumo)
+                                    <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                        <input type="checkbox" class="form-check-input transfer-item-check" title="Selecionar para transferir" aria-label="Selecionar para transferir">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <span class="font-weight-bold">{{ $item->produto->descricao }}</span> — R$ {{ number_format($item->preco, 2, ',', '.') }} <span class="text-muted small">(unid.)</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="d-block small text-muted mb-0">No pedido</label>
+                                        <input type="number" class="form-control item-quantidade" name="itens_cart[{{ $item->produto_id }}][quantidade]" value="{{ $item->quantidade }}" min="1" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="d-block small text-muted mb-0">Qtd a transferir</label>
+                                        <input type="number" class="form-control transfer-qtd-input" min="1" max="{{ $item->quantidade }}" value="{{ $item->quantidade }}" disabled data-max="{{ $item->quantidade }}">
+                                    </div>
+                                @else
+                                    <div class="col-md-8">
+                                        <span class="font-weight-bold">{{ $item->produto->descricao }}</span> - R$ {{ number_format($item->produto->preco_venda, 2, ',', '.') }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control item-quantidade" name="itens_cart[{{ $item->produto_id }}][quantidade]" value="{{ $item->quantidade }}" min="1" readonly>
+                                    </div>
+                                @endif
                                 <div class="col-md-2 text-right">
 
                                     <form action="{{ route('admin.bar.pedidos.save') }}" method="POST" class="d-inline cancel-form">
@@ -131,6 +151,26 @@
                             </div>
                         @endforeach
                     </div>
+                    @if($podeTransferirConsumo)
+                    <div class="card border-info mb-4" id="transferencia-consumo-card">
+                        <div class="card-header bg-info text-white">
+                            <strong><i class="fas fa-exchange-alt"></i> Transferir consumo para outro apartamento</strong>
+                            <small class="d-block font-weight-normal mt-1 mb-0">Somente reservas em HOSPEDADO com período sobreposto a esta reserva.</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group mb-3">
+                                <label for="reserva_destino_consumo">Reserva / apartamento de destino</label>
+                                <select id="reserva_destino_consumo" class="form-control">
+                                    <option value="">Carregando opções…</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-info" id="btn-transferir-consumo" disabled>
+                                <i class="fas fa-exchange-alt"></i> Transferir consumo selecionado
+                            </button>
+                            <p class="text-muted small mb-0 mt-2" id="transferencia-consumo-feedback" aria-live="polite"></p>
+                        </div>
+                    </div>
+                    @endif
                     <x-admin.form save-route="admin.bar.pedidos.save" submitTitle='<i class="fas fa-note"></i> Salvar Observação'>
                         @csrf
                         @if($edit)
@@ -758,6 +798,161 @@
                 cancelForm.reportValidity();
             }
         });
+
+        const reservaDestSelect = document.getElementById('reserva_destino_consumo');
+        const btnTransferirConsumo = document.getElementById('btn-transferir-consumo');
+        const feedbackTransferencia = document.getElementById('transferencia-consumo-feedback');
+        if (reservaDestSelect && btnTransferirConsumo) {
+            const urlLista = @json(route('admin.bar.pedidos.reservas-destino-consumo', $pedido->id));
+            const urlPost = @json(route('admin.bar.pedidos.transferir-consumo', $pedido->id));
+
+            function setFeedbackTransferencia(msg, isError) {
+                if (!feedbackTransferencia) {
+                    return;
+                }
+                feedbackTransferencia.textContent = msg || '';
+                feedbackTransferencia.classList.toggle('text-danger', !!isError);
+                feedbackTransferencia.classList.toggle('text-muted', !isError);
+            }
+
+            function refreshTransferButtonState() {
+                const anyChecked = document.querySelectorAll('.transfer-item-check:checked').length > 0;
+                const hasDestino = reservaDestSelect.value !== '';
+                btnTransferirConsumo.disabled = !(anyChecked && hasDestino);
+            }
+
+            fetch(urlLista, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (payload) {
+                    const items = payload.data || [];
+                    reservaDestSelect.innerHTML = '';
+                    if (items.length === 0) {
+                        reservaDestSelect.innerHTML = '<option value="">(Nenhuma reserva elegível no período)</option>';
+                        setFeedbackTransferencia('Não há outras reservas hospedadas com período sobreposto.', false);
+                    } else {
+                        const opt0 = document.createElement('option');
+                        opt0.value = '';
+                        opt0.textContent = 'Selecione a reserva de destino…';
+                        reservaDestSelect.appendChild(opt0);
+                        items.forEach(function (row) {
+                            const o = document.createElement('option');
+                            o.value = row.id;
+                            o.textContent = row.label;
+                            reservaDestSelect.appendChild(o);
+                        });
+                    }
+                })
+                .catch(function () {
+                    reservaDestSelect.innerHTML = '<option value="">Erro ao carregar lista</option>';
+                    setFeedbackTransferencia('Erro ao carregar reservas de destino.', true);
+                });
+
+            reservaDestSelect.addEventListener('change', refreshTransferButtonState);
+
+            document.querySelectorAll('.transfer-item-check').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    const row = cb.closest('.cart-item-row');
+                    const q = row ? row.querySelector('.transfer-qtd-input') : null;
+                    if (q) {
+                        q.disabled = !cb.checked;
+                        if (cb.checked) {
+                            const mx = parseInt(row.getAttribute('data-qtd-max'), 10) || 1;
+                            q.max = mx;
+                            let v = parseInt(q.value, 10);
+                            if (isNaN(v) || v < 1) {
+                                v = 1;
+                            }
+                            if (v > mx) {
+                                v = mx;
+                            }
+                            q.value = v;
+                        }
+                    }
+                    refreshTransferButtonState();
+                });
+            });
+
+            document.querySelectorAll('.transfer-qtd-input').forEach(function (inp) {
+                inp.addEventListener('input', function () {
+                    const row = inp.closest('.cart-item-row');
+                    const mx = row ? parseInt(row.getAttribute('data-qtd-max'), 10) : 999;
+                    let v = parseInt(inp.value, 10);
+                    if (isNaN(v) || v < 1) {
+                        v = 1;
+                    }
+                    if (v > mx) {
+                        v = mx;
+                    }
+                    inp.value = v;
+                });
+            });
+
+            btnTransferirConsumo.addEventListener('click', function () {
+                setFeedbackTransferencia('');
+                const reservaDestinoId = reservaDestSelect.value;
+                if (!reservaDestinoId) {
+                    setFeedbackTransferencia('Escolha a reserva de destino.', true);
+                    return;
+                }
+                const itens = [];
+                document.querySelectorAll('.cart-item-row').forEach(function (row) {
+                    const c = row.querySelector('.transfer-item-check');
+                    if (!c || !c.checked) {
+                        return;
+                    }
+                    const qIn = row.querySelector('.transfer-qtd-input');
+                    const pid = row.getAttribute('data-produto-id');
+                    if (!pid || !qIn) {
+                        return;
+                    }
+                    itens.push({ produto_id: parseInt(pid, 10), quantidade: parseInt(qIn.value, 10) });
+                });
+                if (itens.length === 0) {
+                    setFeedbackTransferencia('Selecione ao menos um item para transferir.', true);
+                    return;
+                }
+                btnTransferirConsumo.disabled = true;
+                fetch(urlPost, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': APP_CSRF_TOKEN,
+                    },
+                    body: JSON.stringify({
+                        reserva_destino_id: parseInt(reservaDestinoId, 10),
+                        itens: itens,
+                    }),
+                })
+                    .then(function (r) {
+                        return r.json().then(function (data) {
+                            return { ok: r.ok, data: data };
+                        });
+                    })
+                    .then(function (res) {
+                        if (res.ok && res.data.success) {
+                            window.location.reload();
+                        } else {
+                            setFeedbackTransferencia(
+                                res.data && res.data.message ? res.data.message : 'Não foi possível transferir.',
+                                true
+                            );
+                            btnTransferirConsumo.disabled = false;
+                            refreshTransferButtonState();
+                        }
+                    })
+                    .catch(function () {
+                        setFeedbackTransferencia('Falha de rede ao transferir.', true);
+                        btnTransferirConsumo.disabled = false;
+                        refreshTransferButtonState();
+                    });
+            });
+        }
     });
 </script>
 

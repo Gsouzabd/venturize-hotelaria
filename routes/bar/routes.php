@@ -17,6 +17,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/pedidos/{idPedido}/cupom-parcial', [PedidoController::class, 'showCupomParcial'])->name('bar.pedidos.cupom-parcial');
             Route::get('/pedidos/{idPedido}/status-impressao', [PedidoController::class, 'statusImpressao'])->name('bar.pedidos.status-impressao');
             Route::get('/pedidos/{idPedido}/extrato-parcial', [PedidoController::class, 'showExtratoParcial'])->name('bar.pedidos.extrato-parcial');
+            Route::get('/pedidos/{id}/reservas-destino-consumo', [PedidoController::class, 'reservasDestinoConsumo'])->name('bar.pedidos.reservas-destino-consumo');
+            Route::post('/pedidos/{id}/transferir-consumo', [PedidoController::class, 'transferirConsumo'])->name('bar.pedidos.transferir-consumo');
 
             $prefixes = [
                 'mesas' => MesaController::class,

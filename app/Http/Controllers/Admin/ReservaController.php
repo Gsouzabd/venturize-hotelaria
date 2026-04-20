@@ -604,29 +604,43 @@ class ReservaController extends Controller
             $clienteId = (int) $request->cliente_id;
         } elseif ($request->filled('cpf')) {
             $cpfLimpo = preg_replace('/\D/', '', $request->cpf);
-            $cliente = \App\Models\Cliente::where('cpf', 'like', "%{$cpfLimpo}%")->first();
+            $cliente = \App\Models\Cliente::where('cpf', $cpfLimpo)
+                ->orWhere('cpf', $request->cpf)
+                ->first();
+
+            $dadosAcompanhante = [
+                'nome'            => $request->nome,
+                'email'           => $request->email,
+                'telefone'        => $request->telefone,
+                'data_nascimento' => $request->data_nascimento,
+            ];
+
             if ($cliente) {
+                // Preenche apenas campos vazios para não sobrescrever dados completos do cliente
+                foreach ($dadosAcompanhante as $campo => $valor) {
+                    if (!empty($valor) && empty($cliente->{$campo})) {
+                        $cliente->{$campo} = $valor;
+                    }
+                }
+                if ($cliente->isDirty()) {
+                    $cliente->save();
+                }
                 $clienteId = $cliente->id;
             } else {
-                // Auto-criar cliente para o acompanhante
-                $cliente = \App\Models\Cliente::create([
-                    'nome'           => $request->nome,
-                    'cpf'            => $request->cpf,
-                    'email'          => $request->email,
-                    'telefone'       => $request->telefone,
-                    'data_nascimento'=> $request->data_nascimento,
-                    'fl_ativo'       => true,
-                ]);
+                $cliente = \App\Models\Cliente::create(array_merge($dadosAcompanhante, [
+                    'cpf'         => $cpfLimpo,
+                    'estrangeiro' => 'Não',
+                ]));
                 $clienteId = $cliente->id;
             }
         } elseif ($request->filled('nome')) {
             // Criar cliente mesmo sem CPF para permitir edição
             $cliente = \App\Models\Cliente::create([
-                'nome'           => $request->nome,
-                'email'          => $request->email,
-                'telefone'       => $request->telefone,
-                'data_nascimento'=> $request->data_nascimento,
-                'fl_ativo'       => true,
+                'nome'            => $request->nome,
+                'email'           => $request->email,
+                'telefone'        => $request->telefone,
+                'data_nascimento' => $request->data_nascimento,
+                'estrangeiro'     => 'Não',
             ]);
             $clienteId = $cliente->id;
         }

@@ -87,42 +87,10 @@ class ReservaService
             $data['empresa_faturamento_id'] = $empresaFaturamento->id;
         }
 
-        if (!empty($data['data_nascimento'])) {
-            foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $fmt) {
-                try {
-                    $data['data_nascimento'] = Carbon::createFromFormat($fmt, $data['data_nascimento'])->format('Y-m-d');
-                    break;
-                } catch (\Exception $e) { /* tenta próximo */ }
-            }
-        }
         // Buscar ou criar o cliente solicitante
         $clienteSolicitante = null;
         if (!empty($data['cpf']) && !empty($data['nome'])) {
             $cpfLimpo = preg_replace('/\D/', '', $data['cpf']);
-            $clienteData = [
-                'cpf' => $cpfLimpo,
-                'nome' => $data['nome'],
-                'email' => $data['email'] ?? null,
-                'telefone' => $data['telefone'] ?? null,
-                'celular' => $data['celular'] ?? null,
-                'data_nascimento' => $data['data_nascimento'] ?? null,
-                'rg'              => $data['rg'] ?? null,
-                'passaporte'      => $data['passaporte'] ?? null,
-                'orgao_expedidor' => $data['orgao_expedidor'] ?? null,
-                'sexo'            => $data['sexo'] ?? null,
-                'estado_civil'    => $data['estado_civil'] ?? null,
-                'profissao'       => $data['profissao'] ?? null,
-                'nacionalidade'   => $data['nacionalidade'] ?? null,
-                'estrangeiro'     => 'Não',
-                'cep'             => $data['cep'] ?? null,
-                'endereco'        => $data['endereco'] ?? null,
-                'numero'          => $data['numero'] ?? null,
-                'complemento'     => $data['complemento'] ?? null,
-                'bairro'          => $data['bairro'] ?? null,
-                'cidade'          => $data['cidade'] ?? null,
-                'estado'          => $data['estado'] ?? null,
-                'pais'            => $data['pais'] ?? null,
-            ];
 
             // Primeiro tenta achar pelo CPF normalizado, para não trocar o CPF de outro registro
             $clienteSolicitante = Cliente::where('cpf', $cpfLimpo)->first();
@@ -132,9 +100,54 @@ class ReservaService
                 $clienteSolicitante = Cliente::where('cpf', $data['cpf'])->first();
             }
 
+            // Campos do cadastro de cliente vindos do formulário da reserva (chave = nome no request)
+            $camposClienteReserva = [
+                'email', 'email_alternativo', 'telefone', 'celular', 'rg', 'passaporte', 'orgao_expedidor',
+                'sexo', 'estado_civil', 'profissao', 'nacionalidade', 'cep', 'endereco', 'numero', 'complemento',
+                'bairro', 'cidade', 'estado', 'pais', 'tipo', 'inscricao_estadual_pf', 'estrangeiro',
+            ];
+
+            $clienteData = [
+                'cpf' => $cpfLimpo,
+                'nome' => $data['nome'],
+            ];
+
+            foreach ($camposClienteReserva as $campo) {
+                if (! array_key_exists($campo, $data)) {
+                    continue;
+                }
+                $valor = $data[$campo];
+                $clienteData[$campo] = ($valor === '' || $valor === null) ? null : $valor;
+            }
+
+            if (array_key_exists('data_nascimento', $data)) {
+                $dn = $data['data_nascimento'];
+                if ($dn === '' || $dn === null) {
+                    $clienteData['data_nascimento'] = null;
+                } else {
+                    $parsed = null;
+                    foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $fmt) {
+                        try {
+                            $parsed = Carbon::createFromFormat($fmt, $dn)->format('Y-m-d');
+                            break;
+                        } catch (\Exception $e) {
+                        }
+                    }
+                    $clienteData['data_nascimento'] = $parsed ?? $dn;
+                }
+            }
+
             if ($clienteSolicitante) {
+                // Atualiza só o que veio no request: evita gravar null em tudo e apagar dados
+                // quando o POST não inclui campos (ex.: secção oculta, outro passo do fluxo).
                 $clienteSolicitante->update($clienteData);
             } else {
+                if (! isset($clienteData['tipo'])) {
+                    $clienteData['tipo'] = 'Pessoa Física';
+                }
+                if (! isset($clienteData['estrangeiro'])) {
+                    $clienteData['estrangeiro'] = 'Não';
+                }
                 $clienteSolicitante = Cliente::create($clienteData);
             }
         }
@@ -249,6 +262,29 @@ class ReservaService
                 // Criar ou atualizar a reserva
                 if (isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '') {
                     $reserva = Reserva::findOrFail($quartoData['reserva_id']);
+
+                    // Quando o período mudou, validar conflito com outras reservas do mesmo quarto
+                    $periodoMudou = $reservaData['data_checkin'] != $reserva->data_checkin
+                        || $reservaData['data_checkout'] != $reserva->data_checkout;
+                    if ($periodoMudou && !$isDayUse && !empty($reservaData['quarto_id'])) {
+                        $conflito = Reserva::where('quarto_id', $reservaData['quarto_id'])
+                            ->where('id', '!=', $reserva->id)
+                            ->where('situacao_reserva', '!=', 'CANCELADA')
+                            ->where(function ($q) use ($reservaData) {
+                                $q->whereBetween('data_checkin', [$reservaData['data_checkin'], $reservaData['data_checkout']])
+                                  ->orWhereBetween('data_checkout', [$reservaData['data_checkin'], $reservaData['data_checkout']])
+                                  ->orWhere(function ($q) use ($reservaData) {
+                                      $q->where('data_checkin', '<', $reservaData['data_checkin'])
+                                        ->where('data_checkout', '>', $reservaData['data_checkout']);
+                                  });
+                            })
+                            ->exists();
+
+                        if ($conflito) {
+                            throw new Exception('Quarto não disponível para o novo período selecionado.');
+                        }
+                    }
+
                     $reserva->update($reservaData);
                 } else {
                     $reserva = Reserva::create($reservaData);

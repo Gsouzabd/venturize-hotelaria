@@ -139,7 +139,7 @@
 
                     <x-admin.field cols="4">
                         <x-admin.label label="Data de Nascimento"/>
-                        <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($cliente->data_nascimento) ? \Carbon\Carbon::parse($cliente->data_nascimento)->format('d-m-Y') : '')" required/>                        
+                        <x-admin.datepicker name="data_nascimento" id="data_nascimento" :value="old('data_nascimento', isset($cliente->data_nascimento) ? \Carbon\Carbon::parse($cliente->data_nascimento)->format('d/m/Y') : '')" required/>
 
                     </x-admin.field>
 

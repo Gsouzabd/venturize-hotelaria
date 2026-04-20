@@ -158,7 +158,8 @@
         @php
             $nomeSolicitanteValue = old('nome', $reserva->clienteSolicitante->nome ?? $reserva->clienteResponsavel->nome ?? '');
             $cpfSolicitanteValue = old('cpf', $reserva->clienteSolicitante->cpf ?? $reserva->clienteResponsavel->cpf ?? '');
-            $lockSolicitante = $edit && !empty($nomeSolicitanteValue);
+            $titularTrocavel = in_array($reserva->situacao_reserva ?? '', ['PRÉ RESERVA', 'RESERVADO'], true);
+            $lockSolicitante = $edit && !empty($nomeSolicitanteValue) && !$titularTrocavel;
         @endphp
         <x-admin.field-group>
             <x-admin.field cols="6">
@@ -245,7 +246,7 @@
                 <x-admin.field cols="3">
                     <x-admin.label label="Data de Nascimento" />
                     <x-admin.datepicker name="data_nascimento" id="data_nascimento"
-                        :value="old('data_nascimento', ($reserva->clienteSolicitante && $reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d-m-Y') : '')"/>
+                        :value="old('data_nascimento', ($reserva->clienteSolicitante && $reserva->clienteSolicitante->data_nascimento) ? \Carbon\Carbon::parse($reserva->clienteSolicitante->data_nascimento)->format('d/m/Y') : '')"/>
                 </x-admin.field>
                 <x-admin.field cols="3">
                     <x-admin.label label="Sexo" />
@@ -491,36 +492,7 @@
             @endif
         @endif
 
-        @if ($edit && $reserva->situacao_reserva == 'HOSPEDADO')
-            <hr class="mt-4"/>
-            <h5><i class="fas fa-calendar-alt"></i> Período da Reserva</h5>
-            <p class="text-muted">Altere as datas de check-in e check-out sem trocar o apartamento.</p>
-
-            <div id="editar-periodo-form">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label>Data de Check-in</label>
-                            <input type="date" id="periodo_checkin" class="form-control"
-                                value="{{ \Carbon\Carbon::parse($reserva->data_checkin)->format('Y-m-d') }}">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label>Data de Check-out</label>
-                            <input type="date" id="periodo_checkout" class="form-control"
-                                value="{{ \Carbon\Carbon::parse($reserva->data_checkout)->format('Y-m-d') }}">
-                        </div>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="button" class="btn btn-primary mb-3 w-100" id="btn-salvar-periodo">
-                            <i class="fas fa-save"></i> Salvar Período
-                        </button>
-                    </div>
-                </div>
-                <div id="periodo-msg" style="display:none;"></div>
-            </div>
-        @endif
+        {{-- Edição de período foi unificada no carrinho (aba Disponibilidade/Pagamento) --}}
     </div>
 </div>
 
@@ -643,7 +615,7 @@
                 document.getElementById('nacionalidade').value     = cliente.nacionalidade || '';
                 if (cliente.data_nascimento) {
                     var p = cliente.data_nascimento.split('-');
-                    document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : cliente.data_nascimento;
+                    document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : cliente.data_nascimento;
                 }
                 document.getElementById('cep_pf').value            = cliente.cep || '';
                 document.getElementById('endereco').value          = cliente.endereco || '';
@@ -655,7 +627,7 @@
                 document.getElementById('pais').value              = cliente.pais || '';
 
                 // Exibir campos ocultos pelo modo Pré Reserva
-                preReservaHide.style.display = 'block';
+                if (preReservaHide) preReservaHide.style.display = 'block';
             });
         }, 300);
 
@@ -680,6 +652,7 @@
 
         const buscarCpfButton = document.getElementById('buscarCpfButton');
         const cpfInput = document.getElementById('cpf');
+        const cpfError = document.getElementById('cpfError');
         const clienteInfo = document.getElementById('clienteInfo');
         const modalElement = document.getElementById('criarClienteModal');
         const modal = modalElement ? new bootstrap.Modal(modalElement) : null;
@@ -691,48 +664,55 @@
         }
 
         if (buscarCpfButton) buscarCpfButton.addEventListener('click', function () {
-            const cpf = cpfInput.value;
+            const cpf = (cpfInput && cpfInput.value) ? cpfInput.value.trim() : '';
+            if (cpfError) cpfError.style.display = 'none';
+            if (!cpf) return;
 
-            // Faz uma requisição AJAX para buscar o cliente pelo CPF
-            fetch(`/admin/clientes/cpf/${cpf}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data) {
-                        document.getElementById('nomeSolicitante').value   = data.nome ?? '';
-                        document.getElementById('cpf').value               = data.cpf ?? '';
-                        document.getElementById('modal_email').value       = data.email ?? '';
-                        document.getElementById('celular').value           = data.celular ?? '';
-                        document.getElementById('telefone').value          = data.telefone ?? '';
-                        document.getElementById('rg').value                = data.rg ?? '';
-                        document.getElementById('passaporte').value        = data.passaporte ?? '';
-                        document.getElementById('orgao_expedidor').value   = data.orgao_expedidor ?? '';
-                        document.getElementById('profissao').value         = data.profissao ?? '';
-                        document.getElementById('sexo').value              = data.sexo ?? '';
-                        document.getElementById('estado_civil').value      = data.estado_civil ?? '';
-                        document.getElementById('nacionalidade').value     = data.nacionalidade ?? '';
-                        if (data.data_nascimento) {
-                            var p = data.data_nascimento.split('-');
-                            document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : data.data_nascimento;
-                        }
-                        document.getElementById('cep_pf').value            = data.cep ?? '';
-                        document.getElementById('endereco').value          = data.endereco ?? '';
-                        document.getElementById('numero_pf').value         = data.numero ?? '';
-                        document.getElementById('complemento').value       = data.complemento ?? '';
-                        document.getElementById('bairro').value            = data.bairro ?? '';
-                        document.getElementById('cidade').value            = data.cidade ?? '';
-                        document.getElementById('estado_pf').value         = data.estado ?? '';
-                        document.getElementById('pais').value              = data.pais ?? '';
-
-                        preReservaHide.style.display = 'block';
+            fetch('/admin/clientes/cpf/' + encodeURIComponent(cpf), {
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Cliente não encontrado');
                     }
+                    return response.json();
                 })
-                .catch(error => {
-                    cpfError.style.display = 'block'; // Mostra a mensagem de erro
-                    console.log(error);
+                .then(function (data) {
+                    if (!data || !data.id) {
+                        throw new Error('Cliente não encontrado');
+                    }
+                    document.getElementById('nomeSolicitante').value   = data.nome ?? '';
+                    document.getElementById('cpf').value               = data.cpf ?? '';
+                    document.getElementById('modal_email').value       = data.email ?? '';
+                    document.getElementById('celular').value           = data.celular ?? '';
+                    document.getElementById('telefone').value          = data.telefone ?? '';
+                    document.getElementById('rg').value                = data.rg ?? '';
+                    document.getElementById('passaporte').value        = data.passaporte ?? '';
+                    document.getElementById('orgao_expedidor').value   = data.orgao_expedidor ?? '';
+                    document.getElementById('profissao').value         = data.profissao ?? '';
+                    document.getElementById('sexo').value              = data.sexo ?? '';
+                    document.getElementById('estado_civil').value      = data.estado_civil ?? '';
+                    document.getElementById('nacionalidade').value     = data.nacionalidade ?? '';
+                    if (data.data_nascimento) {
+                        var p = data.data_nascimento.split('-');
+                        document.getElementById('data_nascimento').value = p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : data.data_nascimento;
+                    }
+                    document.getElementById('cep_pf').value            = data.cep ?? '';
+                    document.getElementById('endereco').value          = data.endereco ?? '';
+                    document.getElementById('numero_pf').value         = data.numero ?? '';
+                    document.getElementById('complemento').value       = data.complemento ?? '';
+                    document.getElementById('bairro').value            = data.bairro ?? '';
+                    document.getElementById('cidade').value            = data.cidade ?? '';
+                    document.getElementById('estado_pf').value         = mapEstadoToUF(data.estado) || (data.estado ?? '');
+                    document.getElementById('pais').value              = data.pais ?? '';
 
-                    // Esconde a mensagem de erro após 5 segundos
-                    setTimeout(() => {
-                        cpfError.style.display = 'none';
+                    if (preReservaHide) preReservaHide.style.display = 'block';
+                })
+                .catch(function (error) {
+                    if (cpfError) cpfError.style.display = 'block';
+                    console.log(error);
+                    setTimeout(function () {
+                        if (cpfError) cpfError.style.display = 'none';
                     }, 2000);
                 });
         });
@@ -923,67 +903,5 @@
             return dateStr; // Retorna a string original se não corresponder a nenhum formato esperado
         };
 
-        // === Editar Período da Reserva ===
-        const btnSalvarPeriodo = document.getElementById('btn-salvar-periodo');
-        if (btnSalvarPeriodo) {
-            const moverUrl = '{{ $edit ? route("admin.reservas.mover", ["id" => $reserva->id]) : "" }}';
-            const csrfTokenPeriodo = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-
-            btnSalvarPeriodo.addEventListener('click', function () {
-                const checkin  = document.getElementById('periodo_checkin').value;
-                const checkout = document.getElementById('periodo_checkout').value;
-                const msgEl    = document.getElementById('periodo-msg');
-
-                msgEl.style.display = 'none';
-                msgEl.className = '';
-
-                if (!checkin || !checkout) {
-                    msgEl.textContent = 'Informe as duas datas.';
-                    msgEl.className = 'alert alert-danger';
-                    msgEl.style.display = 'block';
-                    return;
-                }
-                if (checkout <= checkin) {
-                    msgEl.textContent = 'A data de check-out deve ser posterior ao check-in.';
-                    msgEl.className = 'alert alert-danger';
-                    msgEl.style.display = 'block';
-                    return;
-                }
-
-                btnSalvarPeriodo.disabled = true;
-
-                const body = new URLSearchParams({
-                    _token: csrfTokenPeriodo,
-                    _method: 'PATCH',
-                    quarto_id: '{{ $reserva->quarto_id ?? "" }}',
-                    data_checkin: checkin,
-                    data_checkout: checkout,
-                });
-
-                fetch(moverUrl, {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' },
-                    body,
-                })
-                .then(r => r.json())
-                .then(data => {
-                    btnSalvarPeriodo.disabled = false;
-                    if (data.success) {
-                        msgEl.textContent = 'Período atualizado com sucesso!';
-                        msgEl.className = 'alert alert-success';
-                    } else {
-                        msgEl.textContent = data.message || 'Erro ao atualizar período.';
-                        msgEl.className = 'alert alert-danger';
-                    }
-                    msgEl.style.display = 'block';
-                })
-                .catch(() => {
-                    btnSalvarPeriodo.disabled = false;
-                    msgEl.textContent = 'Erro de comunicação.';
-                    msgEl.className = 'alert alert-danger';
-                    msgEl.style.display = 'block';
-                });
-            });
-        }
     });
 </script>

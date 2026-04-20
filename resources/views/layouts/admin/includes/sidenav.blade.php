@@ -165,6 +165,29 @@
             </li>
             @endcan
 
+            @can('visualizar_relatorios')
+            <li class="sidenav-item{{ is_active_path('admin/relatorios') ? ' active open' : '' }}">
+                <a href="{{ route('admin.relatorios.estoque') }}" class="sidenav-link">
+                    <i class="sidenav-icon fas fa-chart-bar"></i>
+                    <div>Relatórios</div>
+                </a>
+                <ul class="sidenav-submenu">
+                    <li class="sidenav-item{{ is_active_path('admin/relatorios/estoque') ? ' active' : '' }}">
+                        <a href="{{ route('admin.relatorios.estoque') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-boxes"></i>
+                            <span>Estoque de produtos</span>
+                        </a>
+                    </li>
+                    <li class="sidenav-item{{ is_active_path('admin/relatorios/cafe') ? ' active' : '' }}">
+                        <a href="{{ route('admin.relatorios.cafe') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-coffee"></i>
+                            <span>Listagem de café</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            @endcan
+
         @else
 
         <li class="sidenav-item{{ is_active_path('admin') ? ' active' : '' }}">

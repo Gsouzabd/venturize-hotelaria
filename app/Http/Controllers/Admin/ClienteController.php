@@ -114,11 +114,24 @@ class ClienteController extends Controller
     {
         $this->authorize('visualizar_clientes');
 
-        $cliente = $this->model->where('cpf', $cpf)->firstOrFail();
-        if(!$cliente) {
+        $cpf = urldecode($cpf);
+        $digits = preg_replace('/\D+/', '', $cpf);
+
+        $cliente = $this->model->where(function ($q) use ($cpf, $digits) {
+            $q->where('cpf', $cpf);
+            if ($digits !== '') {
+                $q->orWhere('cpf', $digits);
+                $q->orWhereRaw(
+                    "REPLACE(REPLACE(REPLACE(COALESCE(cpf, ''), '.', ''), '-', ''), ' ', '') = ?",
+                    [$digits]
+                );
+            }
+        })->first();
+
+        if (! $cliente) {
             return response()->json(['message' => 'Cliente não encontrado'], 404);
         }
-       
+
         return response()->json($cliente);
     }
 

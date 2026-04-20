@@ -28,7 +28,7 @@
                     id="data_transferencia"
                     name="data_transferencia"
                     class="form-datepicker form-control date-mask"
-                    value="{{ old('data_transferencia', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d-m-Y') : \Carbon\Carbon::today()->format('d-m-Y')) }}"
+                    value="{{ old('data_transferencia', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') : \Carbon\Carbon::today()->format('d/m/Y')) }}"
                     required
                 >
                 <div class="input-group-append">

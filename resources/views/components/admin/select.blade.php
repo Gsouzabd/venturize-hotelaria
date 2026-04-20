@@ -1,5 +1,6 @@
 @props([
     'name',
+    'id' => null,
     'class' => '',
     'disabled' => false,
     'placeholder' => 'Selecione um item',
@@ -9,6 +10,7 @@
 ])
 
 <select name="{{ $name }}"
+        @if($id) id="{{ $id }}" @endif
         class="custom-select{{ $class ? ' ' . $class : '' }}"{{ $disabled ? ' disabled' : '' }}>
     <option value="">{{ $placeholder }}</option>
     @if(!empty($items))

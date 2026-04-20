@@ -427,7 +427,140 @@ class MesaService {
         return $dompdf->stream('extrato_reserva.pdf');
     }
 
+    /**
+     * Transfere quantidades de itens entre pedidos de apartamento (sem movimentação de stock).
+     *
+     * @param  array<int, array{produto_id: int, quantidade: int}>  $itens
+     */
+    public function transferirItensConsumoEntreReservas(int $pedidoOrigemId, int $reservaDestinoId, array $itens): void
+    {
+        if ($itens === []) {
+            throw new \InvalidArgumentException('Selecione pelo menos um item para transferir.');
+        }
 
+        $porProduto = [];
+        foreach ($itens as $row) {
+            $pid = (int) ($row['produto_id'] ?? 0);
+            $qty = (int) ($row['quantidade'] ?? 0);
+            if ($pid < 1 || $qty < 1) {
+                continue;
+            }
+            $porProduto[$pid] = ($porProduto[$pid] ?? 0) + $qty;
+        }
+
+        if ($porProduto === []) {
+            throw new \InvalidArgumentException('Itens inválidos para transferência.');
+        }
+
+        DB::transaction(function () use ($pedidoOrigemId, $reservaDestinoId, $porProduto) {
+            $pedidoOrigem = Pedido::lockForUpdate()->with(['reserva', 'itens'])->findOrFail($pedidoOrigemId);
+
+            if (!$pedidoOrigem->pedido_apartamento) {
+                throw new \InvalidArgumentException('Apenas pedidos de apartamento podem usar esta transferência.');
+            }
+            if ($pedidoOrigem->status !== 'aberto') {
+                throw new \InvalidArgumentException('O pedido de origem não está aberto.');
+            }
+
+            $reservaOrigem = $pedidoOrigem->reserva;
+            if (!$reservaOrigem) {
+                throw new \InvalidArgumentException('Pedido sem reserva associada.');
+            }
+
+            $reservaDest = Reserva::lockForUpdate()
+                ->with(['quarto', 'clienteResponsavel', 'clienteSolicitante'])
+                ->findOrFail($reservaDestinoId);
+
+            if ((int) $reservaDest->id === (int) $reservaOrigem->id) {
+                throw new \InvalidArgumentException('Selecione uma reserva de destino diferente da atual.');
+            }
+
+            if ($reservaDest->situacao_reserva !== 'HOSPEDADO') {
+                throw new \InvalidArgumentException('A reserva de destino precisa estar hospedada (HOSPEDADO).');
+            }
+
+            if (
+                !($reservaDest->data_checkin < $reservaOrigem->data_checkout
+                && $reservaDest->data_checkout > $reservaOrigem->data_checkin)
+            ) {
+                throw new \InvalidArgumentException('O período da reserva de destino não coincide com o desta reserva.');
+            }
+
+            $pedidoDest = Pedido::lockForUpdate()
+                ->where('reserva_id', $reservaDest->id)
+                ->where('pedido_apartamento', true)
+                ->first();
+
+            if (!$pedidoDest) {
+                $clienteId = $reservaDest->clienteResponsavel->id ?? $reservaDest->clienteSolicitante->id ?? null;
+                if (!$clienteId) {
+                    throw new \InvalidArgumentException('Reserva de destino sem cliente associado.');
+                }
+                $pedidoDest = Pedido::create([
+                    'reserva_id' => $reservaDest->id,
+                    'cliente_id' => $clienteId,
+                    'mesa_id' => null,
+                    'status' => 'aberto',
+                    'total' => 0.00,
+                    'pedido_apartamento' => true,
+                ]);
+            } elseif ($pedidoDest->status !== 'aberto') {
+                throw new \InvalidArgumentException('O pedido de consumo da reserva de destino não está aberto.');
+            }
+
+            $operadorId = auth()->id();
+
+            foreach ($porProduto as $produtoId => $quantidadeTransferir) {
+                $itemOrigem = $pedidoOrigem->itens()->where('produto_id', $produtoId)->lockForUpdate()->first();
+
+                if (!$itemOrigem || $itemOrigem->quantidade < $quantidadeTransferir) {
+                    throw new \InvalidArgumentException(
+                        'Quantidade indisponível para o produto ID '.$produtoId.' no pedido de origem.'
+                    );
+                }
+
+                $precoUnitario = (float) $itemOrigem->preco;
+
+                if ($itemOrigem->quantidade > $quantidadeTransferir) {
+                    $itemOrigem->quantidade -= $quantidadeTransferir;
+                    $itemOrigem->save();
+                } else {
+                    $itemOrigem->delete();
+                }
+
+                $itemDest = $pedidoDest->itens()->where('produto_id', $produtoId)->lockForUpdate()->first();
+                if ($itemDest) {
+                    $itemDest->quantidade += $quantidadeTransferir;
+                    $itemDest->save();
+                } else {
+                    $pedidoDest->itens()->create([
+                        'produto_id' => $produtoId,
+                        'quantidade' => $quantidadeTransferir,
+                        'preco' => $precoUnitario,
+                        'operador_id' => $operadorId,
+                    ]);
+                }
+            }
+
+            $pedidoOrigem->refresh();
+            $pedidoDest->refresh();
+            $this->sincronizarTotaisPedido($pedidoOrigem);
+            $this->sincronizarTotaisPedido($pedidoDest);
+        });
+    }
+
+    private function sincronizarTotaisPedido(Pedido $pedido): void
+    {
+        $pedido->loadMissing('itens');
+        $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
+        $taxaServico = $pedido->pedido_apartamento ? 0 : $total * 0.1;
+        $pedido->update([
+            'total' => $total,
+            'taxa_servico' => $taxaServico,
+            'removar_taxa' => $pedido->pedido_apartamento ? 1 : $pedido->remover_taxa,
+            'total_com_taxa' => $total + $taxaServico,
+        ]);
+    }
 
     public function imprimirCupom($conteudo) {
             try {

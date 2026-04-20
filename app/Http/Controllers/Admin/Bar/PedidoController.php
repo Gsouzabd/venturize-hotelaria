@@ -9,8 +9,10 @@ use App\Models\Bar\Mesa;
 use App\Models\Categoria;
 use App\Models\Bar\Pedido;
 use App\Models\Bar\ImpressaoPedido;
+use App\Models\Reserva;
 use Illuminate\Http\Request;
 use App\Events\ItemAdicionado;
+use App\Http\Requests\Admin\Bar\TransferirConsumoRequest;
 use App\Services\Bar\MesaService;
 use App\Services\PrinterService;
 use Illuminate\Support\Facades\Log;
@@ -187,6 +189,70 @@ class PedidoController extends Controller
         return redirect()
             ->route('admin.bar.pedidos.index')
             ->with('notice', config('app.messages.delete'));
+    }
+
+    public function reservasDestinoConsumo($id)
+    {
+        $pedido = $this->model->with(['reserva'])->findOrFail($id);
+
+        if (!$pedido->pedido_apartamento || $pedido->status !== 'aberto' || !$pedido->reserva) {
+            return response()->json(['data' => []], 403);
+        }
+
+        $orig = $pedido->reserva;
+        $ci = $orig->data_checkin;
+        $co = $orig->data_checkout;
+
+        $reservas = Reserva::query()
+            ->with(['quarto', 'clienteResponsavel', 'clienteSolicitante'])
+            ->where('id', '!=', $orig->id)
+            ->where('situacao_reserva', 'HOSPEDADO')
+            ->where(function ($q) use ($ci, $co) {
+                $q->where('data_checkin', '<', $co)
+                    ->where('data_checkout', '>', $ci);
+            })
+            ->orderBy('quarto_id')
+            ->get();
+
+        $data = $reservas->map(function (Reserva $r) {
+            $numero = $r->quarto->numero ?? '?';
+            $nome = $r->clienteResponsavel->nome ?? $r->clienteSolicitante->nome ?? '—';
+
+            return [
+                'id' => $r->id,
+                'label' => "Apto {$numero} — Reserva #{$r->id} — {$nome}",
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function transferirConsumo(TransferirConsumoRequest $request, $id)
+    {
+        try {
+            $this->mesaService->transferirItensConsumoEntreReservas(
+                (int) $id,
+                (int) $request->validated('reserva_destino_id'),
+                $request->validated('itens')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Consumo transferido com sucesso.',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('transferirConsumo: '.$e->getMessage(), ['exception' => $e]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível concluir a transferência. Tente novamente.',
+            ], 500);
+        }
     }
 
     public function showCupomParcial($idPedido)

@@ -12,7 +12,7 @@
                     id="data_entrada_dayuse"
                     class="form-control datepicker dayuse-field"
                     placeholder="Selecione a data"
-                    :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d-m-Y') : '')"/>
+                    :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') : '')"/>
             </x-admin.field>
             <x-admin.field cols="6">
                 <x-admin.label label="Data saída (mesmo dia)"/>
@@ -21,7 +21,7 @@
                     id="data_saida_dayuse"
                     class="form-control datepicker dayuse-field"
                     placeholder="Mesmo dia"
-                    :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d-m-Y') : '')"/>
+                    :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') : '')"/>
             </x-admin.field>
         </x-admin.field-group>
         <x-admin.field-group>
@@ -84,7 +84,7 @@
                         name="data_entrada"
                         class="form-control datepicker"
                         placeholder="Selecione a data de entrada"
-                        :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d-m-Y') : '')"/>
+                        :value="old('data_entrada', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') : '')"/>
                 </x-admin.field>
                 <x-admin.field cols="6">
                     <x-admin.label label="Data de Saída"/>
@@ -93,7 +93,7 @@
                         name="data_saida"
                         class="form-control datepicker"
                         placeholder="Selecione a data de saída"
-                        :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d-m-Y') : '')"/>
+                        :value="old('data_saida', isset($reserva->data_checkout) ? \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') : '')"/>
                 </x-admin.field>
             </x-admin.field-group>
 
