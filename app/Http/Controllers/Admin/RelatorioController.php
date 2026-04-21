@@ -155,18 +155,21 @@ class RelatorioController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    /**
+     * Café ~9h: check-in do hotel é às 15h, logo no dia D só contam quem já pernoitou
+     * (data de check-in &lt; D) e ainda está ou sai nesse dia (data_checkout &gt;= D).
+     */
     private function queryReservasCafe(Carbon $dataRef)
     {
         $refStr = $dataRef->format('Y-m-d');
-        $limiteSuperior = $dataRef->copy()->addDay()->format('Y-m-d');
 
         return Reserva::query()
             ->select('reservas.*')
             ->leftJoin('quartos', 'quartos.id', '=', 'reservas.quarto_id')
             ->with(['quarto', 'clienteResponsavel', 'clienteSolicitante', 'acompanhantes.cliente'])
             ->where('reservas.situacao_reserva', 'HOSPEDADO')
-            ->where('reservas.data_checkin', '<', $limiteSuperior)
-            ->where('reservas.data_checkout', '>', $refStr)
+            ->where('reservas.data_checkin', '<', $refStr)
+            ->where('reservas.data_checkout', '>=', $refStr)
             ->orderBy('quartos.numero')
             ->orderBy('reservas.id');
     }

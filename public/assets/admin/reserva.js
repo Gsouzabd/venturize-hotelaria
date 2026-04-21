@@ -70,8 +70,28 @@ async function adicionarQuartoAoCart(
 
     console.log('adicionando ao carrinho', quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total,quartoComposicao);
     
-    // Create a deep copy of the object to avoid reference issues
-    const itemToAdd = JSON.parse(JSON.stringify({ quartoId, quartoNumero, quartoAndar, quartoClassificacao, nome, cpf, criancas_ate_7, criancas_mais_7, adultos, dataCheckin, dataCheckout, precosDiarios, total, reservaId , quartoComposicao}));
+    // Create a deep copy of the object to avoid reference issues (acompanhantes: só quando vêm do servidor na edição)
+    const itemToAddPayload = {
+        quartoId,
+        quartoNumero,
+        quartoAndar,
+        quartoClassificacao,
+        nome,
+        cpf,
+        criancas_ate_7,
+        criancas_mais_7,
+        adultos,
+        dataCheckin,
+        dataCheckout,
+        precosDiarios,
+        total,
+        reservaId,
+        quartoComposicao,
+    };
+    if (acompanhantes && Array.isArray(acompanhantes) && acompanhantes.length > 0) {
+        itemToAddPayload.acompanhantes = JSON.parse(JSON.stringify(acompanhantes));
+    }
+    const itemToAdd = JSON.parse(JSON.stringify(itemToAddPayload));
     
     cart.push(itemToAdd);
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -115,8 +135,11 @@ async function adicionarQuartoAoCart(
             if (tipo === 'Adulto' && index === 0 && !edit) {
                 return;
             }
+            const acompIdAttr = acompanhante.id
+                ? ` data-acompanhante-id="${String(parseInt(acompanhante.id, 10))}"`
+                : '';
             acompanhantesHtml += `
-            <div class="acompanhante">
+            <div class="acompanhante"${acompIdAttr}>
                 <h5>(${index + 1}) ${tipo} </h5>
                 <div class="row">
                     <div class="col-md-4">
@@ -1505,3 +1528,159 @@ document.addEventListener('DOMContentLoaded', function () {
         showTabByHash(window.location.hash);
     }
 });
+
+function _escapeAttrAcomp(s) {
+    return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+}
+
+function _nextAcompanhanteIndexForTipo(quartoId, tipo) {
+    const needle = `[acompanhantes][${tipo}][`;
+    const inputs = document.querySelectorAll('#acompanhantes-container input[name*="[nome]"]');
+    let max = -1;
+    inputs.forEach(function (inp) {
+        const n = inp.name || '';
+        const pos = n.indexOf(needle);
+        if (pos === -1) {
+            return;
+        }
+        const rest = n.slice(pos + needle.length);
+        const m = rest.match(/^(\d+)\]\[nome\]$/);
+        if (m) {
+            max = Math.max(max, parseInt(m[1], 10));
+        }
+    });
+    return max + 1;
+}
+
+/** Sincroniza o painel "Reserva Atual" (cart preview) após POST na aba Acompanhantes. */
+window.appendAcompanhanteToCartPreview = function (acompanhante) {
+    const removeBtn = document.querySelector('#cart-items .remove-quarto');
+    if (!removeBtn) {
+        return;
+    }
+    const quartoId = removeBtn.getAttribute('data-quarto-id');
+    if (!quartoId) {
+        return;
+    }
+    const container = document.querySelector('#cart-items #acompanhantes-container');
+    if (!container) {
+        return;
+    }
+
+    const tipo = acompanhante.tipo || 'Adulto';
+    const index = _nextAcompanhanteIndexForTipo(quartoId, tipo);
+
+    let dataNasc = acompanhante.data_nascimento || '';
+    if (dataNasc && dataNasc.indexOf('T') !== -1) {
+        dataNasc = dataNasc.split('T')[0];
+    }
+
+    const idAttr = acompanhante.id
+        ? ` data-acompanhante-id="${String(parseInt(acompanhante.id, 10))}"`
+        : '';
+
+    const emailTelefoneHtml =
+        tipo === 'Adulto'
+            ? `
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-envelope"></i>
+                            <span>Email:</span>
+                            <input type="email" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][email]" value="${_escapeAttrAcomp(acompanhante.email)}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-phone"></i>
+                            <span>Telefone:</span>
+                            <input type="text" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][telefone]" value="${_escapeAttrAcomp(acompanhante.telefone)}">
+                        </div>
+                    </div>`
+            : '';
+
+    const block = `
+            <div class="acompanhante"${idAttr}>
+                <h5>(${index + 1}) ${tipo} </h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-user"></i>
+                            <span>Nome:</span>
+                            <input type="text" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][nome]" value="${_escapeAttrAcomp(acompanhante.nome)}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-id-card"></i>
+                            <span>CPF:</span>
+                            <input type="text" class="form-control cpf-mask" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][cpf]" value="${_escapeAttrAcomp(acompanhante.cpf)}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info">
+                            <i class="icon fas fa-calendar"></i>
+                            <span>Data Nascimento:</span>
+                            <input type="date" class="form-control" name="quartos[${quartoId}][acompanhantes][${tipo}][${index}][data_nascimento]" value="${_escapeAttrAcomp(dataNasc)}">
+                        </div>
+                    </div>
+                    ${emailTelefoneHtml}
+                </div>
+            </div>
+            `;
+
+    container.insertAdjacentHTML('beforeend', block);
+    if (typeof $ !== 'undefined' && $.fn.mask) {
+        $(container).find('.cpf-mask').last().mask('000.000.000-00', { reverse: true });
+    }
+
+    try {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const item = cart.find(function (c) {
+            return String(c.quartoId) === String(quartoId);
+        });
+        if (item) {
+            if (!Array.isArray(item.acompanhantes)) {
+                item.acompanhantes = [];
+            }
+            item.acompanhantes.push({
+                id: acompanhante.id,
+                tipo: acompanhante.tipo,
+                nome: acompanhante.nome,
+                cpf: acompanhante.cpf,
+                data_nascimento: dataNasc,
+                email: acompanhante.email || null,
+                telefone: acompanhante.telefone || null,
+            });
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+    } catch (e) {
+        console.warn('appendAcompanhanteToCartPreview: localStorage', e);
+    }
+};
+
+window.removeAcompanhanteFromCartPreview = function (acompanhanteId) {
+    const id = String(acompanhanteId);
+    const el = document.querySelector(
+        '#cart-items #acompanhantes-container .acompanhante[data-acompanhante-id="' + id + '"]',
+    );
+    if (el) {
+        el.remove();
+    }
+    try {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart.forEach(function (c) {
+            if (!Array.isArray(c.acompanhantes)) {
+                return;
+            }
+            c.acompanhantes = c.acompanhantes.filter(function (a) {
+                return String(a.id) !== id;
+            });
+        });
+        localStorage.setItem('cart', JSON.stringify(cart));
+    } catch (e) {
+        console.warn('removeAcompanhanteFromCartPreview: localStorage', e);
+    }
+};

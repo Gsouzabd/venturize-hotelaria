@@ -226,6 +226,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 const row = document.getElementById('row-acomp-' + aid);
                 if (row) row.remove();
+                if (typeof window.removeAcompanhanteFromCartPreview === 'function') {
+                    window.removeAcompanhanteFromCartPreview(aid);
+                }
             }
         })
         .catch(() => alert('Erro ao remover acompanhante.'));
@@ -307,6 +310,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 </td>
             `;
             tbody.appendChild(tr);
+
+            if (typeof window.appendAcompanhanteToCartPreview === 'function') {
+                window.appendAcompanhanteToCartPreview(a);
+            }
 
             // Limpar campos
             document.getElementById('acomp_cliente_id').value = '';

@@ -31,14 +31,16 @@
 
     <div class="card mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Hóspedes (titular e acompanhantes) — situação Hospedado na data</h5>
+            <h5 class="mb-0">Hóspedes (titular e acompanhantes) — presentes no café (9h) do dia</h5>
             <a href="{{ route('admin.relatorios.cafe.exportar', $filters) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel"></i> Exportar Excel
             </a>
         </div>
         <div class="card-body">
             <p class="text-muted small mb-3">
-                Inclui reservas cuja estadia cobre a data escolhida (check-in antes do fim do dia e check-out após o início do dia).
+                Check-in às 15h: no café da manhã do dia <strong>D</strong> entram só reservas <strong>HOSPEDADO</strong> com
+                <strong>data de check-in anterior a D</strong> e <strong>data de check-out em D ou depois</strong>
+                (ou seja, já pernoitaram antes das 9h e ainda estão ou saem nesse dia).
             </p>
             <div class="table-responsive">
                 <table class="table table-bordered table-striped">
