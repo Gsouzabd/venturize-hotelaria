@@ -60,8 +60,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('relatorios')->name('relatorios.')->controller(RelatorioController::class)->group(function () {
             Route::get('/estoque', 'estoque')->name('estoque');
             Route::get('/estoque/exportar', 'exportarEstoque')->name('estoque.exportar');
+            Route::get('/estoque/exportar-pdf', 'exportarEstoquePdf')->name('estoque.exportar-pdf');
             Route::get('/cafe', 'cafe')->name('cafe');
             Route::get('/cafe/exportar', 'exportarCafe')->name('cafe.exportar');
+            Route::get('/cafe/exportar-pdf', 'exportarCafePdf')->name('cafe.exportar-pdf');
         });
 
         // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})

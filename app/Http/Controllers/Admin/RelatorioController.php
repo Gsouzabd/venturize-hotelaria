@@ -9,6 +9,8 @@ use App\Models\Produto;
 use App\Models\Reserva;
 use App\Services\ExcelExportService;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -18,24 +20,8 @@ class RelatorioController extends Controller
     {
         $this->authorize('visualizar_relatorios');
 
-        $filters = $request->all();
-        $filters['local_estoque_id'] ??= '';
-        $filters['somente_ativos'] ??= '1';
-
-        $query = Estoque::query()
-            ->with(['produto.categoria', 'localEstoque'])
-            ->orderBy('local_estoque_id')
-            ->orderBy('id');
-
-        if ($filters['local_estoque_id'] !== '') {
-            $query->where('local_estoque_id', $filters['local_estoque_id']);
-        }
-
-        if (($filters['somente_ativos'] ?? '') === '1') {
-            $query->whereHas('produto', fn ($q) => $q->where('ativo', 1));
-        }
-
-        $estoques = $query->get();
+        $filters = $this->normalizarFiltrosEstoque($request);
+        $estoques = $this->colecaoEstoqueParaRelatorio($filters);
         $locaisEstoque = LocalEstoque::orderBy('nome')->get();
 
         return view('admin.relatorios.estoque', compact('estoques', 'filters', 'locaisEstoque'));
@@ -45,24 +31,8 @@ class RelatorioController extends Controller
     {
         $this->authorize('visualizar_relatorios');
 
-        $filters = $request->all();
-        $filters['local_estoque_id'] ??= '';
-        $filters['somente_ativos'] ??= '1';
-
-        $query = Estoque::query()
-            ->with(['produto.categoria', 'localEstoque'])
-            ->orderBy('local_estoque_id')
-            ->orderBy('id');
-
-        if ($filters['local_estoque_id'] !== '') {
-            $query->where('local_estoque_id', $filters['local_estoque_id']);
-        }
-
-        if (($filters['somente_ativos'] ?? '') === '1') {
-            $query->whereHas('produto', fn ($q) => $q->where('ativo', 1));
-        }
-
-        $estoques = $query->get();
+        $filters = $this->normalizarFiltrosEstoque($request);
+        $estoques = $this->colecaoEstoqueParaRelatorio($filters);
 
         $unidades = Produto::UNIDADES;
         $dadosExcel = [];
@@ -105,6 +75,33 @@ class RelatorioController extends Controller
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.ms-excel',
         ])->deleteFileAfterSend(true);
+    }
+
+    public function exportarEstoquePdf(Request $request)
+    {
+        $this->authorize('visualizar_relatorios');
+
+        $filters = $this->normalizarFiltrosEstoque($request);
+        $estoques = $this->colecaoEstoqueParaRelatorio($filters);
+        $unidades = Produto::UNIDADES;
+        $geradoEm = Carbon::now()->format('d/m/Y H:i');
+
+        $nomeLocalFiltro = null;
+        if ($filters['local_estoque_id'] !== '') {
+            $nomeLocalFiltro = LocalEstoque::find($filters['local_estoque_id'])?->nome;
+        }
+
+        $html = view('pdf.relatorio_estoque', compact(
+            'estoques',
+            'unidades',
+            'filters',
+            'geradoEm',
+            'nomeLocalFiltro'
+        ))->render();
+
+        $filename = 'relatorio_estoque_' . Carbon::now()->format('Y-m-d') . '.pdf';
+
+        return $this->respostaPdf($html, $filename, 'landscape');
     }
 
     public function cafe(Request $request)
@@ -153,6 +150,74 @@ class RelatorioController extends Controller
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.ms-excel',
         ])->deleteFileAfterSend(true);
+    }
+
+    public function exportarCafePdf(Request $request)
+    {
+        $this->authorize('visualizar_relatorios');
+
+        $filters = $request->all();
+        $filters['data'] ??= Carbon::now()->format('d/m/Y');
+
+        $dataRef = Carbon::createFromFormat('d/m/Y', $filters['data'])->startOfDay();
+        $reservas = $this->queryReservasCafe($dataRef)->get();
+        $linhas = $this->montarLinhasCafe($reservas);
+
+        $dataReferencia = $dataRef->format('d/m/Y');
+        $html = view('pdf.relatorio_cafe', compact('linhas', 'dataReferencia'))->render();
+
+        $filename = 'listagem_cafe_' . $dataRef->format('Y-m-d') . '.pdf';
+
+        return $this->respostaPdf($html, $filename, 'portrait');
+    }
+
+    private function normalizarFiltrosEstoque(Request $request): array
+    {
+        $filters = $request->all();
+        $filters['local_estoque_id'] ??= '';
+        $filters['somente_ativos'] ??= '1';
+
+        return $filters;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Estoque>
+     */
+    private function colecaoEstoqueParaRelatorio(array $filters): Collection
+    {
+        $query = Estoque::query()
+            ->with(['produto.categoria', 'localEstoque'])
+            ->orderBy('local_estoque_id')
+            ->orderBy('id');
+
+        if ($filters['local_estoque_id'] !== '') {
+            $query->where('local_estoque_id', $filters['local_estoque_id']);
+        }
+
+        if (($filters['somente_ativos'] ?? '') === '1') {
+            $query->whereHas('produto', fn ($q) => $q->where('ativo', 1));
+        }
+
+        return $query->get();
+    }
+
+    private function respostaPdf(string $html, string $filename, string $orientation = 'portrait')
+    {
+        $pdfOptions = new Options();
+        $pdfOptions->set('defaultFont', 'DejaVu Sans');
+        $pdfOptions->set('isHtml5ParserEnabled', true);
+        $pdfOptions->set('isRemoteEnabled', false);
+
+        $dompdf = new Dompdf($pdfOptions);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', $orientation);
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 
     /**

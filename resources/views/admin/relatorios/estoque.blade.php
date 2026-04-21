@@ -49,11 +49,16 @@
     </div>
 
     <div class="card mt-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <h5 class="mb-0">Posição de estoque</h5>
-            <a href="{{ route('admin.relatorios.estoque.exportar', $filters) }}" class="btn btn-success btn-sm">
-                <i class="fas fa-file-excel"></i> Exportar Excel
-            </a>
+            <div class="btn-group">
+                <a href="{{ route('admin.relatorios.estoque.exportar', $filters) }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-file-excel"></i> Excel
+                </a>
+                <a href="{{ route('admin.relatorios.estoque.exportar-pdf', $filters) }}" class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
