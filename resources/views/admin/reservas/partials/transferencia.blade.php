@@ -10,7 +10,9 @@
     <x-admin.field-group>
         <x-admin.field cols="6">
             <x-admin.label label="Novo Apartamento" required/>
-            <select name="quarto_id" class="form-control" required>
+            {{-- Sem required HTML5: este bloco fica numa aba inativa no mesmo <form> da reserva;
+                 o submit principal falharia com "not focusable". Validação em transferirApartamento. --}}
+            <select name="quarto_id" class="form-control">
                 <option value="">Selecione o apartamento...</option>
                 @foreach(\App\Models\Quarto::where('inativo', 0)->orderBy('numero')->get() as $q)
                     <option value="{{ $q->id }}" {{ $q->id == $reserva->quarto_id ? 'disabled' : '' }}>
@@ -29,7 +31,6 @@
                     name="data_transferencia"
                     class="form-datepicker form-control date-mask"
                     value="{{ old('data_transferencia', isset($reserva->data_checkin) ? \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') : \Carbon\Carbon::today()->format('d/m/Y')) }}"
-                    required
                 >
                 <div class="input-group-append">
                     <span class="input-group-text">
