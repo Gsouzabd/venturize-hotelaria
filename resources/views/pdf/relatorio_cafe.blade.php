@@ -10,6 +10,9 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #333; padding: 5px 6px; text-align: left; }
         th { background: #eee; font-weight: bold; }
+        .col-check { width: 28px; text-align: center; }
+        .col-qtd { width: 50px; text-align: center; }
+        .totais { font-weight: bold; text-transform: uppercase; margin-top: 12px; font-size: 11px; border: 1px solid #333; padding: 6px 10px; background: #f5f5f5; }
     </style>
 </head>
 <body>
@@ -24,8 +27,11 @@
             <tr>
                 <th>Quarto</th>
                 <th>Tipo</th>
+                <th>Adulto/Criança</th>
+                <th class="col-qtd">Qtd./Quarto</th>
                 <th>Nome</th>
                 <th>CPF</th>
+                <th class="col-check">✓</th>
             </tr>
         </thead>
         <tbody>
@@ -33,15 +39,28 @@
                 <tr>
                     <td>{{ $linha['quarto'] }}</td>
                     <td>{{ $linha['tipo'] }}</td>
+                    <td>{{ $linha['tipo_pessoa'] }}</td>
+                    <td class="col-qtd">{{ $linha['qtd_pessoas_quarto'] }}</td>
                     <td>{{ $linha['nome'] }}</td>
                     <td>{{ $linha['cpf'] !== '' ? $linha['cpf'] : '—' }}</td>
+                    <td class="col-check"></td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4">Nenhum hóspede nesta data.</td>
+                    <td colspan="7">Nenhum hóspede nesta data.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
+
+    @if($totalGeral > 0)
+    <div class="totais">
+        TOTAL ADULTOS: {{ $totalAdultos }}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        TOTAL CRIANÇAS: {{ $totalCriancas }}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        TOTAL GERAL: {{ $totalGeral }}
+    </div>
+    @endif
 </body>
 </html>

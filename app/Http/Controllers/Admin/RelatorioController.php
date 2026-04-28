@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Estoque;
 use App\Models\LocalEstoque;
+use App\Models\Pagamento;
 use App\Models\Produto;
+use App\Models\Quarto;
 use App\Models\Reserva;
 use App\Services\ExcelExportService;
 use Carbon\Carbon;
@@ -115,7 +117,11 @@ class RelatorioController extends Controller
         $reservas = $this->queryReservasCafe($dataRef)->get();
         $linhas = $this->montarLinhasCafe($reservas);
 
-        return view('admin.relatorios.cafe', compact('linhas', 'filters'));
+        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
+        $totalGeral    = count($linhas);
+
+        return view('admin.relatorios.cafe', compact('linhas', 'filters', 'totalAdultos', 'totalCriancas', 'totalGeral'));
     }
 
     public function exportarCafe(Request $request)
@@ -130,19 +136,30 @@ class RelatorioController extends Controller
         $linhas = $this->montarLinhasCafe($reservas);
 
         $dadosExcel = [];
+        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
+        $totalGeral    = count($linhas);
+
         $dadosExcel[] = ['Listagem de café — hóspedes por quarto'];
         $dadosExcel[] = ['Data de referência: ' . $dataRef->format('d/m/Y')];
         $dadosExcel[] = [];
-        $dadosExcel[] = ['Quarto', 'Tipo', 'Nome', 'CPF'];
+        $dadosExcel[] = ['Quarto', 'Tipo', 'Adulto/Criança', 'Qtd./Quarto', 'Nome', 'CPF'];
 
         foreach ($linhas as $linha) {
             $dadosExcel[] = [
                 $linha['quarto'],
                 $linha['tipo'],
+                $linha['tipo_pessoa'],
+                $linha['qtd_pessoas_quarto'],
                 $linha['nome'],
                 $linha['cpf'],
             ];
         }
+
+        $dadosExcel[] = [];
+        $dadosExcel[] = ['TOTAL ADULTOS', $totalAdultos, '', '', '', ''];
+        $dadosExcel[] = ['TOTAL CRIANÇAS', $totalCriancas, '', '', '', ''];
+        $dadosExcel[] = ['TOTAL GERAL', $totalGeral, '', '', '', ''];
 
         $filename = 'listagem_cafe_' . $dataRef->format('Y-m-d') . '.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Listagem de café');
@@ -163,12 +180,170 @@ class RelatorioController extends Controller
         $reservas = $this->queryReservasCafe($dataRef)->get();
         $linhas = $this->montarLinhasCafe($reservas);
 
+        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
+        $totalGeral    = count($linhas);
+
         $dataReferencia = $dataRef->format('d/m/Y');
-        $html = view('pdf.relatorio_cafe', compact('linhas', 'dataReferencia'))->render();
+        $html = view('pdf.relatorio_cafe', compact('linhas', 'dataReferencia', 'totalAdultos', 'totalCriancas', 'totalGeral'))->render();
 
         $filename = 'listagem_cafe_' . $dataRef->format('Y-m-d') . '.pdf';
 
         return $this->respostaPdf($html, $filename, 'portrait');
+    }
+
+    public function pagamentos(Request $request)
+    {
+        $this->authorize('visualizar_relatorios');
+
+        $filters = $this->normalizarFiltrosPagamentos($request->all());
+        $reservas = $this->buildPagamentosQuery($filters)->get();
+        $tiposPagamento = Pagamento::METODOS_PAGAMENTO;
+        $tiposQuarto = Quarto::distinct()->orderBy('classificacao')->pluck('classificacao')->filter()->values();
+
+        return view('admin.relatorios.pagamentos', compact('reservas', 'filters', 'tiposPagamento', 'tiposQuarto'));
+    }
+
+    public function exportarPagamentos(Request $request)
+    {
+        $this->authorize('visualizar_relatorios');
+
+        $filters = $this->normalizarFiltrosPagamentos($request->all());
+        $reservas = $this->buildPagamentosQuery($filters)->get();
+
+        $dadosExcel = [];
+        $dadosExcel[] = ['Relatório de Pagamentos de Reservas'];
+        $dadosExcel[] = ['Gerado em: ' . Carbon::now()->format('d/m/Y H:i')];
+        $dadosExcel[] = [];
+        $dadosExcel[] = ['ID Reserva', 'Hóspede', 'Quarto', 'Tipo Quarto', 'Check-in', 'Check-out', 'Tipo Pagamento', 'Valor Pago', 'Status'];
+
+        $totalValor = 0;
+        foreach ($reservas as $reserva) {
+            $cliente = $reserva->clienteResponsavel ?? $reserva->clienteSolicitante;
+            $pagamento = $reserva->pagamentos->first();
+            $metodosLabel = $this->extrairMetodosPagamento($pagamento);
+            $valorPago = $reserva->pagamentos->sum('valor_pago');
+            $totalValor += $valorPago;
+
+            $dadosExcel[] = [
+                $reserva->id,
+                $cliente->nome ?? '—',
+                $reserva->quarto->numero ?? '—',
+                $reserva->quarto->classificacao ?? '—',
+                $reserva->data_checkin ? Carbon::parse($reserva->data_checkin)->format('d/m/Y') : '—',
+                $reserva->data_checkout ? Carbon::parse($reserva->data_checkout)->format('d/m/Y') : '—',
+                $metodosLabel ?: '—',
+                $valorPago,
+                Pagamento::STATUS_PAGAMENTO[$pagamento->status_pagamento ?? ''] ?? ($pagamento->status_pagamento ?? '—'),
+            ];
+        }
+
+        $dadosExcel[] = [];
+        $dadosExcel[] = ['TOTAL', '', '', '', '', '', '', $totalValor, ''];
+
+        $filename = 'relatorio_pagamentos_' . Carbon::now()->format('Y-m-d_His') . '.xls';
+        $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório de Pagamentos');
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.ms-excel',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function exportarPagamentosPdf(Request $request)
+    {
+        $this->authorize('visualizar_relatorios');
+
+        $filters = $this->normalizarFiltrosPagamentos($request->all());
+        $reservas = $this->buildPagamentosQuery($filters)->get();
+        $tiposPagamento = Pagamento::METODOS_PAGAMENTO;
+        $geradoEm = Carbon::now()->format('d/m/Y H:i');
+        $totalValor = $reservas->sum(fn ($r) => $r->pagamentos->sum('valor_pago'));
+
+        $html = view('pdf.relatorio_pagamentos', compact('reservas', 'filters', 'tiposPagamento', 'geradoEm', 'totalValor'))->render();
+
+        $filename = 'relatorio_pagamentos_' . Carbon::now()->format('Y-m-d') . '.pdf';
+
+        return $this->respostaPdf($html, $filename, 'landscape');
+    }
+
+    private function normalizarFiltrosPagamentos(array $filters): array
+    {
+        $filters['tipo_pagamento'] ??= null;
+        $filters['tipo_quarto'] ??= null;
+        $filters['nome'] ??= null;
+        $filters['data_checkin_inicial'] ??= null;
+        $filters['data_checkin_final'] ??= null;
+        $filters['data_checkout_inicial'] ??= null;
+        $filters['data_checkout_final'] ??= null;
+
+        return $filters;
+    }
+
+    private function buildPagamentosQuery(array $filters)
+    {
+        $query = Reserva::with(['pagamentos', 'quarto', 'clienteResponsavel', 'clienteSolicitante'])
+            ->whereHas('pagamentos');
+
+        if (!empty($filters['tipo_pagamento'])) {
+            $query->whereHas('pagamentos', fn ($q) => $q->where('valores_recebidos', 'like', '%' . $filters['tipo_pagamento'] . '%'));
+        }
+
+        if (!empty($filters['tipo_quarto'])) {
+            $query->whereHas('quarto', fn ($q) => $q->where('classificacao', $filters['tipo_quarto']));
+        }
+
+        if (!empty($filters['nome'])) {
+            $nome = $filters['nome'];
+            $query->where(function ($q) use ($nome) {
+                $q->whereHas('clienteSolicitante', fn ($sq) => $sq->where('nome', 'like', '%' . $nome . '%'))
+                  ->orWhereHas('clienteResponsavel', fn ($sq) => $sq->where('nome', 'like', '%' . $nome . '%'));
+            });
+        }
+
+        if (!empty($filters['data_checkin_inicial'])) {
+            $query->where('data_checkin', '>=', Carbon::createFromFormat('d/m/Y', $filters['data_checkin_inicial'])->startOfDay());
+        }
+        if (!empty($filters['data_checkin_final'])) {
+            $query->where('data_checkin', '<=', Carbon::createFromFormat('d/m/Y', $filters['data_checkin_final'])->endOfDay());
+        }
+        if (!empty($filters['data_checkout_inicial'])) {
+            $query->where('data_checkout', '>=', Carbon::createFromFormat('d/m/Y', $filters['data_checkout_inicial'])->startOfDay());
+        }
+        if (!empty($filters['data_checkout_final'])) {
+            $query->where('data_checkout', '<=', Carbon::createFromFormat('d/m/Y', $filters['data_checkout_final'])->endOfDay());
+        }
+
+        return $query->orderBy('data_checkin', 'desc');
+    }
+
+    private function extrairMetodosPagamento(?Pagamento $pagamento): string
+    {
+        if (!$pagamento || !$pagamento->valores_recebidos) {
+            return '';
+        }
+
+        $valores = is_array($pagamento->valores_recebidos)
+            ? $pagamento->valores_recebidos
+            : json_decode($pagamento->valores_recebidos, true) ?? [];
+
+        $labels = [];
+        foreach (array_keys($valores) as $chave) {
+            $key = explode('-', $chave)[0];
+            foreach (Pagamento::METODOS_PAGAMENTO as $catKey => $cat) {
+                if ($key === $catKey) {
+                    $labels[] = $cat['label'];
+                    break;
+                }
+                foreach ($cat['submetodos'] as $subKey => $subLabel) {
+                    if ($key === $subKey) {
+                        $labels[] = $subLabel;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return implode(', ', array_unique($labels));
     }
 
     private function normalizarFiltrosEstoque(Request $request): array
@@ -241,7 +416,7 @@ class RelatorioController extends Controller
 
     /**
      * @param  Collection<int, Reserva>  $reservas
-     * @return array<int, array{quarto: string, tipo: string, nome: string, cpf: string, ordem: int}>
+     * @return array<int, array{quarto: string, tipo: string, tipo_pessoa: string, qtd_pessoas_quarto: int, nome: string, cpf: string, ordem: int}>
      */
     private function montarLinhasCafe(Collection $reservas): array
     {
@@ -252,24 +427,29 @@ class RelatorioController extends Controller
             $titular = $reserva->clienteResponsavel ?? $reserva->clienteSolicitante;
             $nomeTitular = $titular->nome ?? '—';
             $cpfTitular = $titular->cpf ?? '';
+            $qtdPessoas = 1 + $reserva->acompanhantes->count();
 
             $linhas[] = [
-                'quarto' => (string) $numeroQuarto,
-                'tipo' => 'Titular',
-                'nome' => $nomeTitular,
-                'cpf' => $cpfTitular,
-                'ordem' => 0,
+                'quarto'             => (string) $numeroQuarto,
+                'tipo'               => 'Titular',
+                'tipo_pessoa'        => 'Adulto',
+                'qtd_pessoas_quarto' => $qtdPessoas,
+                'nome'               => $nomeTitular,
+                'cpf'                => $cpfTitular,
+                'ordem'              => 0,
             ];
 
             foreach ($reserva->acompanhantes as $ac) {
                 $nome = $ac->cliente->nome ?? $ac->nome ?? '—';
                 $cpf = $ac->cliente->cpf ?? $ac->cpf ?? '';
                 $linhas[] = [
-                    'quarto' => (string) $numeroQuarto,
-                    'tipo' => 'Acompanhante',
-                    'nome' => $nome,
-                    'cpf' => $cpf,
-                    'ordem' => 1,
+                    'quarto'             => (string) $numeroQuarto,
+                    'tipo'               => 'Acompanhante',
+                    'tipo_pessoa'        => $ac->tipo ?? 'Adulto',
+                    'qtd_pessoas_quarto' => $qtdPessoas,
+                    'nome'               => $nome,
+                    'cpf'                => $cpf,
+                    'ordem'              => 1,
                 ];
             }
         }

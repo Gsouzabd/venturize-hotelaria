@@ -33,6 +33,8 @@ use App\Models\Produto;
                                 <th>Produto</th>
                                 <th>Quantidade</th>
                                 <th>Unidade</th>
+                                <th>Preço Custo</th>
+                                <th>Preço Venda</th>
                                 <th>Data de Criação</th>
                                 <th>Ações</th>
                             </tr>
@@ -45,6 +47,8 @@ use App\Models\Produto;
                                     <td>{{ $estoque->produto->descricao }}</td>
                                     <td>{{ $estoque->quantidade }}</td>
                                     <td>{{ $estoque->produto->unidade}} - {{\App\Models\Produto::UNIDADES[$estoque->produto->unidade] }}</td>
+                                    <td>R$ {{ number_format($estoque->produto->preco_custo ?? 0, 2, ',', '.') }}</td>
+                                    <td>R$ {{ number_format($estoque->produto->preco_venda ?? 0, 2, ',', '.') }}</td>
                                     <td>{{ Carbon::parse($estoque->created_at)->format('d-m-Y') }}</td>
                                     <td class="cell-nowrap">
                                         <x-admin.edit-btn route="admin.estoque.edit" :route-params="['local_estoque_id' => $local->id, 'id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>
@@ -53,7 +57,7 @@ use App\Models\Produto;
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center">Nenhum estoque encontrado para este local.</td>
+                                    <td colspan="8" class="text-center">Nenhum estoque encontrado para este local.</td>
                                 </tr>
                             @endforelse
                         </tbody>

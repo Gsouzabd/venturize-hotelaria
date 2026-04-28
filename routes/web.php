@@ -64,6 +64,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/cafe', 'cafe')->name('cafe');
             Route::get('/cafe/exportar', 'exportarCafe')->name('cafe.exportar');
             Route::get('/cafe/exportar-pdf', 'exportarCafePdf')->name('cafe.exportar-pdf');
+            Route::get('/pagamentos', 'pagamentos')->name('pagamentos');
+            Route::get('/pagamentos/exportar', 'exportarPagamentos')->name('pagamentos.exportar');
+            Route::get('/pagamentos/exportar-pdf', 'exportarPagamentosPdf')->name('pagamentos.exportar-pdf');
         });
 
         // Rotas específicas para despesas (devem vir ANTES do loop para não serem capturadas por /{id})

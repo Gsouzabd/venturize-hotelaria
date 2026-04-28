@@ -53,8 +53,11 @@
                         <tr>
                             <th>Quarto</th>
                             <th>Tipo</th>
+                            <th>Adulto/Criança</th>
+                            <th>Qtd./Quarto</th>
                             <th>Nome</th>
                             <th>CPF</th>
+                            <th style="width:50px; text-align:center;">✓</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,17 +65,30 @@
                             <tr>
                                 <td>{{ $linha['quarto'] }}</td>
                                 <td>{{ $linha['tipo'] }}</td>
+                                <td>{{ $linha['tipo_pessoa'] }}</td>
+                                <td>{{ $linha['qtd_pessoas_quarto'] }}</td>
                                 <td>{{ $linha['nome'] }}</td>
                                 <td>{{ $linha['cpf'] !== '' ? $linha['cpf'] : '—' }}</td>
+                                <td style="text-align:center;"><input type="checkbox" style="width:18px;height:18px;pointer-events:none;"></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center">Nenhum hóspede encontrado para esta data</td>
+                                <td colspan="7" class="text-center">Nenhum hóspede encontrado para esta data</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+
+            @if(count($linhas) > 0)
+            <div class="mt-3 p-3 border rounded bg-light fw-bold text-uppercase fs-6">
+                <span>TOTAL ADULTOS: {{ $totalAdultos }}</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <span>TOTAL CRIANÇAS: {{ $totalCriancas }}</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <span>TOTAL GERAL: {{ $totalGeral }}</span>
+            </div>
+            @endif
         </div>
     </div>
 

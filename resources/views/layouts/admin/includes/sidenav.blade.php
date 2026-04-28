@@ -184,6 +184,12 @@
                             <span>Listagem de café</span>
                         </a>
                     </li>
+                    <li class="sidenav-item{{ is_active_path('admin/relatorios/pagamentos') ? ' active' : '' }}">
+                        <a href="{{ route('admin.relatorios.pagamentos') }}" class="sidenav-link">
+                            <i class="sidenav-icon fas fa-money-bill-wave"></i>
+                            <span>Pagamentos</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
             @endcan

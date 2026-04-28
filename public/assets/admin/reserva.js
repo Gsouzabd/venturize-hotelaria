@@ -942,6 +942,15 @@ function atualizarValorTotalDoCart() {
     } else {
         console.warn('Elemento com ID total-cart-value não encontrado no DOM');
     }
+
+    // Propaga o novo total para o campo valor_total na aba de pagamento e recalcula os valores
+    const valorTotalInput = document.getElementById('valor_total');
+    if (valorTotalInput) {
+        valorTotalInput.value = totalGeral.toFixed(2);
+        if (typeof window.atualizarValores === 'function') {
+            window.atualizarValores();
+        }
+    }
 }
 
 
