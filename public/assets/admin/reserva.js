@@ -614,13 +614,16 @@ async function adicionarQuartoAoCart(
             valorTotalSpan.textContent = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
             inputValorTotal.value = novoTotal.toFixed(2);
 
-            // Atualizar localStorage
-            if (cartEntry) {
-                cartEntry.dataCheckin  = checkinFmt;
-                cartEntry.dataCheckout = checkoutFmt;
-                cartEntry.precosDiarios = novosPrecoDiarios;
-                cartEntry.total = novoTotal.toFixed(2);
-                localStorage.setItem('cart', JSON.stringify(cart));
+            // Re-ler o cart de localStorage para evitar sobrescrever alterações
+            // feitas durante o await (ex.: usuário removeu outro quarto enquanto a API respondia).
+            const cartAtual = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartEntryAtual = cartAtual.find(item => String(item.quartoId) === String(quartoId));
+            if (cartEntryAtual) {
+                cartEntryAtual.dataCheckin  = checkinFmt;
+                cartEntryAtual.dataCheckout = checkoutFmt;
+                cartEntryAtual.precosDiarios = novosPrecoDiarios;
+                cartEntryAtual.total = novoTotal.toFixed(2);
+                localStorage.setItem('cart', JSON.stringify(cartAtual));
             }
             atualizarValorTotalDoCart();
         } catch (e) {
@@ -903,29 +906,65 @@ async function obterPlanosPrecos(quartoId, dataEntrada, dataSaida, composicaoQua
 
 // Função para remover o quarto do carrinho
 function removerQuartoDoCart(quartoId, dataCheckin, dataCheckout) {
+    // Normaliza datas para um formato canônico (YYYY-MM-DD) — entradas podem
+    // chegar como DD/MM/YYYY (datepicker), DD-MM-YYYY (após recalcular) ou YYYY-MM-DD.
+    const normalizarData = (d) => {
+        if (!d) return '';
+        const s = String(d).split(' ')[0];
+        if (s.includes('/')) {
+            const [day, month, year] = s.split('/');
+            return `${year}-${month}-${day}`;
+        }
+        if (s.includes('-')) {
+            const parts = s.split('-');
+            if (parts.length === 3 && parts[0].length === 4) return s;
+            if (parts.length === 3) {
+                const [day, month, year] = parts;
+                return `${year}-${month}-${day}`;
+            }
+        }
+        return s;
+    };
+
+    const checkinAlvo = normalizarData(dataCheckin);
+    const checkoutAlvo = normalizarData(dataCheckout);
+
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    console.log('Cart antes da remoção:', cart);
+    let removido = false;
     cart = cart.filter(item => {
-        const match = item.quartoId === String(quartoId) && item.dataCheckin === dataCheckin && item.dataCheckout === dataCheckout;
-        console.log(`Verificando item: ${JSON.stringify(item)}, match: ${match}`);
-        return !match;
+        if (removido) return true; // garante remover apenas a primeira correspondência
+        const sameId = item.quartoId === String(quartoId);
+        const sameCheckin = normalizarData(item.dataCheckin) === checkinAlvo;
+        const sameCheckout = normalizarData(item.dataCheckout) === checkoutAlvo;
+        if (sameId && sameCheckin && sameCheckout) {
+            removido = true;
+            return false;
+        }
+        return true;
     });
-    console.log('Cart após a remoção:', cart);
     localStorage.setItem('cart', JSON.stringify(cart));
-    console.log(`Quarto ${quartoId} removido do carrinho`);
 
     // Atualizar o total geral após a remoção
     atualizarValorTotalDoCart();
 
     const numeroQuartos = cart.length + 1;
     const quantidadeDeApartamentos = document.getElementById('apartamentos').value;
+    const avancarBtn = document.getElementById('avancarPagamento');
     if(numeroQuartos > quantidadeDeApartamentos){
-        document.getElementById('avancarPagamento').removeAttribute('disabled');
-        document.getElementById('avancarPagamento').classList.remove('disabled');
+        if (avancarBtn) {
+            avancarBtn.removeAttribute('disabled');
+            avancarBtn.classList.remove('disabled');
+        }
     }else{
-        document.getElementById('avançarPagamento').setAttribute('disabled', 'disabled');
-        document.getElementById('numero-do-quarto').classList.add('disabled');
-        document.getElementById('numero-do-quarto').textContent = numeroQuartos;
+        if (avancarBtn) {
+            avancarBtn.setAttribute('disabled', 'disabled');
+            avancarBtn.classList.add('disabled');
+        }
+        const numeroQuartoEl = document.getElementById('numero-do-quarto');
+        if (numeroQuartoEl) {
+            numeroQuartoEl.classList.add('disabled');
+            numeroQuartoEl.textContent = numeroQuartos;
+        }
     }
 }
 
