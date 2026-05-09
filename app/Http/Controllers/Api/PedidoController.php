@@ -69,14 +69,25 @@ class PedidoController extends Controller
         if (isset($data['pedido_id'])) {
             if (isset($data['action'])) {
                 if ($data['action'] == "add-itens") {
-                    $itens = $this->mesaService->adicionarItemPedido($data);
-                    $pdfContent = $this->mesaService->gerarCupomItemAdicionado($data['pedido_id'], $itens);
-                    $pdfPath = storage_path("app/public/cupom_pedido_{$data['pedido_id']}.pdf");
-                    file_put_contents($pdfPath, $pdfContent);
+                    $this->mesaService->adicionarItemPedido($data);
+
+                    $pedido = $this->model->findOrFail($data['pedido_id']);
+                    if (!$pedido->temImpressaoPendente()) {
+                        $pedido->impressoes()->create([
+                            'agente_impressao' => 'sistema_web',
+                            'ip_origem' => $request->ip(),
+                            'status_impressao' => 'pendente',
+                            'dados_impressao' => [
+                                'user_agent' => $request->userAgent(),
+                                'timestamp_criacao' => now()->toISOString(),
+                                'tipo_cupom' => 'parcial',
+                                'origem' => 'add-itens',
+                            ],
+                        ]);
+                    }
 
                     return response()->json([
                         'success' => 'Itens adicionados ao pedido com sucesso.',
-                        'pdf_url' => asset("storage/cupom_pedido_{$data['pedido_id']}.pdf")
                     ]);
                 } elseif ($data['action'] == "remove-item") {
                     $itensCancelados = $this->mesaService->cancelarItemPedido($data);

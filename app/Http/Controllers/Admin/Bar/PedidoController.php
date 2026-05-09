@@ -11,7 +11,6 @@ use App\Models\Bar\Pedido;
 use App\Models\Bar\ImpressaoPedido;
 use App\Models\Reserva;
 use Illuminate\Http\Request;
-use App\Events\ItemAdicionado;
 use App\Http\Requests\Admin\Bar\TransferirConsumoRequest;
 use App\Services\Bar\MesaService;
 use App\Services\PrinterService;
@@ -95,30 +94,25 @@ class PedidoController extends Controller
                         ->with('notice', 'Observações salvas com sucesso.');
                 }
                 if ($data['action'] === 'add-itens') {
-                    // Adicionar itens ao pedido
-                    $itens = $this->mesaService->adicionarItemPedido($data);
-                
-                    // Gerar conteúdo do PDF para o cupom
-                    $pdfContent = $this->mesaService->gerarCupomItemAdicionado($data['pedido_id'], $itens);
-                    $pdfPath = storage_path("app/public/cupom_pedido_{$data['pedido_id']}.pdf");
-                    file_put_contents($pdfPath, $pdfContent);
-                    $pdfUrl = asset("storage/cupom_pedido_{$data['pedido_id']}.pdf");
-                
-                    // Disparar o evento
-                    event(new ItemAdicionado($data, $itens, $pdfUrl));
-                
-                    $conteudoCupom = "Pedido ID: " . $data['pedido_id'] . "\n";
-                    foreach ($itens as $item) {
-                        $conteudoCupom .= "{$item['nome']} - R$ {$item['preco']}\n";
+                    $this->mesaService->adicionarItemPedido($data);
+
+                    $pedido = $this->model->findOrFail($data['pedido_id']);
+                    if (!$pedido->temImpressaoPendente()) {
+                        $pedido->impressoes()->create([
+                            'agente_impressao' => 'sistema_web',
+                            'ip_origem' => $request->ip(),
+                            'status_impressao' => 'pendente',
+                            'dados_impressao' => [
+                                'user_agent' => $request->userAgent(),
+                                'timestamp_criacao' => now()->toISOString(),
+                                'tipo_cupom' => 'parcial',
+                                'origem' => 'add-itens',
+                            ],
+                        ]);
                     }
-                
-                    // Acionar a impressão
-                    $this->mesaService->imprimirCupom($conteudoCupom);
-                
-                    // Retornar resposta com o URL do PDF
+
                     return response()->json([
                         'success' => 'Itens adicionados ao pedido com sucesso.',
-                        'pdf_url' => $pdfUrl,
                     ]);
                 } elseif ($data['action'] == "remove-item") {
                     $itensCancelados = $this->mesaService->cancelarItemPedido($data);

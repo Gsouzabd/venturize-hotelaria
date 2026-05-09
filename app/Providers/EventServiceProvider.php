@@ -3,8 +3,6 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
-use App\Events\ItemAdicionado;
-use App\Listeners\GeneratePdfForItemAdicionado;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -14,9 +12,6 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        ItemAdicionado::class => [
-            GeneratePdfForItemAdicionado::class,
-        ],
     ];
 
     /**

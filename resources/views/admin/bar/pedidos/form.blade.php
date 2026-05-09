@@ -699,12 +699,10 @@
 
         }
 
-        // Função para enviar o formulário de adicionar itens e abrir o PDF em uma nova aba
         function submitAddItemsForm(event) {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
-            const pedidoId = form.querySelector('input[name="pedido_id"]').value;
 
             fetch(`/admin/bar/pedidos/`, {
                 method: 'POST',
@@ -715,18 +713,8 @@
                 }
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.pdf_url) {
-                    const printWindow = window.open(data.pdf_url, '_blank');
-                    printWindow.onload = function() {
-                        printWindow.print();
-                    };
-                }
-                if (data.success) {
-                    window.location.reload();
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error:', error))
+            .finally(() => window.location.reload());
         }
 
         // Adicionar evento de submit ao formulário de adicionar itens

@@ -2,20 +2,18 @@
 
 namespace App\Services\Bar;
 
-use Exception;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Models\Produto;
 use App\Models\Reserva;
+use App\Models\Estoque;
 use App\Models\Bar\Mesa;
 use App\Models\Bar\Pedido;
-use Mike42\Escpos\Printer;
 use App\Models\LocalEstoque;
 use Illuminate\Support\Facades\DB;
 use App\Services\MovimentacaoEstoqueService;
 use Illuminate\Support\Facades\Log;
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 
 class MesaService {
 
@@ -24,6 +22,27 @@ class MesaService {
     public function __construct(MovimentacaoEstoqueService $movimentacaoEstoqueService)
     {
         $this->movimentacaoEstoqueService = $movimentacaoEstoqueService;
+    }
+
+    private function resolverLocalEstoqueId(Pedido $pedido, int $produtoId): int
+    {
+        if ($pedido->pedido_apartamento) {
+            $estoque = Estoque::where('produto_id', $produtoId)
+                ->orderByDesc('quantidade')
+                ->orderBy('id')
+                ->first();
+
+            if ($estoque) {
+                return $estoque->local_estoque_id;
+            }
+
+            $local = LocalEstoque::where('nome', 'Recepção')->first();
+            if ($local) {
+                return $local->id;
+            }
+        }
+
+        return LocalEstoque::where('nome', 'Bar')->first()->id;
     }
 
     public function abrirMesa($data)
@@ -128,7 +147,7 @@ class MesaService {
                         foreach ($produto->composicoes as $composicao) {
                             $this->movimentacaoEstoqueService->registrarEntrada([
                                 'produto_id' => $composicao->insumo_id,
-                                'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                                'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
                                 'quantidade' => $composicao->quantidade * $item['quantidade'],
                                 'valor_unitario' => Produto::find($composicao->insumo_id)->preco_custo,
                                 'justificativa' => 'Cancelamento de venda de produto no bar',
@@ -137,7 +156,7 @@ class MesaService {
                     } else {
                         $this->movimentacaoEstoqueService->registrarEntrada([
                             'produto_id' => $item['produto_id'],
-                            'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                            'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
                             'quantidade' => $item['quantidade'],
                             'valor_unitario' => Produto::find($item['produto_id'])->preco_custo,
                             'justificativa' => 'Cancelamento de venda de produto no bar',
@@ -227,7 +246,7 @@ class MesaService {
                     foreach ($produto->composicoes as $composicao) {
                         $this->movimentacaoEstoqueService->registrarSaida([
                             'produto_id' => $composicao->insumo_id,
-                            'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                            'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
                             'quantidade' =>  $item['quantidade'],
                             'valor_unitario_venda' => Produto::find($composicao->insumo_id)->preco_venda,
                             'justificativa' => 'Venda de produto no bar',
@@ -236,7 +255,7 @@ class MesaService {
                 }else{
                     $this->movimentacaoEstoqueService->registrarSaida([
                         'produto_id' => $item['produto_id'],
-                        'local_estoque_id' => LocalEstoque::where('nome', 'Bar')->first()->id,
+                        'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
                         'quantidade' => $item['quantidade'],
                         'valor_unitario_venda' => Produto::find($item['produto_id'])->preco_venda,
                         'justificativa' => 'Venda de produto no bar',
@@ -331,36 +350,6 @@ class MesaService {
         return $dompdf->output();
     }
 
-
-    public function gerarCupomItemAdicionado($idPedido, $novosItens) {
-        // Encontrar o pedido pelo ID
-        $pedido = Pedido::find($idPedido);
-        if ($pedido instanceof \Illuminate\Support\Collection) {
-            $pedido = $pedido->first();
-        }
-    
-        // Configurar Dompdf
-        $options = new Options();
-        $options->set('defaultFont', 'Courier');
-        $options->set('isHtml5ParserEnabled', true);
-        $dompdf = new Dompdf($options);
-    
-        // Definir o tamanho do papel para impressora térmica (80mm de largura)
-        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
-        $dompdf->setPaper($customPaper);
-    
-        // Dados do pedido e itens adicionados
-        $html = view('pdf.cupom_item_adicionado', compact('pedido', 'novosItens'))->render();
-    
-        // Carregar o HTML no Dompdf
-        $dompdf->loadHtml($html);
-    
-        // Renderizar o PDF
-        $dompdf->render();
-    
-        // Enviar o PDF para o navegador
-        return $dompdf->output();
-    }
 
     public function gerarCupomParcial($idPedido)
     {
@@ -561,32 +550,5 @@ class MesaService {
             'total_com_taxa' => $total + $taxaServico,
         ]);
     }
-
-    public function imprimirCupom($conteudo) {
-            try {
-                // Nome da impressora (configure o nome da impressora no sistema operacional)
-                $nomeImpressora = "ELGIN_I9"; // Substitua pelo nome configurado no sistema
-
-                // Conexão com a impressora
-                $connector = new WindowsPrintConnector($nomeImpressora);
-                $printer = new Printer($connector);
-
-                // Adicionar conteúdo ao cupom
-                $printer->setJustification(Printer::JUSTIFY_CENTER);
-                $printer->text("=== CUPOM ===\n\n");
-                $printer->setJustification(Printer::JUSTIFY_LEFT);
-                $printer->text($conteudo . "\n\n");
-                $printer->text("Obrigado por sua compra!\n");
-
-                Log::info("Impressão realizada com sucesso.");
-
-                // Cortar papel e finalizar
-                $printer->cut();
-                $printer->close();
-            } catch (Exception $e) {
-                // Tratamento de erro
-                error_log("Erro ao imprimir: " . $e->getMessage());
-            }
-        }
 
     }
