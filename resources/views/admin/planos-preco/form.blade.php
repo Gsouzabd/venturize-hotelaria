@@ -121,6 +121,19 @@
             </x-admin.field>
         </x-admin.field-group>
 
+        @if($edit)
+        <x-admin.field-group>
+            <x-admin.field cols="12">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="form-check-input" name="copiar_para_categoria" id="copiar_para_categoria" value="1" {{ old('copiar_para_categoria') ? 'checked' : '' }}>
+                    <label class="form-check-label" for="copiar_para_categoria">
+                        <strong>Aplicar estes preços a todos os quartos da mesma classificação e tipo?</strong>
+                        <small class="d-block text-muted">Copia os preços por dia da semana para quartos com a mesma classificação (ex: Embaúba) e mesmo tipo (Individual, Duplo ou Triplo).</small>
+                    </label>
+                </div>
+            </x-admin.field>
+        </x-admin.field-group>
+        @endif
 
     </x-admin.form>
 </div>
