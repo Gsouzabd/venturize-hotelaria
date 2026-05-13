@@ -131,35 +131,53 @@ class ReservaController extends Controller
                 foreach ($reservas as $reserva) {
                     $quartoId = $reserva->quarto_id;
 
-                    // dd($data['quartos']);
+                    if (!empty($data['reserva_site']) && !empty($data['tipo_pagamento'])) {
+                        // Reserva do site: registrar pagamento com método e status corretos
+                        $total  = floatval($reserva->total);
+                        $metodo = $this->mapearMetodoPagamentoSite($data['tipo_pagamento']);
+                        $pagamentosJson = json_encode([$metodo => $total]);
+                        $pagamento = Pagamento::where('reserva_id', $reserva->id)->first();
+                        $payload = [
+                            'valores_recebidos' => $pagamentosJson,
+                            'valor_pago'        => $total,
+                            'valor_total'       => $total,
+                            'status_pagamento'  => 'PAGO',
+                            'data_pagamento'    => now(),
+                            'observacoes'       => 'Pagamento via site: ' . $data['tipo_pagamento'],
+                        ];
+                        if ($pagamento) {
+                            $pagamento->update($payload);
+                        } else {
+                            Pagamento::create(array_merge(['reserva_id' => $reserva->id], $payload));
+                        }
+                        continue;
+                    }
+
                     if (isset($data['quartos'][$quartoId])) {
-                        // dd($data['quartos'][$quartoId]);
                         $quartoData = $data['quartos'][$quartoId];
-            
+
                         $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
                         $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
                         $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
-            
+
                         $pagamentos = [];
                         $valorPago = 0;
-            
+
                         foreach ($valoresRecebidos as $index => $valor) {
                             $metodoPagamento = $metodosPagamento[$index] ?? null;
                             $submetodoPagamento = $submetodosPagamento[$index] ?? null;
                             $key = "{$metodoPagamento}-{$submetodoPagamento}";
-            
+
                             if (!isset($pagamentos[$key])) {
                                 $pagamentos[$key] = 0;
                             }
-            
+
                             $pagamentos[$key] += $valor;
                             $valorPago += $valor;
                         }
-            
+
                         $pagamentosJson = json_encode($pagamentos);
 
-                        // dd($pagamentosJson);
-            
                         $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
                     }
                 }
@@ -188,6 +206,15 @@ class ReservaController extends Controller
         $reserva->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function mapearMetodoPagamentoSite(string $titulo): string
+    {
+        $t = mb_strtolower($titulo, 'UTF-8');
+        if (str_contains($t, 'pix'))                                   return 'PIX_SITE';
+        if (str_contains($t, 'créd') || str_contains($t, 'cred'))     return 'CARTAO_CREDITO_VISTA_SITE';
+        if (str_contains($t, 'déb')  || str_contains($t, 'deb'))      return 'CARTAO_DEBITO_CIELO';
+        return 'PIX_SITE';
     }
 
     public function updateSituacaoReserva($id, $situacao_reserva)

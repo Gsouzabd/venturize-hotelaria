@@ -260,7 +260,8 @@ class ReservaService
                 // dd($reservaData);
         
                 // Criar ou atualizar a reserva
-                if (isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '') {
+                $isNovaReserva = !(isset($quartoData['reserva_id']) && $quartoData['reserva_id'] != '');
+                if (!$isNovaReserva) {
                     $reserva = Reserva::findOrFail($quartoData['reserva_id']);
 
                     // Quando o período mudou, validar conflito com outras reservas do mesmo quarto
