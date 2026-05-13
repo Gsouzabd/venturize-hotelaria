@@ -12,8 +12,8 @@ class DisponibilidadeController extends Controller
 {
     public function verificar(Request $request)
     {
-        $dataEntrada = Carbon::createFromFormat('d/m/Y', $request->data_entrada)->format('Y-m-d');
-        $dataSaida = Carbon::createFromFormat('d/m/Y', $request->data_saida)->format('Y-m-d');
+        $dataEntrada = parseDateVenturize($request->data_entrada);
+        $dataSaida = parseDateVenturize($request->data_saida);
         // Busca os quartos disponíveis com base no tipo de quarto, se fornecido
         $quartosQuery = Quarto::where('inativo', 0); // Apenas quartos que não estão inativos
 

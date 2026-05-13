@@ -3,6 +3,8 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\PrintController;
+use App\Http\Controllers\Api\ReservaController;
+use App\Http\Controllers\Api\DisponibilidadeController;
 // SEMPRE RODAR O COMANDO:
 //php artisan cache:clear
 //php artisan route:cache
@@ -11,6 +13,10 @@ Route::get('/', function () {
 });
 
 Route::post('/login', [LoginController::class, 'login']);
+
+// Integração WordPress → Venturize
+Route::post('/disponibilidade/verificar', [DisponibilidadeController::class, 'verificar']);
+Route::post('/reservas', [ReservaController::class, 'store']);
 
 // Rotas da API de Impressão
 Route::prefix('print')->name('api.print.')->group(function () {
