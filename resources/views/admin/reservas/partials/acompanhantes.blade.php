@@ -251,6 +251,21 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Validar limite de acompanhantes por composição do quarto
+        const composicaoSelect = document.getElementById('composicao_quarto');
+        const composicao = composicaoSelect ? composicaoSelect.value : '{{ $reserva->composicao_quarto ?? '' }}';
+        const limites = { 'Individual': 0, 'Duplo': 1, 'Triplo': 2 };
+        if (composicao && limites[composicao] !== undefined) {
+            const maxAcomp = limites[composicao];
+            const acompAtual = document.querySelectorAll('#tabela-acompanhantes tbody tr').length;
+            if (acompAtual >= maxAcomp) {
+                const nomes = { 'Individual': 'Individual', 'Duplo': 'Duplo', 'Triplo': 'Triplo' };
+                errorEl.textContent = `Quarto ${nomes[composicao]} permite no máximo ${maxAcomp} acompanhante(s). Para adicionar mais, altere o tipo de apto na aba Disponibilidade.`;
+                errorEl.style.display = 'block';
+                return;
+            }
+        }
+
         // Converter dd/mm/yyyy para yyyy-mm-dd
         let nascimentoFormatted = '';
         if (nascimento) {

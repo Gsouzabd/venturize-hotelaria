@@ -450,9 +450,9 @@ async function adicionarQuartoAoCart(
                 return;
             }
 
-            const cartItem = cart.find(item => 
-                item.quartoId === quartoId && 
-                formatDate(item.dataCheckin) === formatDate(dataCheckin) && 
+            const cartItem = cart.find(item =>
+                String(item.quartoId) === String(quartoId) &&
+                formatDate(item.dataCheckin) === formatDate(dataCheckin) &&
                 formatDate(item.dataCheckout) === formatDate(dataCheckout)
             );
 
@@ -605,6 +605,19 @@ async function adicionarQuartoAoCart(
                         cartItem.querySelectorAll('.preco-diario').forEach(i => { t += parseFloat(i.value) || 0; });
                         valorTotalSpan.textContent = `R$ ${t.toFixed(2).replace('.', ',')}`;
                         inputValorTotal.value = t.toFixed(2);
+                        // Atualizar localStorage para manter sincronia com atualizarValorTotalDoCart()
+                        const cartAtual = JSON.parse(localStorage.getItem('cart')) || [];
+                        const entry = cartAtual.find(item => String(item.quartoId) === String(quartoId));
+                        if (entry) {
+                            const idx = inp.getAttribute('data-index');
+                            const preco = parseFloat(inp.value) || 0;
+                            if (entry.precosDiarios && entry.precosDiarios[idx] !== undefined) {
+                                entry.precosDiarios[idx].preco = preco.toFixed(2);
+                                entry.precosDiarios[idx].precoManual = true;
+                            }
+                            entry.total = t.toFixed(2);
+                            localStorage.setItem('cart', JSON.stringify(cartAtual));
+                        }
                         atualizarValorTotalDoCart();
                     });
                 });
@@ -691,6 +704,33 @@ saveInfoButton.addEventListener('click', function () {
 });
 
 // Atualizar rótulo da aba Disponibilidade conforme tipo de reserva (Day Use vs Disponibilidade)
+// Garantir sincronização de totais antes do submit do formulário de reserva
+document.addEventListener('DOMContentLoaded', function () {
+    const reservaForm = document.querySelector('form.edit-form.reservarForm, form.reservarForm');
+    if (reservaForm) {
+        reservaForm.addEventListener('submit', function () {
+            // Recalcular cada quarto do cart a partir dos inputs do DOM
+            const cartAtual = JSON.parse(localStorage.getItem('cart')) || [];
+            document.querySelectorAll('[id^="input-valor-total-"]').forEach(function (hiddenInput) {
+                const qId = hiddenInput.id.replace('input-valor-total-', '');
+                const cartItem = hiddenInput.closest('[data-quarto-id]') || document;
+                let t = 0;
+                const scope = document.getElementById('cart-items') || document;
+                scope.querySelectorAll(`.preco-diario[data-quarto-id="${qId}"]`).forEach(function (inp) {
+                    t += parseFloat(inp.value) || 0;
+                });
+                if (t > 0) {
+                    hiddenInput.value = t.toFixed(2);
+                    const entry = cartAtual.find(function (i) { return String(i.quartoId) === String(qId); });
+                    if (entry) { entry.total = t.toFixed(2); }
+                }
+            });
+            localStorage.setItem('cart', JSON.stringify(cartAtual));
+            document.getElementById('cart-input').value = JSON.stringify(cartAtual);
+        }, true);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     const tipoReservaSelect = document.querySelector('select[name="tipo_reserva"]');
     const tabLabel = document.getElementById('disponibilidade-tab-label');
@@ -840,21 +880,12 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
         // );     
     });
     $(document).ready(function() {
-        // Inicializa os datepickers
-        $('#data_entrada').datepicker({
-            dateFormat: 'dd/mm/yy',
-            minDate: 0, // Desabilita datas passadas
-            onSelect: function(selectedDate) {
-                // Define a data mínima da saída para um dia após a data de entrada
-                var minDate = $('#data_entrada').datepicker('getDate');
+        $('#data_entrada').on('changeDate', function() {
+            var minDate = $('#data_entrada').datepicker('getDate');
+            if (minDate) {
                 minDate.setDate(minDate.getDate() + 1);
-                $('#data_saida').datepicker('x.admin-option', 'minDate', minDate);
+                $('#data_saida').datepicker('setStartDate', minDate);
             }
-        });
-    
-        $('#data_saida').datepicker({
-            dateFormat: 'dd/mm/yy',
-            minDate: 1, // Saída deve ser ao menos um dia após a entrada
         });
     });
 }

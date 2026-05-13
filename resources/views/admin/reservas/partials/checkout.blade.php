@@ -6,19 +6,30 @@
 @endphp
 
 <div class="tab-pane fade" id="checkout" role="tabpanel" aria-labelledby="checkout-tab">
-    @if($reserva->situacao_reserva != 'FINALIZADO')
-
-        <h3>Realizar Checkout</h3>
-    @else
+    @if($reserva->situacao_reserva == 'FINALIZADO')
+        {{-- Painel bloqueado pós check-out --}}
         <div class="alert alert-info" style="background: #00a65a; color: white;">
             O status da reserva já foi atualizado para: <strong>{{ $reserva->situacao_reserva }}.</strong>
-                <br/><br/>
-
-                <strong>Data da operação: </strong> {{$reserva->checkOut ? timestamp_br($reserva->checkOut->checkout_at) : '' }}</strong>
-            <input class="form-check-input" type="hidden" name="situacao_reserva" id="confirmarCheckin" value= {{ $reserva->situacao_reserva }}>
+            <br/><br/>
+            <strong>Data da operação: </strong> {{ $reserva->checkOut ? timestamp_br($reserva->checkOut->checkout_at) : '' }}
         </div>
+        <div class="d-flex gap-2 mt-3">
+            <a href="{{ route('admin.reservas.gerar-extrato', ['id' => $reserva->id]) }}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-file-alt"></i> Gerar Extrato
+            </a>
+            <form action="{{ route('admin.reservas.reabrir', ['id' => $reserva->id]) }}" method="POST" class="d-inline"
+                  onsubmit="return confirm('Confirma a reabertura deste quarto? O status voltará para HOSPEDADO.')">
+                @csrf
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-door-open"></i> Reabrir Quarto
+                </button>
+            </form>
+        </div>
+    @else
+        <h3>Realizar Checkout</h3>
     @endif
 
+    @if($reserva->situacao_reserva != 'FINALIZADO')
     <div class="row">
       
         <div class="col-md-6">
@@ -333,6 +344,7 @@
 
 
     </div>
+    @endif {{-- fim do bloco não-FINALIZADO --}}
 </div>
 
 <script>
@@ -440,8 +452,13 @@ function atualizarValores() {
 }
 
         
+            if (typeof $ !== 'undefined' && $.fn.mask) {
+                $('#valor_recebido').mask('#.##0,00', { reverse: true });
+            }
+
             addValorRecebidoButton.addEventListener('click', function () {
-                const valor = parseFloat(valorRecebidoInput.value.replace(',', '.'));
+                const rawVal = valorRecebidoInput.value.replace(/\./g, '').replace(',', '.');
+                const valor = parseFloat(rawVal);
                 if (!document.querySelector('input[name="metodo_pagamento"]:checked')) {
                     alert('Selecione um método de pagamento');
                     return;

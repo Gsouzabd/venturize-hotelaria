@@ -452,7 +452,10 @@
                         'X-CSRF-TOKEN': APP_CSRF_TOKEN
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro do servidor: ' + response.status);
+                    return response.json();
+                })
                 .then(data => {
                     if (data.pdf_url) {
                         const printWindow = window.open(data.pdf_url, '_blank');
@@ -464,7 +467,10 @@
                         window.location.reload();
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao confirmar itens. Por favor, tente novamente.');
+                });
             }
 
             // Adicionar evento de submit ao formulário de adicionar itens

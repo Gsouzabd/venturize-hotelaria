@@ -236,7 +236,7 @@ class MesaService {
                         'produto_id' => $item['produto_id'],
                         'quantidade' => $item['quantidade'],
                         'preco' => Produto::find($item['produto_id'])->preco_venda, // Obtenha o preço do produto
-                        'operador_id' => auth()->user()->id, // Adicionar o operador ao item
+                        'operador_id' => auth('admin')->id() ?? auth()->id(),
                     ]);
                     $itens[] = $novoItem;
                 }

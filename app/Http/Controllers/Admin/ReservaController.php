@@ -664,6 +664,19 @@ class ReservaController extends Controller
         ]);
     }
 
+    public function reabrir($id)
+    {
+        $this->authorize('gerenciar_reservas');
+
+        $reserva = Reserva::findOrFail($id);
+        $reserva->situacao_reserva = 'HOSPEDADO';
+        $reserva->save();
+
+        return redirect()
+            ->route('admin.reservas.edit', ['id' => $id])
+            ->with('notice', 'Quarto reaberto com sucesso.');
+    }
+
     public function removerAcompanhante($id, $aid)
     {
         $this->authorize('gerenciar_reservas');

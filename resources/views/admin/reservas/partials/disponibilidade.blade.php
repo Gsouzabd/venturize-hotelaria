@@ -225,6 +225,18 @@
         atualizarLabelsCriancas();
         if (tipoReservaSelect) tipoReservaSelect.addEventListener('change', atualizarLabelsCriancas);
 
+        var composicaoQuartoSelect = document.getElementById('composicao_quarto');
+        if (composicaoQuartoSelect) {
+            var adultosMapa = { 'Individual': 1, 'Duplo': 2, 'Triplo': 3 };
+            composicaoQuartoSelect.addEventListener('change', function () {
+                var adultos = adultosMapa[this.value];
+                var adultosInput = document.getElementById('adultos');
+                if (adultos !== undefined && adultosInput) {
+                    adultosInput.value = adultos;
+                }
+            });
+        }
+
         var saveQty = document.getElementById('save-qty-apartamentos');
         if (saveQty) {
             saveQty.addEventListener('click', function() {

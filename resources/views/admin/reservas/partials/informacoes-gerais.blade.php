@@ -101,7 +101,7 @@
             <x-admin.field-group>
                 <!-- Campo de Tipo de Reserva -->
                 <x-admin.field cols="3">
-                    <x-admin.label label="Tipo de Reserva" required/>
+                    <x-admin.label label="Tipo de Reserva"/>
                     <x-admin.select name="tipo_reserva" id="tipo_reserva" class="form-control" required
                                     :items="['INDIVIDUAL' => 'Individual', 'GRUPO' => 'Grupo', 'DAY_USE' => 'Day Use']"
                                     selectedItem="{{ old('tipo_reserva', $reserva->tipo_reserva ?? 'INDIVIDUAL') }}">
@@ -110,7 +110,7 @@
 
                 <!-- Campo de Situação -->
                 <x-admin.field cols="3">
-                    <x-admin.label label="Situação da Reserva" required/>
+                    <x-admin.label label="Situação da Reserva"/>
                     <x-admin.select name="situacao_reserva" id="situacao" class="form-control"
                                     :items="['RESERVADO' => 'Reservado', 'CANCELADA' => 'Cancelada', 'PRÉ RESERVA' => 'Pré Reserva']"
                                     
@@ -119,7 +119,7 @@
                 </x-admin.field>
 
                 <x-admin.field cols="3">
-                    <x-admin.label label="Tipo de Solicitante" required/>
+                    <x-admin.label label="Tipo de Solicitante"/>
                     <x-admin.select name="tipo_solicitante" id="tipo_solicitante" label="Tipo de Solicitante" required 
                                     :items="['PF' => 'Pessoa Física (PF)', 'PJ' => 'Pessoa Jurídica (PJ)']"
                                     selectedItem="{{ old('tipo_solicitante', $reserva->tipo_solicitante ?? 'PF') }}"/>   
@@ -177,7 +177,7 @@
                     </a>
                 @else
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox">
+                        <input class="form-check-input" type="checkbox" id="solicitanteHospedeCheckbox" name="solicitante_hospede" value="1" checked>
                         <label class="form-check-label" for="solicitanteHospedeCheckbox">
                             Solicitante será o hóspede?
                         </label>
