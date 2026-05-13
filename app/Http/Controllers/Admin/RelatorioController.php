@@ -363,8 +363,10 @@ class RelatorioController extends Controller
     {
         $query = Estoque::query()
             ->with(['produto.categoria', 'localEstoque'])
-            ->orderBy('local_estoque_id')
-            ->orderBy('id');
+            ->join('produtos', 'produtos.id', '=', 'estoques.produto_id')
+            ->select('estoques.*')
+            ->orderBy('estoques.local_estoque_id')
+            ->orderBy('produtos.descricao', 'asc');
 
         if ($filters['local_estoque_id'] !== '') {
             $query->where('local_estoque_id', $filters['local_estoque_id']);

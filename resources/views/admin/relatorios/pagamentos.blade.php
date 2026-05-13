@@ -104,15 +104,33 @@
                             @php
                                 $cliente = $reserva->clienteResponsavel ?? $reserva->clienteSolicitante;
                                 $pagamento = $reserva->pagamentos->first();
-                                $valorPago = $reserva->pagamentos->sum('valor_pago');
+                                $tipoPagamentoFiltrado = $filters['tipo_pagamento'] ?? null;
 
-                                $metodosLabel = '';
+                                // Extrair valores do JSON de valores_recebidos
+                                $valoresJson = [];
                                 if ($pagamento && $pagamento->valores_recebidos) {
-                                    $valores = is_array($pagamento->valores_recebidos)
+                                    $valoresJson = is_array($pagamento->valores_recebidos)
                                         ? $pagamento->valores_recebidos
                                         : json_decode($pagamento->valores_recebidos, true) ?? [];
+                                }
+
+                                // Se filtrado por tipo de pagamento, mostrar apenas o valor daquele método
+                                if ($tipoPagamentoFiltrado && $valoresJson) {
+                                    $valorPago = 0;
+                                    foreach ($valoresJson as $chave => $valor) {
+                                        $chaveBase = explode('-', $chave)[0];
+                                        if ($chaveBase === $tipoPagamentoFiltrado) {
+                                            $valorPago += (float) $valor;
+                                        }
+                                    }
+                                } else {
+                                    $valorPago = $reserva->pagamentos->sum('valor_pago');
+                                }
+
+                                $metodosLabel = '';
+                                if ($valoresJson) {
                                     $labels = [];
-                                    foreach (array_keys($valores) as $chave) {
+                                    foreach (array_keys($valoresJson) as $chave) {
                                         $key = explode('-', $chave)[0];
                                         foreach (Pagamento::METODOS_PAGAMENTO as $catKey => $cat) {
                                             if ($key === $catKey) { $labels[] = $cat['label']; break; }
@@ -151,7 +169,26 @@
                         @endforelse
                     </tbody>
                     @if($reservas->isNotEmpty())
-                        @php $totalGeral = $reservas->sum(fn ($r) => $r->pagamentos->sum('valor_pago')); @endphp
+                        @php
+                            $tipoPagamentoFiltradoTotal = $filters['tipo_pagamento'] ?? null;
+                            $totalGeral = $reservas->sum(function ($r) use ($tipoPagamentoFiltradoTotal) {
+                                $pag = $r->pagamentos->first();
+                                if (!$pag || !$pag->valores_recebidos) return $r->pagamentos->sum('valor_pago');
+                                $vals = is_array($pag->valores_recebidos)
+                                    ? $pag->valores_recebidos
+                                    : json_decode($pag->valores_recebidos, true) ?? [];
+                                if ($tipoPagamentoFiltradoTotal && $vals) {
+                                    $soma = 0;
+                                    foreach ($vals as $chave => $valor) {
+                                        if (explode('-', $chave)[0] === $tipoPagamentoFiltradoTotal) {
+                                            $soma += (float) $valor;
+                                        }
+                                    }
+                                    return $soma;
+                                }
+                                return $r->pagamentos->sum('valor_pago');
+                            });
+                        @endphp
                         <tfoot>
                             <tr class="font-weight-bold">
                                 <td colspan="7" class="text-right">Total:</td>
