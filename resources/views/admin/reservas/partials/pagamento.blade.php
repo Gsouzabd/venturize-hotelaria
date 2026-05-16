@@ -100,8 +100,8 @@
                 <x-admin.field cols="3">
                     <x-admin.label label="Valor Recebido"/>
                     <div class="input-group mb-3 mt-2">
-                        <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control"
-                            value="{{ old('valor_recebido', 0) }}" placeholder="Valor Recebido"/>
+                        <x-admin.text id="valor_recebido" name="valor_recebido" class="form-control money-mask"
+                            value="{{ old('valor_recebido', '') }}" placeholder="0,00"/>
                         <div class="input-group-append w-100">
                             <button class="btn btn-primary" type="button" id="add-valor-recebido">Incluir</button>
                         </div>
@@ -289,7 +289,7 @@
         }
 
         addValorRecebidoButton.addEventListener('click', function () {
-            const valor = parseFloat(valorRecebidoInput.value);
+            const valor = parseFloat(valorRecebidoInput.value.replace(/\./g, '').replace(',', '.'));
             if (!document.querySelector('input[name="metodo_pagamento"]:checked')) {
                 alert('Selecione um método de pagamento');
                 return;

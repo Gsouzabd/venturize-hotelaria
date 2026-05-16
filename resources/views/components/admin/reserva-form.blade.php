@@ -10,7 +10,7 @@
 ])
 
 
-<form action="{{ route($saveRoute) }}" method="{{ $method }}"
+<form action="{{ route($saveRoute) }}" method="{{ $method }}" novalidate
       class="edit-form{{ $class ? ' ' . $class : '' }}"{!! ($filesEnctype ? ' enctype="multipart/form-data"' : '') . ($attributes ? ' ' . $attributes : '') !!}>
     @if($isEdit)
         @method('PUT')

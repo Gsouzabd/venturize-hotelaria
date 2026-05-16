@@ -189,6 +189,20 @@ async function adicionarQuartoAoCart(
     let acompanhantesHtml = '';
     if (acompanhantes && acompanhantes.length > 0) {
         acompanhantesHtml = renderAcompanhantes(acompanhantes, quartoId, true);
+        // Completar com slots vazios para acompanhantes ainda não cadastrados
+        const emptyAcomp = { tipo: 'Adulto', nome: null, cpf: '', data_nascimento: null, email: null, telefone: null };
+        const savedAdultos    = acompanhantes.filter(a => a.tipo === 'Adulto').length;
+        const savedCriancas7  = acompanhantes.filter(a => a.tipo === 'Criança 8 a 12 anos').length;
+        const savedAte7       = acompanhantes.filter(a => a.tipo === 'Criança até 7 anos').length;
+        const missingAdultos   = Math.max(0, (adultos - 1) - savedAdultos);
+        const missingCriancas7 = Math.max(0, criancas_mais_7 - savedCriancas7);
+        const missingAte7      = Math.max(0, criancas_ate_7 - savedAte7);
+        if (missingAdultos > 0)
+            acompanhantesHtml += renderAcompanhantes(Array(missingAdultos).fill({ ...emptyAcomp, tipo: 'Adulto' }), quartoId, true);
+        if (missingCriancas7 > 0)
+            acompanhantesHtml += renderAcompanhantes(Array(missingCriancas7).fill({ ...emptyAcomp, tipo: 'Criança 8 a 12 anos' }), quartoId, true);
+        if (missingAte7 > 0)
+            acompanhantesHtml += renderAcompanhantes(Array(missingAte7).fill({ ...emptyAcomp, tipo: 'Criança até 7 anos' }), quartoId, true);
     } else {
         // Renderizar acompanhantes calculados dinamicamente
         acompanhantesHtml += renderAcompanhantes(Array(adultos).fill({ tipo: 'Adulto' }), quartoId);

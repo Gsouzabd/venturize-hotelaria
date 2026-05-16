@@ -505,15 +505,25 @@
         const situacaoReservaSelect = document.querySelector('select[name="situacao_reserva"]');
 
         const preReservaHide = document.getElementById('pre-reserva-hide');
-        const preReservaHideRequired = preReservaHide ? preReservaHide.querySelectorAll('input, select, textarea') : [];
 
+        // Marcar quais campos têm required antes de qualquer ocultação
+        if (preReservaHide) {
+            preReservaHide.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.hasAttribute('required')) el.dataset.required = '1';
+            });
+        }
 
         function esconderPreReserva() {
             if (!preReservaHide || !situacaoReservaSelect) return;
+            const fields = preReservaHide.querySelectorAll('input, select, textarea');
             if (situacaoReservaSelect.value === 'PRÉ RESERVA') {
                 preReservaHide.style.display = 'none';
+                fields.forEach(el => el.removeAttribute('required'));
             } else {
                 preReservaHide.style.display = 'block';
+                fields.forEach(el => {
+                    if (el.dataset.required) el.setAttribute('required', 'required');
+                });
             }
         }
         esconderPreReserva();

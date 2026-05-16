@@ -275,6 +275,11 @@
                                 methodInput.disabled = true;
                             }
                         }
+
+                        // Remover required de campos em abas ocultas para evitar erro de validação do browser
+                        this.querySelectorAll('.tab-pane:not(.active) [required]').forEach(function (el) {
+                            el.removeAttribute('required');
+                        });
                     });
                 }
 

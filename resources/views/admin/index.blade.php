@@ -81,9 +81,10 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
         $quartosPorAndar = collect($statusQuartoNoDia)->groupBy(function($status) {
             return $status['quarto']->andar;
         });
+        $andaoresRegulares = $quartosPorAndar->except(['Externo']);
     @endphp
-    
-    @foreach($quartosPorAndar as $andar => $quartos)
+
+    @foreach($andaoresRegulares as $andar => $quartos)
         <div class="row mb-4 andar-block">
             <div class="col-12">
                 <span class="andar">Andar: {{ $andar }}</span>
@@ -155,10 +156,111 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
             @endforeach
         </div>
     @endforeach
-    
+
+    {{-- Andar: Day Use --}}
+    @if($dayUseHoje->isNotEmpty())
+    @php
+        $situacoesReserva = \App\Models\Reserva::SITUACOESRESERVA;
+        $situacoesReserva['HOSPEDADO']['background'] = '#b70000';
+        $situacoesReserva['RESERVADO']['background'] = '#033287';
+    @endphp
+    <div class="row mb-4 andar-block">
+        <div class="col-12">
+            <span class="andar">Andar: Day Use</span>
+        </div>
+        @foreach($dayUseHoje as $reservaDU)
+            @php
+                $situacaoDU = $reservaDU->situacao_reserva;
+                $corDU = $situacoesReserva[$situacaoDU]['background'] ?? '#f39c12';
+                $labelDU = $situacoesReserva[$situacaoDU]['label'] ?? $situacaoDU;
+                $nomeDU = $reservaDU->clienteResponsavel->nome ?? 'Day Use';
+                $pessoasDU = $reservaDU->adultos + $reservaDU->criancas_ate_7 + $reservaDU->criancas_mais_7;
+            @endphp
+            <div class="col-lg-2 col-md-2 col-sm-4 col-6 mb-4 quartos">
+                <a href="{{ route('admin.reservas.edit', ['id' => $reservaDU->id]) }}" class="text-decoration-none d-block" style="color: inherit; cursor: pointer;">
+                    <div class="card room-card shadow-sm h-100">
+                        <div class="card-body text-center p-2" style="color: white; background-color: {{ $corDU }};">
+                            <h5 class="card-title mb-1" style="font-size: 0.85rem;">{{ Str::limit(ucwords(strtolower($nomeDU)), 14) }}</h5>
+                            <p class="room-name mb-1">{{ $pessoasDU }} pessoa(s)</p>
+                            <i class="fas fa-sun fa-2x" style="color: rgba(255,255,255,0.8);"></i>
+                            <p class="card-text quarto">{{ $labelDU }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        @endforeach
+    </div>
+    @endif
+
+    {{-- Andar: Externo (quartos com andar = 'Externo') --}}
+    <div class="row mb-4 andar-block">
+        <div class="col-12">
+            <span class="andar">Andar: Externo</span>
+        </div>
+        @if($quartosPorAndar->has('Externo'))
+            @foreach($quartosPorAndar['Externo'] as $status)
+                @php
+                    $situacaoExt = $status['status'];
+                    $corExt = $situacoesReserva[$situacaoExt]['background'] ?? '#00a65a';
+                    $labelExt = $situacoesReserva[$situacaoExt]['label'] ?? 'Livre';
+                    $urlLivreExt = route('admin.reservas.create', [
+                        'quarto_id' => $status['quarto']->id,
+                        'quarto_numero' => $status['quarto']->numero,
+                        'quarto_classificacao' => $status['quarto']->classificacao ?? '',
+                        'quarto_andar' => $status['quarto']->andar ?? '',
+                        'data_checkin' => Carbon::today()->format('Y-m-d'),
+                        'data_checkout' => Carbon::today()->addDay()->format('Y-m-d'),
+                    ]);
+                    $urlComReservaExt = $status['reserva'] ? route('admin.reservas.edit', ['id' => $status['reserva']->id]) : $urlLivreExt;
+                @endphp
+                <div class="col-lg-2 col-md-2 col-sm-4 col-6 mb-4 quartos">
+                    <a href="{{ $status['status'] === 'Livre' ? $urlLivreExt : $urlComReservaExt }}" class="text-decoration-none d-block" style="color: inherit; cursor: pointer;">
+                        <div class="card room-card shadow-sm h-100">
+                            <div class="card-body text-center p-2" style="color: white; background-color: {{ $corExt }};"
+                                @if($status['status'] != 'Livre' && $status['reserva'])
+                                    data-toggle="tooltip" data-html="true" title="
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Cliente:</strong> <span>{{ ucwords(strtolower($status['reserva']->clienteResponsavel->nome ?? 'N/A')) }}</span>
+                                        </div>
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Check-in:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkin)->format('d-m-Y H:i') }}</span>
+                                        </div>
+                                        <div class='d-flex justify-content-between' style='font-size: 12px;'>
+                                            <strong>Check-out:</strong> <span>{{ \Carbon\Carbon::parse($status['reserva']->data_checkout)->format('d-m-Y H:i') }}</span>
+                                        </div>
+                                    "
+                                @endif
+                            >
+                                <h5 class="card-title mb-2">{{ $status['quarto']->numero }}</h5>
+                                <p class="room-name">{{ $status['quarto']->classificacao }}</p>
+                                @if($status['status'] == 'HOSPEDADO')
+                                    <i class="fas fa-lock fa-2x text-danger"></i>
+                                @elseif($status['status'] == 'Livre')
+                                    <i class="fas fa-thumbs-up fa-2x" style="color: #0d6c0d;"></i>
+                                @elseif($status['status'] == 'RESERVADO')
+                                    <i class="fas fa-dollar-sign fa-2x" style="color: #062381;"></i>
+                                @else
+                                    <i class="fas fa-question-circle fa-2x text-warning"></i>
+                                @endif
+                                <p class="card-text quarto">{{ $labelExt }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            @endforeach
+        @else
+            <div class="col-12">
+                <p class="text-muted" style="font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i> Nenhum quarto externo cadastrado.
+                    <a href="{{ route('admin.quartos.create') }}">Cadastrar quarto</a> com andar <strong>Externo</strong>.
+                </p>
+            </div>
+        @endif
+    </div>
+
     <script>
         $(document).ready(function(){
-            $('[data-toggle="tooltip"]').tooltip(); 
+            $('[data-toggle="tooltip"]').tooltip();
         });
     </script>
 

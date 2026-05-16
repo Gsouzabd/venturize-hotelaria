@@ -75,6 +75,8 @@ class QuartoController extends Controller
 
         $data = $request->all();
 
+        $data['quantidade_cama_casal']    = $data['quantidade_cama_casal']    ?? 0;
+        $data['quantidade_cama_solteiro'] = $data['quantidade_cama_solteiro'] ?? 0;
 
         if($data['posicao_quarto'] == null){
             $data['posicao_quarto'] = 'frente';

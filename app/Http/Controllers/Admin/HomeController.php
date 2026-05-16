@@ -68,7 +68,8 @@ class HomeController extends Controller
 
             // Day Use de hoje (resumo para dashboard)
             $hoje = Carbon::now('America/Sao_Paulo')->toDateString();
-            $dayUseHoje = Reserva::where('tipo_reserva', 'DAY_USE')
+            $dayUseHoje = Reserva::with('clienteResponsavel')
+                ->where('tipo_reserva', 'DAY_USE')
                 ->whereDate('data_checkin', $hoje)
                 ->get();
 
@@ -101,7 +102,8 @@ class HomeController extends Controller
             'totalDisponiveis',
             'totalLimpos',
             'dayUseHojeTotal',
-            'dayUseHojePessoas'
+            'dayUseHojePessoas',
+            'dayUseHoje'
         ));
     }
 

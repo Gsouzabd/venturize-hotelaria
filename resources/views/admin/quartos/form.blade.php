@@ -45,7 +45,7 @@
             <x-admin.field cols="4">
                 <x-admin.label label="Andar" required/>
                 <x-admin.select name="andar" id="andar" :value="old('andar', $quarto->andar)"
-                    :items="['Terréo' => 'Terréo', '1o Andar' => '1o Andar']"
+                    :items="['Terréo' => 'Terréo', '1o Andar' => '1o Andar', 'Externo' => 'Externo']"
                     selectedItem="{{ old('andar', $quarto->andar) }}" required/>
             </x-admin.field>
 
@@ -90,8 +90,8 @@
             <x-admin.field cols="6">
                 <x-admin.label label="Classificação"/>
                 <x-admin.select name="classificacao" id="classificacao" :value="old('classificacao', $quarto->classificacao)"
-                    :items="['Embaúba' => 'Embaúba', 'Camará' => 'Camará']"
-                    selectedItem="{{ old('classificacao', $quarto->classificacao) }}" required/>
+                    :items="['Embaúba' => 'Embaúba', 'Camará' => 'Camará', 'Externo' => 'Externo']"
+                    selectedItem="{{ old('classificacao', $quarto->classificacao) }}"/>
             </x-admin.field>
 
             <!-- Acessibilidade -->
