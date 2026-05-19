@@ -59,6 +59,10 @@ class ClienteController extends Controller
 
         $data['data_nascimento'] = parseDateVenturize($data['data_nascimento']);
 
+        if (!empty($data['cpf'])) {
+            $data['cpf'] = preg_replace('/\D+/', '', $data['cpf']);
+        }
+
         if ($id = $request->get('id')) {
             $this->model->findOrFail($id)->update($data);
         } else {
