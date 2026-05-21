@@ -807,93 +807,80 @@ const dataCheckout = urlParams.get('data_checkout') ? formatDate(urlParams.get('
 let responsaveis = [];
 
 
-if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataCheckin && dataCheckout) {
-    // $('#responsavelReservaModal').modal('show');
+document.addEventListener('DOMContentLoaded', function() {
+    if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataCheckin && dataCheckout) {
+        // $('#responsavelReservaModal').modal('show');
 
-    mostrarQuartosDisponiveis({
-        quartos: [{
-            id: quartoId,
-            numero: quartoNumero,
-            classificacao: quartoClassificacao,
-            andar: quartoAndar,
-        }],
-        dataEntrada: dataCheckin, // Exemplo de data de entrada
-        dataSaida: dataCheckout, // Exemplo de data de saída
-    });
-    const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
-    const infoGeraisTabLink = document.getElementById('informacoes-gerais-tab');
+        mostrarQuartosDisponiveis({
+            quartos: [{
+                id: quartoId,
+                numero: quartoNumero,
+                classificacao: quartoClassificacao,
+                andar: quartoAndar,
+            }],
+            dataEntrada: dataCheckin, // Exemplo de data de entrada
+            dataSaida: dataCheckout, // Exemplo de data de saída
+        });
+        const disponibilidadeTabLink = document.getElementById('disponibilidade-tab');
+        const infoGeraisTabLink = document.getElementById('informacoes-gerais-tab');
 
-    // define as datas da url nos inputs
-    document.querySelector('input[name="data_entrada"]').value = dataCheckin;
-    document.querySelector('input[name="data_saida"]').value = dataCheckout;
-    document.querySelector('select[name="tipo_quarto"]').value = quartoClassificacao;
-
-
-    disponibilidadeTabLink.classList.add('disabled');
-    infoGeraisTabLink.click(); // Alterna para a tab de Disponibilidade
+        // define as datas da url nos inputs
+        document.querySelector('input[name="data_entrada"]').value = dataCheckin;
+        document.querySelector('input[name="data_saida"]').value = dataCheckout;
+        document.querySelector('select[name="tipo_quarto"]').value = quartoClassificacao;
 
 
-    const tipoReservaSelect = document.getElementById('tipoReserva');
+        disponibilidadeTabLink.classList.add('disabled');
+        infoGeraisTabLink.click(); // Alterna para a tab de Disponibilidade
 
-    // Função para atualizar a visibilidade dos campos
-    function atualizarCampos() {
-        const cpfGroup = document.getElementById('cpfGroup2');
-        console.log(tipoReservaSelect.value);
-    
-        if (tipoReservaSelect.value == 'pre-reserva') {
-            cpfGroup.style.display = 'none';
-            document.getElementById('responsavelReservaCpf').removeAttribute('required');
-        } else {
-            cpfGroup.style.display = 'block';
-            document.getElementById('responsavelReservaCpf').setAttribute('required', 'required');
-        }
-  
-    }
 
-    // Atualiza os campos ao carregar a página
-    atualizarCampos();
+        const tipoReservaSelect = document.getElementById('tipoReserva');
 
-    // Adiciona um evento de mudança ao select
-    tipoReservaSelect.addEventListener('change', atualizarCampos);
+        // Função para atualizar a visibilidade dos campos
+        function atualizarCampos() {
+            const cpfGroup = document.getElementById('cpfGroup2');
+            console.log(tipoReservaSelect.value);
 
-    // Evento de clique para salvar o responsável pela reserva
-    document.getElementById('saveResponsavelReserva').addEventListener('click', function() {
-        $('#responsavelReservaModal').modal('hide');
-
-        const solicitanteHospedeModal = document.getElementById('solicitanteHospedeCheckboxModal').checked;
-
-        // Preencher os campos nomeSolicitante e cpf
-        var nome = '';
-        var cpf = '';
-        var situacao_reserva = document.getElementById('tipoReserva').value;
-        nome = document.getElementById('responsavelReservaNome').value;
-        cpf = document.getElementById('responsavelReservaCpf').value;
-        document.getElementById('nomeSolicitante').value = nome;
-        document.getElementById('cpf').value = cpf;
-        const solicitanteHospedeCheckbox = document.getElementById('solicitanteHospedeCheckbox');
-        if (solicitanteHospedeCheckbox) {
-            solicitanteHospedeCheckbox.checked = solicitanteHospedeModal;
-        }
-        document.querySelector('select[name="situacao_reserva"]').value = situacao_reserva;
-        if(!solicitanteHospedeModal){
-            nome = '';
-            cpf = '';
+            if (tipoReservaSelect.value == 'pre-reserva') {
+                cpfGroup.style.display = 'none';
+                document.getElementById('responsavelReservaCpf').removeAttribute('required');
+            } else {
+                cpfGroup.style.display = 'block';
+                document.getElementById('responsavelReservaCpf').setAttribute('required', 'required');
+            }
         }
 
-        // responsaveis.push({ quartoId, nome, cpf });
-        // adicionarQuartoAoCart(
-        //     quartoId, 
-        //     quartoNumero, 
-        //     quartoAndar, 
-        //     quartoClassificacao, 
-        //     '',
-        //     nome, 
-        //     cpf, 
-        //     formatDate(urlParams.get('data_checkin')), 
-        //     formatDate(urlParams.get('data_checkout')),
-        // );     
-    });
-    $(document).ready(function() {
+        // Atualiza os campos ao carregar a página
+        atualizarCampos();
+
+        // Adiciona um evento de mudança ao select
+        tipoReservaSelect.addEventListener('change', atualizarCampos);
+
+        // Evento de clique para salvar o responsável pela reserva
+        document.getElementById('saveResponsavelReserva').addEventListener('click', function() {
+            $('#responsavelReservaModal').modal('hide');
+
+            const solicitanteHospedeModal = document.getElementById('solicitanteHospedeCheckboxModal').checked;
+
+            // Preencher os campos nomeSolicitante e cpf
+            var nome = '';
+            var cpf = '';
+            var situacao_reserva = document.getElementById('tipoReserva').value;
+            nome = document.getElementById('responsavelReservaNome').value;
+            cpf = document.getElementById('responsavelReservaCpf').value;
+            document.getElementById('nomeSolicitante').value = nome;
+            document.getElementById('cpf').value = cpf;
+            const solicitanteHospedeCheckbox = document.getElementById('solicitanteHospedeCheckbox');
+            if (solicitanteHospedeCheckbox) {
+                solicitanteHospedeCheckbox.checked = solicitanteHospedeModal;
+            }
+            document.querySelector('select[name="situacao_reserva"]').value = situacao_reserva;
+            if(!solicitanteHospedeModal){
+                nome = '';
+                cpf = '';
+            }
+        });
+
         $('#data_entrada').on('changeDate', function() {
             var minDate = $('#data_entrada').datepicker('getDate');
             if (minDate) {
@@ -901,8 +888,8 @@ if (quartoId && quartoNumero && quartoClassificacao && quartoAndar && dataChecki
                 $('#data_saida').datepicker('setStartDate', minDate);
             }
         });
-    });
-}
+    }
+});
 
 
 
