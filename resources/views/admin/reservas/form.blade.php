@@ -181,23 +181,23 @@
             </div>
         </div>
     </div>
-    
+@endsection
 
+@push('scripts')
+    <script src="{{ asset('assets/admin/reserva.js') }}?v={{ @filemtime(public_path('assets/admin/reserva.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            
+
             localStorage.removeItem('cart');
-    
+
             // Script do cart quando for tela de edição
             @if ($edit)
                 @php
                     $item = $reserva->getCartSerializedAttribute();
                     $precosDiarios = $reserva->getPrecosDiarios();
                     $acompanhantes = $reserva->acompanhantes;
-                    // dd($precosDiarios);
-
                 @endphp
-                
+
                     adicionarQuartoAoCart(
                         "{{ $item['quartoId'] ?? '' }}",
                         "{{ $item['quartoNumero'] ?? '' }}",
@@ -215,13 +215,10 @@
                         "{{ $reserva->adultos ?? 1 }}",
                         {!! json_encode($acompanhantes ?? '') !!},
                         "{{ $item['quartoComposicao'] ?? '' }}",
-
                     );
             @endif
         });
     </script>
-
-    <script src="{{ asset('assets/admin/reserva.js') }}?v={{ @filemtime(public_path('assets/admin/reserva.js')) }}"></script>
     <script>
         (function () {
             function activateReservaTabByLink(tabLink) {
@@ -268,7 +265,6 @@
                         var isTransferencia = action.indexOf('/transferir') !== -1;
                         var isRefeicoes = action.indexOf('/refeicoes') !== -1;
 
-                        // Submits dessas abas devem sair como POST real (sem _method=PUT do form principal)
                         if (isTransferencia || isRefeicoes) {
                             var methodInput = this.querySelector('input[name="_method"]');
                             if (methodInput) {
@@ -276,7 +272,6 @@
                             }
                         }
 
-                        // Remover required de campos em abas ocultas para evitar erro de validação do browser
                         this.querySelectorAll('.tab-pane:not(.active) [required]').forEach(function (el) {
                             el.removeAttribute('required');
                         });
@@ -300,4 +295,4 @@
             });
         })();
     </script>
-@endsection
+@endpush
