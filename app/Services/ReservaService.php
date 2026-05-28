@@ -211,7 +211,13 @@ class ReservaService
                 // dd($quartoData);
 
                 $dataCheckin = isset($quartoData['data_checkin']) ? $quartoData['data_checkin'] : (isset($quartoData['dataCheckin']) ? $quartoData['dataCheckin'] : null);
-                $dataCheckout = isset($quartoData['data_checkout']) ? $quartoData['data_checkout'] : (isset($quartoData['dataCheckout']) ? $quartoData['dataCheckout'] : null);                
+                $dataCheckout = isset($quartoData['data_checkout']) ? $quartoData['data_checkout'] : (isset($quartoData['dataCheckout']) ? $quartoData['dataCheckout'] : null);
+
+                // Entries without dates are payment-only (e.g. from the payment partial for other rooms)
+                if (empty($dataCheckin) || empty($dataCheckout)) {
+                    continue;
+                }
+
                 // Preparar os dados da reserva
                 $reservaData = [
                     'tipo_reserva' => $data['tipo_reserva'] ?? null,

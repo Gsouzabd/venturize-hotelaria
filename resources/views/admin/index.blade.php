@@ -258,11 +258,13 @@ $situacoesReserva['RESERVADO']['background'] = '#033287';
         @endif
     </div>
 
+    @push('scripts')
     <script>
         $(document).ready(function(){
-            $('[data-toggle="tooltip"]').tooltip();
+            $('[data-toggle="tooltip"]').tooltip({ html: true });
         });
     </script>
+    @endpush
 
 
 

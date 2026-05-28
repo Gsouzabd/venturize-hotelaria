@@ -15,8 +15,8 @@
                     <div>
                         @if($reserva->data_checkin && $reserva->data_checkout)
                             <span class="badge badge-info">
-                                {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') }}
-                                → {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') }}
+                                {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y H:i') }}
+                                → {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y H:i') }}
                             </span>
                         @endif
                         <span class="badge badge-{{ $reserva->situacao_reserva == 'HOSPEDADO' ? 'success' : ($reserva->situacao_reserva == 'RESERVADO' ? 'primary' : 'secondary') }}">
@@ -71,8 +71,8 @@
                                 ({{ $reserva->quarto->referencia ?? $reserva->quarto->classificacao }})
                                 — {{ $reserva->quarto->composicao ?? '' }}
                             </div>
-                            <div class="col-md-3"><strong>Check-in:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y') }}</div>
-                            <div class="col-md-3"><strong>Check-out:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y') }}</div>
+                            <div class="col-md-3"><strong>Check-in:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkin)->format('d/m/Y H:i') }}</div>
+                            <div class="col-md-3"><strong>Check-out:</strong> {{ \Carbon\Carbon::parse($reserva->data_checkout)->format('d/m/Y H:i') }}</div>
                             <div class="col-md-2">
                                 <strong>Hóspedes:</strong> {{ $reserva->adultos ?? 0 }} ad.
                                 @if($reserva->criancas_ate_7) + {{ $reserva->criancas_ate_7 }} cr. @endif

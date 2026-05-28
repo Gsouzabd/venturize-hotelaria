@@ -317,9 +317,16 @@
                 <x-admin.field cols="3" id="valor-pendente">
                     <x-admin.label label='<i class="fas fa-exclamation-circle"></i> Valor Pendente' />
                     <x-admin.text id="valor_pendente" name="valor_pendente" class="form-control"
-                        readonly/>        
+                        readonly/>
                 </x-admin.field>
-            
+
+                <!-- Troco -->
+                <x-admin.field cols="3" id="valor-troco">
+                    <x-admin.label label='<i class="fas fa-coins"></i> Troco' />
+                    <x-admin.text id="valor_troco" name="valor_troco" class="form-control"
+                        readonly/>
+                </x-admin.field>
+
                 <!-- Status do Pagamento -->
                 <x-admin.field cols="12">
                     <x-admin.label label="Status do Pagamento"/>
@@ -433,8 +440,14 @@ function atualizarValores() {
     console.log('Valor Total:', valorTotal);
 
     // Calcular e atualizar valor pendente
-    const valorPendente = Math.max(0, valorTotal - totalPago); // Evitar valores negativos
+    const valorPendente = Math.max(0, valorTotal - totalPago);
+    const troco = Math.max(0, totalPago - valorTotal);
     valorPendenteInput.value = valorPendente.toFixed(2).replace('.', ',');
+
+    const trocoInput = document.getElementById('valor_troco');
+    if (trocoInput) {
+        trocoInput.value = troco.toFixed(2).replace('.', ',');
+    }
 
     console.log('Valor Pendente:', valorPendente);
 

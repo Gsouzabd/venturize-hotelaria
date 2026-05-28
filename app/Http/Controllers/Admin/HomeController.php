@@ -113,6 +113,7 @@ class HomeController extends Controller
         $hoje = Carbon::now('America/Sao_Paulo')->toDateString();
         $reservas = Reserva::whereDate('data_checkin', '<=', $hoje)
                             ->whereDate('data_checkout', '>=', $hoje)
+                            ->whereNotIn('situacao_reserva', ['CANCELADA', 'NO SHOW'])
                             ->get();
 
         $status = [];

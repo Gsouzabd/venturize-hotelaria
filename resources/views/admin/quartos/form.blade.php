@@ -90,7 +90,7 @@
             <x-admin.field cols="6">
                 <x-admin.label label="Classificação"/>
                 <x-admin.select name="classificacao" id="classificacao" :value="old('classificacao', $quarto->classificacao)"
-                    :items="['Embaúba' => 'Embaúba', 'Camará' => 'Camará', 'Externo' => 'Externo']"
+                    :items="['Embaúba' => 'Embaúba', 'Camará' => 'Camará', 'Externo' => 'Externo', 'Suíte Master' => 'Suíte Master']"
                     selectedItem="{{ old('classificacao', $quarto->classificacao) }}"/>
             </x-admin.field>
 
