@@ -42,6 +42,7 @@ class Reserva extends Model
         'criancas_ate_7',
         'criancas_mais_7',
         'cart_serialized', // Novo campo
+        'woocommerce_order_id',
         'total', // Novo campo
         'remover_taxa_servico', // Nova coluna
         'com_cafe',

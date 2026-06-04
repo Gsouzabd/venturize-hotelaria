@@ -242,6 +242,7 @@ class ReservaService
                     'observacoes' => $data['observacoes'] ?? null,
                     'observacoes_internas' => $data['observacoes_internas'] ?? null,
                     'cart_serialized' => $quartoCartSerialized ?? null,
+                    'woocommerce_order_id' => isset($data['woocommerce_order_id']) ? (int) $data['woocommerce_order_id'] : null,
                     'com_cafe' => (bool) ($data['com_cafe'] ?? false),
                     'valor_cafe' => null,
                     'total' => $quartoData['total'] ?? 0,

@@ -101,6 +101,21 @@ class ReservaController extends Controller
     {
         $data = $request->all();
         try {
+            // Idempotency guard: return existing reservations if this WooCommerce order was already processed
+            if (!empty($data['woocommerce_order_id']) && !isset($data['edit'])) {
+                $existing = Reserva::where('woocommerce_order_id', $data['woocommerce_order_id'])
+                    ->where('situacao_reserva', '!=', 'CANCELADA')
+                    ->get();
+
+                if ($existing->isNotEmpty()) {
+                    Log::info('Duplicate WooCommerce order — returning existing reservations.', [
+                        'woocommerce_order_id' => $data['woocommerce_order_id'],
+                        'reserva_ids' => $existing->pluck('id'),
+                    ]);
+                    return response()->json($existing, 200);
+                }
+            }
+
             if(isset($data['reserva_site']) && !isset($data['edit'])){
                 if($data['reserva_site'] == true){
                     $quartosAtualizados = [];

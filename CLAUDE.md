@@ -88,6 +88,34 @@ Printer configs are stored in the `impressoras` DB table (model: `Impressora`) w
 ### Helpers
 `app/helpers.php` is autoloaded globally — check it before adding utility functions.
 
+## Deploy to Production
+
+**No Hostinger MCP tool exists for PHP apps.** Use `make-deploy.ps1` + SFTP + SSH.
+
+```powershell
+# 1. Build frontend assets and create the deploy zip
+.\make-deploy.ps1
+
+# 2. Upload via SFTP
+#    Host: venturize.com.br  Port: 65002  User: u529148852
+#    Remote path: ~/domains/venturize.com.br/public_html/laravel/
+
+# 3. Post-deploy via SSH (port 65002)
+unzip -o venturize-hotelaria.zip
+php artisan migrate --force
+php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear
+php artisan route:cache
+```
+
+**Files excluded by `make-deploy.ps1`:** `.git`, `.claude`, `node_modules`, `vendor`, `bitz-exports`, `tests`, `printingAgent`, `database/seeders`, `resources/js`, `resources/css`, `storage/logs`, `storage/app`, `storage/framework`, `bootstrap/cache`.
+
+> If Hostinger SSH has no `composer`: remove `vendor/` from the exclusion list in `make-deploy.ps1` to bundle it (~97 MB).
+
+**Before deploying, remove these debug files from `public/`:**
+`debug-logs.php`, `limpar-cache-completo.php`, `limpar-cache-laravel.php`, `test-api-impressao.html`, `teste-conexao-simples.php`, `teste-config-helper.php`, `teste-final-admin-bar.php`, `teste-rota-bar.php`
+
+Also delete: `storage/debug_reserva_240.php`
+
 ## Important Notes
 
 - After any route changes, always clear and re-cache routes: `php artisan cache:clear; php artisan route:cache`
