@@ -90,31 +90,76 @@ Printer configs are stored in the `impressoras` DB table (model: `Impressora`) w
 
 ## Deploy to Production
 
-**No Hostinger MCP tool exists for PHP apps.** Use `make-deploy.ps1` + SFTP + SSH.
+> **NUNCA use `deployStaticWebsite` ou `deployJsApplication` do MCP Hostinger para este projeto.** Essas ferramentas são para sites estáticos e apps Node.js — usá-las aqui destrói a estrutura PHP no servidor. Isso já aconteceu neste projeto.
 
-```powershell
-# 1. Build frontend assets and create the deploy zip
-.\make-deploy.ps1
+> **SSH no Windows: use Python `paramiko`.** `sshpass` não está disponível. Não tente passar senha por pipe no PowerShell.
 
-# 2. Upload via SFTP
-#    Host: venturize.com.br  Port: 65002  User: u529148852
-#    Remote path: ~/domains/venturize.com.br/public_html/laravel/
+### Update rápido (apenas arquivos alterados, sem migração)
 
-# 3. Post-deploy via SSH (port 65002)
-unzip -o venturize-hotelaria.zip
-php artisan migrate --force
-php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear
-php artisan route:cache
+```python
+import paramiko
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect('147.79.94.231', port=65002, username='u529148852', password='<senha>', timeout=30)
+sftp = client.open_sftp()
+
+base_local  = r'C:\Users\ryanr\Desktop\ALDEIA DOS CAMARAS\venturize-hotelaria'
+base_remote = '/home/u529148852/domains/venturize.com.br/public_html/laravel'
+
+for f in [
+    'app/Http/Controllers/Api/ReservaController.php',
+    # ... listar apenas os arquivos alterados
+]:
+    sftp.put(f'{base_local}/{f.replace("/", chr(92))}', f'{base_remote}/{f}')
+    print(f'OK: {f}')
+
+sftp.close()
+
+# Limpar caches após upload
+for cmd in [
+    f'cd {base_remote} && php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear',
+    f'cd {base_remote} && php artisan route:cache && php artisan config:cache',
+]:
+    _, out, _ = client.exec_command(cmd, timeout=60)
+    print(out.read().decode())
+client.close()
 ```
 
-**Files excluded by `make-deploy.ps1`:** `.git`, `.claude`, `node_modules`, `vendor`, `bitz-exports`, `tests`, `printingAgent`, `database/seeders`, `resources/js`, `resources/css`, `storage/logs`, `storage/app`, `storage/framework`, `bootstrap/cache`.
+### Deploy completo (com migrações ou rebuild de assets)
 
-> If Hostinger SSH has no `composer`: remove `vendor/` from the exclusion list in `make-deploy.ps1` to bundle it (~97 MB).
+```powershell
+# 1. Gerar zip (estrutura de diretórios preservada via ZipArchive)
+cd venturize-hotelaria
+.\make-deploy.ps1
+```
 
-**Before deploying, remove these debug files from `public/`:**
-`debug-logs.php`, `limpar-cache-completo.php`, `limpar-cache-laravel.php`, `test-api-impressao.html`, `teste-conexao-simples.php`, `teste-config-helper.php`, `teste-final-admin-bar.php`, `teste-rota-bar.php`
+```python
+# 2. Upload + extração + pós-deploy (NÃO sobrescreve .env do servidor)
+import paramiko
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect('147.79.94.231', port=65002, username='u529148852', password='<senha>', timeout=30)
 
-Also delete: `storage/debug_reserva_240.php`
+base = '/home/u529148852/domains/venturize.com.br/public_html/laravel'
+
+sftp = client.open_sftp()
+sftp.put(r'venturize-hotelaria.zip', f'{base}/venturize-hotelaria.zip')
+sftp.close()
+
+for cmd in [
+    f'cd {base} && unzip -o venturize-hotelaria.zip && rm venturize-hotelaria.zip',
+    f'cd {base} && php artisan migrate --force',
+    f'cd {base} && php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear',
+    f'cd {base} && php artisan route:cache && php artisan config:cache',
+]:
+    _, out, err = client.exec_command(cmd, timeout=120)
+    print(out.read().decode('utf-8', errors='replace'))
+client.close()
+```
+
+**`make-deploy.ps1` exclui:** `.git`, `.mcp.json`, `.claude`, `node_modules`, `vendor`, `bitz-exports`, `tests`, `printingAgent`, `database/seeders`, `resources/js`, `resources/css`, `storage/logs`, `storage/app`, `storage/framework`, `bootstrap/cache`.
+
+> `.env` não está no zip — as variáveis de produção nunca são sobrescritas pelo deploy.
 
 ## Important Notes
 

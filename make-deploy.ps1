@@ -3,7 +3,7 @@ npm run build
 
 Write-Host "Gerando zip..."
 
-$source = Get-Location
+$source = (Get-Location).Path
 $output = Join-Path $source "venturize-hotelaria.zip"
 
 $excludeDirs = @(
@@ -16,13 +16,14 @@ $excludeDirs = @(
 
 $excludeFiles = @(
     "venturize-hotelaria.zip", "package.json",
-    "package-lock.json", "vite.config.js", "make-deploy.ps1", "make-deploy.sh"
+    "package-lock.json", "vite.config.js", "make-deploy.ps1", "make-deploy.sh",
+    ".mcp.json"
 )
 
 if (Test-Path $output) { Remove-Item $output }
 
 $files = Get-ChildItem -Path $source -Recurse -File | Where-Object {
-    $relativePath = $_.FullName.Substring($source.Path.Length + 1)
+    $relativePath = $_.FullName.Substring($source.Length + 1)
 
     $inExcludedDir = $false
     foreach ($dir in $excludeDirs) {
@@ -37,7 +38,16 @@ $files = Get-ChildItem -Path $source -Recurse -File | Where-Object {
     -not $inExcludedDir -and -not $isExcludedFile
 }
 
-Compress-Archive -Path $files.FullName -DestinationPath $output -CompressionLevel Optimal
+# Build zip preserving relative directory structure
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
+
+$zip = [System.IO.Compression.ZipFile]::Open($output, [System.IO.Compression.ZipArchiveMode]::Create)
+foreach ($file in $files) {
+    $relativePath = $file.FullName.Substring($source.Length + 1)
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $relativePath, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+}
+$zip.Dispose()
 
 $size = (Get-Item $output).Length / 1MB
-Write-Host ("Concluído! Tamanho: {0:N1} MB" -f $size)
+Write-Host ("Concluido! Tamanho: {0:N1} MB" -f $size)
