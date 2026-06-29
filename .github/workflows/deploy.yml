@@ -22,6 +22,11 @@ jobs:
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy files via rsync
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PATH: ${{ secrets.SSH_REMOTE_PATH }}
         run: |
           rsync -az \
             --exclude '.git/' \
@@ -39,9 +44,9 @@ jobs:
             --exclude '.claude/' \
             --exclude 'make-deploy*' \
             --exclude 'deploy.py' \
-            -e "ssh -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" \
+            -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no" \
             ./ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_REMOTE_PATH }}/
+            "${SSH_USER}@${SSH_HOST}:${REMOTE_PATH}/"
 
       - name: Run post-deploy commands
         uses: appleboy/ssh-action@v1
