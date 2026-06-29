@@ -32,7 +32,8 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           REMOTE_PATH: ${{ secrets.SSH_REMOTE_PATH }}
         run: |
-          rsync -az \
+          echo "Destino: ${SSH_USER}@${SSH_HOST}:${REMOTE_PATH}/"
+          rsync -avz \
             --exclude '.git/' \
             --exclude 'node_modules/' \
             --exclude 'vendor/' \
