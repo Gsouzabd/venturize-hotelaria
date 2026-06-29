@@ -22,14 +22,13 @@ class LocalEstoqueController extends Controller
         $filters = $request->all();
         $filters['nome'] ??= '';
 
-        $query = $this->model->with(['parent', 'children'])->newQuery();
+        $query = $this->model->with(['children'])->whereNull('parent_id');
 
         if ($filters['nome']) {
             $query->where('nome', 'like', '%' . $filters['nome'] . '%');
         }
 
         $locaisEstoque = $query
-            ->orderBy('parent_id')
             ->orderBy('nome')
             ->paginate(config('app.rows_per_page'));
 

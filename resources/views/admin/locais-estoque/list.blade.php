@@ -22,7 +22,6 @@
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>Local Pai</th>
                 <th>Subestoques</th>
                 <th>Descrição</th>
                 <th>Criado em</th>
@@ -31,19 +30,13 @@
             </thead>
             <tbody>
             @forelse($locaisEstoque as $localEstoque)
-                <tr {{ $localEstoque->parent_id ? 'class=table-secondary' : '' }}>
+                {{-- Linha do pai --}}
+                <tr>
                     <td>{{ $localEstoque->id }}</td>
-                    <td>
-                        @if($localEstoque->parent_id)
-                            <span class="text-muted" style="padding-left:1rem">↳</span>
-                        @endif
-                        {{ $localEstoque->nome }}
-                    </td>
-                    <td>{{ $localEstoque->parent?->nome ?? '—' }}</td>
+                    <td><strong>{{ $localEstoque->nome }}</strong></td>
                     <td>
                         @if($localEstoque->children->isNotEmpty())
                             <span class="badge badge-info">{{ $localEstoque->children->count() }}</span>
-                            {{ $localEstoque->children->pluck('nome')->join(', ') }}
                         @else
                             <span class="text-muted">—</span>
                         @endif
@@ -55,9 +48,23 @@
                         <x-admin.delete-btn route="admin.locais-estoque.destroy" :route-params="['id' => $localEstoque->id]"/>
                     </td>
                 </tr>
+                {{-- Linhas dos filhos imediatamente abaixo --}}
+                @foreach($localEstoque->children->sortBy('nome') as $filho)
+                <tr class="table-secondary">
+                    <td class="text-muted">{{ $filho->id }}</td>
+                    <td style="padding-left:2rem">↳ {{ $filho->nome }}</td>
+                    <td><span class="text-muted">—</span></td>
+                    <td>{{ $filho->descricao }}</td>
+                    <td>{{ timestamp_br($filho->created_at) }}</td>
+                    <td class="cell-nowrap">
+                        <x-admin.edit-btn route="admin.locais-estoque.edit" :route-params="['id' => $filho->id]"/>
+                        <x-admin.delete-btn route="admin.locais-estoque.destroy" :route-params="['id' => $filho->id]"/>
+                    </td>
+                </tr>
+                @endforeach
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">{{ config('app.messages.no_rows') }}</td>
+                    <td colspan="6" class="text-center">{{ config('app.messages.no_rows') }}</td>
                 </tr>
             @endforelse
             </tbody>
