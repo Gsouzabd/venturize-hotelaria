@@ -32,6 +32,10 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           REMOTE_PATH: ${{ secrets.SSH_REMOTE_PATH }}
         run: |
+          : "${SSH_HOST:?Secret SSH_HOST nao configurado}"
+          : "${SSH_PORT:?Secret SSH_PORT nao configurado}"
+          : "${SSH_USER:?Secret SSH_USER nao configurado}"
+          : "${REMOTE_PATH:?Secret SSH_REMOTE_PATH nao configurado}"
           echo "Destino: ${SSH_USER}@${SSH_HOST}:${REMOTE_PATH}/"
           rsync -avz \
             --exclude '.git/' \
