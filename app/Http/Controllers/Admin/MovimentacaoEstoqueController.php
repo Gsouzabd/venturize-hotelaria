@@ -46,7 +46,8 @@ class MovimentacaoEstoqueController extends Controller
         $edit = boolval($id);
         $movimentacao = $edit ? $this->model->findOrFail($id) : new MovimentacaoEstoque();
 
-        $locaisEstoque = LocalEstoque::all();
+        // Carrega hierarquia para optgroups nas dropdowns
+        $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
 
 
         $produtos = Produto::all();

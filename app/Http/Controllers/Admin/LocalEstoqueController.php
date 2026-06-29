@@ -22,14 +22,15 @@ class LocalEstoqueController extends Controller
         $filters = $request->all();
         $filters['nome'] ??= '';
 
-        $query = $this->model->newQuery();
+        $query = $this->model->with(['parent', 'children'])->newQuery();
 
         if ($filters['nome']) {
             $query->where('nome', 'like', '%' . $filters['nome'] . '%');
         }
 
         $locaisEstoque = $query
-            ->orderBy('id', 'desc')
+            ->orderBy('parent_id')
+            ->orderBy('nome')
             ->paginate(config('app.rows_per_page'));
 
         return view('admin.locais-estoque.list', compact('locaisEstoque', 'filters'));
@@ -42,7 +43,12 @@ class LocalEstoqueController extends Controller
         $edit = boolval($id);
         $localEstoque = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
 
-        return view('admin.locais-estoque.form', compact('localEstoque', 'edit'));
+        $locaisPai = $this->model->whereNull('parent_id')
+            ->when($edit, fn ($q) => $q->where('id', '!=', $id))
+            ->orderBy('nome')
+            ->get();
+
+        return view('admin.locais-estoque.form', compact('localEstoque', 'edit', 'locaisPai'));
     }
 
     public function save(Request $request)

@@ -39,10 +39,23 @@
             <x-admin.field cols="6">
                 <x-admin.label label="Local de Estoque" required/>
                 @if($edit)
-                    <input type="text" name="local_estoque_nome" id="local_estoque_nome" class="form-control" value="{{ $locaisEstoque->firstWhere('id', $estoque->local_estoque_id)->nome ?? '' }}" readonly/>
-                    <input type="hidden" name="local_estoque_id" id="local_estoque_id" value="{{ $estoque->local_estoque_id }}">
+                    @php
+                        $localAtual = $locaisEstoque->firstWhere('id', $estoque->local_estoque_id);
+                        $nomeLocal = $localAtual
+                            ? ($localAtual->parent ? $localAtual->parent->nome . ' › ' . $localAtual->nome : $localAtual->nome)
+                            : '';
+                    @endphp
+                    <input type="text" class="form-control" value="{{ $nomeLocal }}" readonly/>
+                    <input type="hidden" name="local_estoque_id" value="{{ $estoque->local_estoque_id }}">
                 @else
-                    <x-admin.select name="local_estoque_id" id="local_estoque_id" :items="$locaisEstoque->pluck('nome', 'id')" :selected-item="old('local_estoque_id', $estoque->local_estoque_id ?? '')" required/>
+                    <select name="local_estoque_id" id="local_estoque_id" class="form-control" required>
+                        <option value="">Selecione...</option>
+                        @foreach ($locaisEstoque as $local)
+                            <option value="{{ $local->id }}" {{ old('local_estoque_id', $estoque->local_estoque_id ?? '') == $local->id ? 'selected' : '' }}>
+                                {{ $local->parent ? $local->parent->nome . ' › ' . $local->nome : $local->nome }}
+                            </option>
+                        @endforeach
+                    </select>
                 @endif
             </x-admin.field>
             <!-- Quantidade -->

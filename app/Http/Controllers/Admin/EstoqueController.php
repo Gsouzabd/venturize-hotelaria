@@ -47,7 +47,7 @@ class EstoqueController extends Controller
             $filters['created_at'] = Carbon::createFromFormat('d/m/Y', $filters['created_at'])->format('Y-m-d');
         }
 
-        $locaisEstoque = LocalEstoque::all();
+        $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
 
         $estoques = $query
             ->orderBy('id', 'desc')
@@ -65,7 +65,13 @@ class EstoqueController extends Controller
         $locaisEstoque = LocalEstoque::all();
 
         $produtos = Produto::all();
-    
+
+        // Apenas folhas (sem filhos) podem receber estoque; carrega parent para exibir nome agrupado
+        $locaisEstoque = LocalEstoque::with('parent')
+            ->whereDoesntHave('children')
+            ->orderBy('nome')
+            ->get();
+
         return view('admin.estoque.form', compact('estoque', 'edit', 'locaisEstoque', 'produtos'));
     }
     

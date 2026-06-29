@@ -1,8 +1,8 @@
 @extends('layouts.admin.master')
 
-@php 
+@php
 use Carbon\Carbon;
-use App\Models\Produto; 
+use App\Models\Produto;
 @endphp
 
 @section('title', 'Estoque')
@@ -14,61 +14,73 @@ use App\Models\Produto;
 @endsection
 
 @section('content')
-    <ul class="nav nav-tabs" id="estoqueTab" role="tablist">
-        @foreach ($locaisEstoque as $index => $local)
-            <li class="nav-item" role="presentation">
-                <a class="nav-link {{ $index === 0 ? 'active' : '' }}" id="tab-{{ $local->id }}" data-toggle="tab" href="#content-{{ $local->id }}" role="tab" aria-controls="content-{{ $local->id }}" aria-selected="{{ $index === 0 ? 'true' : 'false' }}">{{ $local->nome }}</a>
-            </li>
+    <ul class="nav nav-tabs mb-0 flex-wrap" id="estoqueTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ !request('local_estoque_id') ? 'active' : '' }}"
+               href="{{ route('admin.estoque.index', request()->except(['local_estoque_id', 'page'])) }}">
+               Todos
+            </a>
+        </li>
+        @foreach ($locaisEstoque as $local)
+            @if($local->children->isNotEmpty())
+                {{-- Local pai com filhos: mostra cada filho como tab separada --}}
+                @foreach($local->children as $filho)
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {{ request('local_estoque_id') == $filho->id ? 'active' : '' }}"
+                           href="{{ route('admin.estoque.index', array_merge(request()->except('page'), ['local_estoque_id' => $filho->id])) }}">
+                           <small class="text-muted">{{ $local->nome }} ›</small> {{ $filho->nome }}
+                        </a>
+                    </li>
+                @endforeach
+            @else
+                {{-- Local folha sem pai: mostra como tab simples --}}
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {{ request('local_estoque_id') == $local->id ? 'active' : '' }}"
+                       href="{{ route('admin.estoque.index', array_merge(request()->except('page'), ['local_estoque_id' => $local->id])) }}">
+                       {{ $local->nome }}
+                    </a>
+                </li>
+            @endif
         @endforeach
     </ul>
-    <div class="tab-content" id="estoqueTabContent">
-        @foreach ($locaisEstoque as $index => $local)
-            <div class="tab-pane fade {{ $index === 0 ? 'show active' : '' }}" id="content-{{ $local->id }}" role="tabpanel" aria-labelledby="tab-{{ $local->id }}">
-                <x-admin.grid :pagination="$local->estoques">
-                    <table class="table table-striped table-bordered table-hover card-table">
-                        <thead>
-                            <tr>
-                                <th>ID Estoque</th>
-                                <th>ID Produto</th>
-                                <th>Produto</th>
-                                <th>Quantidade</th>
-                                <th>Unidade</th>
-                                <th>Preço Custo</th>
-                                <th>Preço Venda</th>
-                                <th>Data de Criação</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($local->estoques as $estoque)
-                                <tr>
-                                    <td>{{ $estoque->id }}</td>
-                                    <td>{{ $estoque->produto->id }}</td>
-                                    <td>{{ $estoque->produto->descricao }}</td>
-                                    <td>{{ $estoque->quantidade }}</td>
-                                    <td>{{ $estoque->produto->unidade}} - {{\App\Models\Produto::UNIDADES[$estoque->produto->unidade] }}</td>
-                                    <td>R$ {{ number_format($estoque->produto->preco_custo ?? 0, 2, ',', '.') }}</td>
-                                    <td>R$ {{ number_format($estoque->produto->preco_venda ?? 0, 2, ',', '.') }}</td>
-                                    <td>{{ Carbon::parse($estoque->created_at)->format('d-m-Y') }}</td>
-                                    <td class="cell-nowrap">
-                                        <x-admin.edit-btn route="admin.estoque.edit" :route-params="['local_estoque_id' => $local->id, 'id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>
-                                        <x-admin.delete-btn route="admin.estoque.destroy" :route-params="['id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-trash-alt\'></i>')"/>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="text-center">Nenhum estoque encontrado para este local.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </x-admin.grid>
-            </div>
-        @endforeach
-    </div>
 
-    <!-- Paginação -->
-    <div class="d-flex justify-content-center">
-        {{ $estoques->links() }}
-    </div>
+    <x-admin.grid :pagination="$estoques">
+        <table class="table table-striped table-bordered table-hover card-table">
+            <thead>
+                <tr>
+                    <th>ID Estoque</th>
+                    <th>ID Produto</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Unidade</th>
+                    <th>Preço Custo</th>
+                    <th>Preço Venda</th>
+                    <th>Data de Criação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($estoques as $estoque)
+                    <tr>
+                        <td>{{ $estoque->id }}</td>
+                        <td>{{ $estoque->produto->id }}</td>
+                        <td>{{ $estoque->produto->descricao }}</td>
+                        <td>{{ $estoque->quantidade }}</td>
+                        <td>{{ $estoque->produto->unidade }} - {{ \App\Models\Produto::UNIDADES[$estoque->produto->unidade] }}</td>
+                        <td>R$ {{ number_format($estoque->produto->preco_custo ?? 0, 2, ',', '.') }}</td>
+                        <td>R$ {{ number_format($estoque->produto->preco_venda ?? 0, 2, ',', '.') }}</td>
+                        <td>{{ Carbon::parse($estoque->created_at)->format('d-m-Y') }}</td>
+                        <td class="cell-nowrap">
+                            <x-admin.edit-btn route="admin.estoque.edit" :route-params="['local_estoque_id' => $estoque->local_estoque_id, 'id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-edit\'></i>')"/>
+                            <x-admin.delete-btn route="admin.estoque.destroy" :route-params="['id' => $estoque->id]" :label="html_entity_decode('<i class=\'fas fa-trash-alt\'></i>')"/>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="9" class="text-center">Nenhum estoque encontrado.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </x-admin.grid>
 @endsection

@@ -22,20 +22,34 @@
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
+                <th>Local Pai</th>
+                <th>Subestoques</th>
                 <th>Descrição</th>
                 <th>Criado em</th>
-                <th>Modificado em</th>
                 <th>Ações</th>
             </tr>
             </thead>
             <tbody>
             @forelse($locaisEstoque as $localEstoque)
-                <tr>
+                <tr {{ $localEstoque->parent_id ? 'class=table-secondary' : '' }}>
                     <td>{{ $localEstoque->id }}</td>
-                    <td>{{ $localEstoque->nome }}</td>
+                    <td>
+                        @if($localEstoque->parent_id)
+                            <span class="text-muted" style="padding-left:1rem">↳</span>
+                        @endif
+                        {{ $localEstoque->nome }}
+                    </td>
+                    <td>{{ $localEstoque->parent?->nome ?? '—' }}</td>
+                    <td>
+                        @if($localEstoque->children->isNotEmpty())
+                            <span class="badge badge-info">{{ $localEstoque->children->count() }}</span>
+                            {{ $localEstoque->children->pluck('nome')->join(', ') }}
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
                     <td>{{ $localEstoque->descricao }}</td>
                     <td>{{ timestamp_br($localEstoque->created_at) }}</td>
-                    <td>{{ timestamp_br($localEstoque->updated_at) }}</td>
                     <td class="cell-nowrap">
                         <x-admin.edit-btn route="admin.locais-estoque.edit" :route-params="['id' => $localEstoque->id]"/>
                         <x-admin.delete-btn route="admin.locais-estoque.destroy" :route-params="['id' => $localEstoque->id]"/>
@@ -43,7 +57,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="text-center">{{ config('app.messages.no_rows') }}</td>
+                    <td colspan="7" class="text-center">{{ config('app.messages.no_rows') }}</td>
                 </tr>
             @endforelse
             </tbody>

@@ -111,31 +111,49 @@
                                 </td>
                                 @if (!$transferencia)
                                     <td>
-                                        <select name="local_estoque_id" id="local_estoque_id" class="form-control" >
+                                        <select name="local_estoque_id" id="local_estoque_id" class="form-control">
                                             @foreach($locaisEstoque as $local)
-                                                <option value="{{ $local->id }}" {{ old('local_estoque_id', $estoque->local_estoque_id ?? '') == $local->id ? 'selected' : '' }}>
-                                                    {{ $local->nome }}
-                                                </option>
+                                                @if($local->children->isNotEmpty())
+                                                    <optgroup label="{{ $local->nome }}">
+                                                        @foreach($local->children as $filho)
+                                                            <option value="{{ $filho->id }}">{{ $filho->nome }}</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                @else
+                                                    <option value="{{ $local->id }}">{{ $local->nome }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </td>
                                 @endif
                                 @if ($transferencia)
                                     <td>
-                                        <select name="estoque_origem_id" id="estoque_origem_id" class="form-control" >
+                                        <select name="estoque_origem_id" id="estoque_origem_id" class="form-control">
                                             @foreach($locaisEstoque as $local)
-                                                <option value="{{ $local->id }}" {{ old('estoque_origem_id', $estoque->estoque_origem_id ?? '') == $local->id ? 'selected' : '' }}>
-                                                    {{ $local->nome }}
-                                                </option>
+                                                @if($local->children->isNotEmpty())
+                                                    <optgroup label="{{ $local->nome }}">
+                                                        @foreach($local->children as $filho)
+                                                            <option value="{{ $filho->id }}">{{ $filho->nome }}</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                @else
+                                                    <option value="{{ $local->id }}">{{ $local->nome }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="estoque_destino_id" id="estoque_destino_id" class="form-control" >
+                                        <select name="estoque_destino_id" id="estoque_destino_id" class="form-control">
                                             @foreach($locaisEstoque as $local)
-                                                <option value="{{ $local->id }}" {{ old('estoque_destino_id', $estoque->estoque_destino_id ?? '') == $local->id ? 'selected' : '' }}>
-                                                    {{ $local->nome }}
-                                                </option>
+                                                @if($local->children->isNotEmpty())
+                                                    <optgroup label="{{ $local->nome }}">
+                                                        @foreach($local->children as $filho)
+                                                            <option value="{{ $filho->id }}">{{ $filho->nome }}</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                @else
+                                                    <option value="{{ $local->id }}">{{ $local->nome }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </td>

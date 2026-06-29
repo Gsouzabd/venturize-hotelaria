@@ -1,0 +1,57 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy files via rsync
+        run: |
+          rsync -az \
+            --exclude '.git/' \
+            --exclude 'node_modules/' \
+            --exclude 'vendor/' \
+            --exclude 'storage/' \
+            --exclude '.env' \
+            --exclude 'tests/' \
+            --exclude 'resources/js/' \
+            --exclude 'resources/css/' \
+            --exclude 'database/seeders/' \
+            --exclude 'printingAgent/' \
+            --exclude 'bitz-exports/' \
+            --exclude 'bootstrap/cache/' \
+            --exclude '.claude/' \
+            --exclude 'make-deploy*' \
+            --exclude 'deploy.py' \
+            -e "ssh -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" \
+            ./ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_REMOTE_PATH }}/
+
+      - name: Run post-deploy commands
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.SSH_REMOTE_PATH }}
+            php artisan migrate --force
+            php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear
+            php artisan route:cache && php artisan config:cache

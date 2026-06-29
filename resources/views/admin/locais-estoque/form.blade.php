@@ -31,8 +31,21 @@
                 <x-admin.text name="nome" id="nome" :value="old('nome', $localEstoque->nome)" required/>
             </x-admin.field>
 
-            <!-- Descrição -->
+            <!-- Local Pai -->
             <x-admin.field cols="6">
+                <x-admin.label label="Local Pai (subestoque de)"/>
+                <select name="parent_id" id="parent_id" class="form-control">
+                    <option value="">— Nenhum (local raiz) —</option>
+                    @foreach ($locaisPai as $pai)
+                        <option value="{{ $pai->id }}" {{ old('parent_id', $localEstoque->parent_id) == $pai->id ? 'selected' : '' }}>
+                            {{ $pai->nome }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.field>
+
+            <!-- Descrição -->
+            <x-admin.field cols="12">
                 <x-admin.label label="Descrição"/>
                 <x-admin.textarea name="descricao" id="descricao" :value="old('descricao', $localEstoque->descricao)"/>
             </x-admin.field>

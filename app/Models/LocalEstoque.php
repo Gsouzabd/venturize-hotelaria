@@ -12,7 +12,24 @@ class LocalEstoque extends Model
 
     protected $table = 'locais_estoque';
 
-    protected $fillable = ['nome'];
+    protected $fillable = ['nome', 'parent_id'];
+
+    public function parent()
+    {
+        return $this->belongsTo(LocalEstoque::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(LocalEstoque::class, 'parent_id');
+    }
+
+    public function isLeaf(): bool
+    {
+        return $this->relationLoaded('children')
+            ? $this->children->isEmpty()
+            : $this->children()->doesntExist();
+    }
 
     public function estoques()
     {
