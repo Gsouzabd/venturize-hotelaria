@@ -427,7 +427,8 @@ class ReservaService
 
     protected function gerarCartSerializedReservaSite(array $data)
     {
-        $cart = [];
+        $cart    = [];
+        $quartos = [];
 
         foreach ($data['quartos'] as $quarto) {
 
