@@ -14,7 +14,7 @@ use App\Models\Reserva;
 @endsection
 
 @section('content')
-    <x-admin.filters route="admin.reservas.index">
+    <x-admin.filters :route="\Illuminate\Support\Facades\Route::currentRouteName()">
         <x-admin.filter cols="2">
             <x-admin.label label="Cliente"/>
             <x-admin.text name="cliente" :value="$filters['cliente_id']"/>

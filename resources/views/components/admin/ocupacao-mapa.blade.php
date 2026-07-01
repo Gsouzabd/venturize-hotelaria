@@ -48,6 +48,15 @@ use Illuminate\Support\Str;
     </ul>
 </div>
 
+@php
+    // Agrupar Day Uses (reservas sem quarto) por dia de check-in
+    $dayUsePorDia = collect($reservas ?? [])->filter(function($reserva) {
+        return method_exists($reserva, 'isDayUse') && $reserva->isDayUse();
+    })->groupBy(function($reserva) {
+        return \Carbon\Carbon::parse($reserva->data_checkin)->toDateString();
+    });
+@endphp
+
 <div class="reservations-calendar mt-4">
     <table class="table table-bordered">
         <thead>
@@ -59,6 +68,44 @@ use Illuminate\Support\Str;
             </tr>
         </thead>
         <tbody>
+            <tr>
+                <td class="quarto"><strong>Day Use</strong></td>
+                @for($i = 0; $i < ($intervaloDias ?? 0); $i++)
+                    @php
+                        $diaAtual = ($dataInicial ?? now())->copy()->addDays($i)->toDateString();
+                        $dayUseNoDia = $dayUsePorDia->get($diaAtual, collect());
+                    @endphp
+                    <td style="padding: 0px; height: 30px;" data-date="{{ $diaAtual }}">
+                        @foreach($dayUseNoDia as $reservaDayUse)
+                            @php
+                                $cor = Reserva::SITUACOESRESERVA[$reservaDayUse->situacao_reserva]['background'] ?? '#f39c12';
+                                $titular = $reservaDayUse->clienteResponsavel
+                                    ? $reservaDayUse->clienteResponsavel->nome
+                                    : optional($reservaDayUse->clienteSolicitante)->nome;
+                                $situacaoLabel = Reserva::SITUACOESRESERVA[$reservaDayUse->situacao_reserva]['label'] ?? $reservaDayUse->situacao_reserva;
+                            @endphp
+                            <a href="{{ route('admin.reservas.edit', ['id' => $reservaDayUse->id]) }}"
+                               data-reserva-id="{{ $reservaDayUse->id }}"
+                               data-reserva-titular="{{ $titular }}"
+                               data-reserva-uh="Day Use"
+                               data-reserva-situacao="{{ $situacaoLabel }}"
+                               data-reserva-situacao-cor="{{ $cor }}"
+                               data-reserva-checkin="{{ \Carbon\Carbon::parse($reservaDayUse->data_checkin)->toDateString() }}"
+                               data-reserva-checkout="{{ \Carbon\Carbon::parse($reservaDayUse->data_checkout)->toDateString() }}"
+                               data-reserva-adultos="{{ $reservaDayUse->adultos }}"
+                               data-reserva-criancas-ate7="{{ $reservaDayUse->criancas_ate_7 }}"
+                               data-reserva-criancas-mais7="{{ $reservaDayUse->criancas_mais_7 }}"
+                               data-reserva-total="{{ $reservaDayUse->total }}"
+                               data-reserva-observacoes="{{ $reservaDayUse->observacoes }}"
+                               data-reserva-edit-url="{{ route('admin.reservas.edit', ['id' => $reservaDayUse->id]) }}"
+                               class="reserva-dia js-open-reserva-modal"
+                               style="display:block; background: {{ $cor }}; color: white;">
+                                {{ $titular ? Str::limit(ucwords(strtolower($titular)), 15) : 'Day Use' }}
+                            </a>
+                        @endforeach
+                    </td>
+                @endfor
+            </tr>
             @foreach($quartos ?? [] as $quarto)
                 <tr>
                     <td class="quarto">{{ $quarto->referencia ?? $quarto->numero ?? '' }}</td>
@@ -149,13 +196,6 @@ use Illuminate\Support\Str;
 </div>
 
 @php
-    // Agrupar Day Uses (reservas sem quarto) por dia de check-in
-    $dayUsePorDia = collect($reservas ?? [])->filter(function($reserva) {
-        return method_exists($reserva, 'isDayUse') && $reserva->isDayUse();
-    })->groupBy(function($reserva) {
-        return \Carbon\Carbon::parse($reserva->data_checkin)->toDateString();
-    });
-
     // Resumo de Day Use para o dia atual (caso não venha do controller)
     $hoje = \Carbon\Carbon::now('America/Sao_Paulo')->toDateString();
     $dayUseHoje = $dayUsePorDia->get($hoje, collect());
