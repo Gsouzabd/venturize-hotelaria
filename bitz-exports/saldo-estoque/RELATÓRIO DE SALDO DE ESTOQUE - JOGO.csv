@@ -1,0 +1,13 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+400,Baralho (par),JOGOS,UN,1,0,0,2,"10,00","10,00",Saldo Excedendo o permitido!,"0,00 %","20,00"
+663,Bola de Futebol,JOGOS,UN,2,1,0,1,"100,00","100,00",sem observacao,"0,00 %","100,00"
+664,Bola de Vôlei,JOGOS,UN,2,1,0,1,"153,00","153,00",sem observacao,"0,00 %","153,00"
+402,Bola ping pong,JOGOS,UN,15,1,0,3,"2,00","2,00",sem observacao,"0,00 %","6,00"
+403,Bola toto,JOGOS,UN,2,1,0,2,"5,00","5,00",sem observacao,"0,00 %","10,00"
+1174,Bomba de encher bola,JOGOS,UN,1,1,0,1,"30,00","30,00",sem observacao,"0,00 %","30,00"
+406,Boneco totó (22),JOGOS,UN,1,0,0,1,"60,00","60,00",sem observacao,"0,00 %","60,00"
+405,Raquete ping-pong,JOGOS,UN,2,1,0,2,"15,00","15,00",sem observacao,"0,00 %","30,00"
+1139,Rede de Ping-Pong,JOGOS,UN,1,1,0,1,"20,00","20,00",sem observacao,"0,00 %","20,00"
+Totais:,,,,,,,14,,"429,00",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,14,,"429,00"

@@ -1,0 +1,36 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+1126,#MANTA PREMIER,PINTURA,UN,0,0,0,1,"60,00","60,00",Saldo Excedendo o permitido!,"0,00 %","60,00"
+1123,#MANTA TERMICA 10M,PINTURA,UN,2,1,0,1,"60,00","60,00",sem observacao,"0,00 %","60,00"
+607,*AUTOMOTIVO (BRANCO) 1/4,PINTURA,UN,2,1,0,2,"60,00","60,00",sem observacao,"0,00 %","120,00"
+1025,*AUTOMOTIVO (ENDURECEDOR),PINTURA,UN,2,1,0,2,"26,84","26,84",sem observacao,"0,00 %","53,68"
+608,*COLA CONTATO 1/4,PINTURA,UN,6,1,1,0,"35,00","35,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+1024,*COLA BRANCA,PINTURA,UN,6,1,0,1,"35,00","35,00",sem observacao,"0,00 %","35,00"
+1112,*SELADOR PLÁSTICO,PINTURA,UN,6,1,0,1,"35,00","35,00",sem observacao,"0,00 %","35,00"
+Totais:,,,,,,,113,,"5.595,91",,,
+597,*VERNIZ (INCOLOR) 1/4,PINTURA,UN,6,1,0,6,"89,25","89,25",sem observacao,"0,00 %","535,50"
+599,DIALINE ANTIFERRUGEM (BRANCO BRILHO) GALÃO,PINTURA,UN,4,1,0,1,"110,25","110,25",sem observacao,"0,00 %","110,25"
+600,DIALINE ANTIFERRUGEM (MARROM TABACO) GALÃO,PINTURA,UN,16,3,0,4,"110,25","110,25",sem observacao,"0,00 %","441,00"
+598,DIALINE SECA RAPIDO (BRANCO FOSCO) GALÃO,PINTURA,UN,4,1,0,1,"99,75","99,75",sem observacao,"0,00 %","99,75"
+603,ESMALTE ( AMAREL0 750ml),PINTURA,UN,10,1,0,6,"25,93","25,93",sem observacao,"0,00 %","155,58"
+658,ESMALTE ( AMARELO TRATOR 750ml ),PINTURA,UN,10,3,0,10,"25,93","29,93",sem observacao,"13,36 %","259,30"
+604,ESMALTE ( AZUL FRANÇA 750ml),PINTURA,UN,10,1,0,7,"25,93","25,93",sem observacao,"0,00 %","181,51"
+657,ESMALTE ( AZUL MAR 750ml ),PINTURA,UN,10,1,0,4,"25,93","25,93",sem observacao,"0,00 %","103,72"
+1027,ESMALTE ( CERAMICA 750ml),PINTURA,UN,10,3,0,7,"25,92","25,93",sem observacao,"0,04 %","181,44"
+606,ESMALTE ( LARANJA 750ml),PINTURA,UN,10,1,0,11,"25,93","25,93",Saldo Excedendo o permitido!,"0,00 %","285,23"
+Totais:,,,,,,,113,,"5.595,91",,,
+605,ESMALTE ( PRETO 750ml),PINTURA,UN,10,1,0,5,"25,93","25,93",sem observacao,"0,00 %","129,65"
+659,ESMALTE ( VERDE FOLHA 750ML ),PINTURA,UN,10,1,0,6,"25,93","25,93",sem observacao,"0,00 %","155,58"
+601,ESMALTE ( VERDE LIMÃO 750ml),PINTURA,UN,10,1,0,2,"25,93","25,93",sem observacao,"0,00 %","51,86"
+602,ESMALTE ( VERMELHO 750ml),PINTURA,UN,6,1,0,17,"25,93","25,93",Saldo Excedendo o permitido!,"0,00 %","440,81"
+622,FUNDO PREPARADOR,PINTURA,UN,1,1,0,1,"186,27","186,27",sem observacao,"0,00 %","186,27"
+588,MASSA ACRÍLICA LATÃO,PINTURA,UN,12,1,0,4,"76,78","76,78",sem observacao,"0,00 %","307,12"
+589,MASSA CORRIDA LATÃO,PINTURA,UN,4,1,0,3,"39,92","39,92",sem observacao,"0,00 %","119,76"
+595,SELA E PINTA (TAPACURÁ) LATÃO,PINTURA,UN,1,1,0,1,"198,45","198,45",sem observacao,"0,00 %","198,45"
+594,SELA E PINTA (CAMURÇA) LATÃO,PINTURA,UN,1,1,0,1,"198,45","198,45",sem observacao,"0,00 %","198,45"
+591,SELADOR LATÃO,PINTURA,UN,1,1,0,1,"67,92","67,92",sem observacao,"0,00 %","67,92"
+592,THINNER LATÃO,PINTURA,UN,2,1,0,2,"292,84","292,84",sem observacao,"0,00 %","585,68"
+Totais:,,,,,,,113,,"5.595,91",,,
+590,TINTA INTERNA (BRANCA) LATÃO,PINTURA,UN,4,1,0,5,"87,48","87,48",Saldo Excedendo o permitido!,"0,00 %","437,40"
+Totais:,,,,,,,113,,"5.595,91",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,113,,"5.595,91"

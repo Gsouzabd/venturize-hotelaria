@@ -1,0 +1,23 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+538,Bobina impressora,Escritorio,UN,20,10,0,114,"4,00","4,00",Saldo Excedendo o permitido!,"0,00 %","456,00"
+539,Caneta Bic,Escritorio,UN,4,1,0,62,"1,50","1,50",Saldo Excedendo o permitido!,"0,00 %","93,00"
+666,Caneta Piloto,Escritorio,UN,4,1,0,8,"2,00","2,00",Saldo Excedendo o permitido!,"0,00 %","16,00"
+540,Cartão Fidel- 50,Escritorio,UN,10,2,0,13,"12,00","12,00",Saldo Excedendo o permitido!,"0,00 %","156,00"
+1195,Cola quente bastão,Escritorio,UN,4,1,0,30,"2,00","2,00",Saldo Excedendo o permitido!,"0,00 %","60,00"
+541,Controle Ar,Escritorio,UN,2,1,0,1,"25,00","25,00",sem observacao,"0,00 %","25,00"
+544,Etiqueta (1000),Escritorio,UN,10,0,0,4,"45,00","45,00",sem observacao,"0,00 %","180,00"
+545,Fita Durex fino,Escritorio,UN,2,1,0,3,"2,00","2,00",Saldo Excedendo o permitido!,"0,00 %","6,00"
+Totais:,,,,,,,306,,"2.756,32",,,
+546,Fita Durex gross,Escritorio,UN,2,1,0,3,"5,00","5,00",Saldo Excedendo o permitido!,"0,00 %","15,00"
+548,Grampo,Escritorio,UN,5,1,0,2,"5,00","5,00",sem observacao,"0,00 %","10,00"
+549,Guarda- chuva,Escritorio,UN,1,1,0,2,"30,00","30,00",Saldo Excedendo o permitido!,"0,00 %","60,00"
+550,Isqueiro,Escritorio,UN,12,2,0,5,"4,00","4,00",sem observacao,"0,00 %","20,00"
+396,Lacre,Escritorio,UN,10,2,0,19,"15,80","15,80",Saldo Excedendo o permitido!,"0,00 %","300,20"
+398,Papel A4,Escritorio,UN,10,4,0,8,"26,00","26,00",sem observacao,"0,00 %","208,00"
+1194,Pilha palito,Escritorio,UN,4,1,0,12,"2,00","2,00",Saldo Excedendo o permitido!,"0,00 %","24,00"
+399,Pulseira,Escritorio,UN,10,1,0,8,"106,39","106,39",sem observacao,"0,00 %","851,12"
+421,Rede ecoparque,Escritorio,UN,0,0,0,2,"63,00","63,00",Saldo Excedendo o permitido!,"0,00 %","126,00"
+533,Rede funcionário,Escritorio,UN,10,0,0,10,"15,00","15,00",sem observacao,"0,00 %","150,00"
+Totais:,,,,,,,306,,"2.756,32",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,306,,"2.756,32"

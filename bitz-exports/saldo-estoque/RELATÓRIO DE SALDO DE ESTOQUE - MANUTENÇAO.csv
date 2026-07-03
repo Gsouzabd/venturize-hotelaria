@@ -1,0 +1,28 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+979,*Luminária vela,MANUTENÇÃO,UN,1,1,0,51,"0,00","0,00",Saldo Excedendo o permitido!,"100,00 %","0,00"
+980,*Luminária vela boia,MANUTENÇÃO,UN,1,1,0,51,"0,00","0,00",Saldo Excedendo o permitido!,"100,00 %","0,00"
+417,*Lâmpada,MANUTENÇÃO,UN,50,10,0,90,"5,00","5,00",Saldo Excedendo o permitido!,"0,00 %","450,00"
+978,*Lâmpada Amarela,MANUTENÇÃO,UN,1,1,1,0,"0,00","0,00",Saldo Menor que o permitido!,"100,00 %","0,00"
+1005,*Lâmpada Fluorescente,MANUTENÇÃO,UN,5,2,0,6,"10,00","10,00",Saldo Excedendo o permitido!,"0,00 %","60,00"
+1133,*Lâmpada Led Fluorescente,MANUTENÇÃO,UN,5,2,0,7,"10,00","10,00",Saldo Excedendo o permitido!,"0,00 %","70,00"
+Totais:,,,,,,,369,,"1.739,00",,,
+1193,*Lâmpada recepção,MANUTENÇÃO,UN,50,4,0,9,"5,00","5,00",sem observacao,"0,00 %","45,00"
+1129,Borracha frigobar grande,MANUTENÇÃO,UN,1,0,0,3,"40,00","30,00",Saldo Excedendo o permitido!,"-33,33 %","120,00"
+1128,Borracha frigobar pequena,MANUTENÇÃO,UN,1,0,0,1,"40,00","30,00",sem observacao,"-33,33 %","40,00"
+410,Capa chuva,MANUTENÇÃO,UN,5,2,0,2,"10,00","10,00",sem observacao,"0,00 %","20,00"
+411,Chuveiro,MANUTENÇÃO,UN,2,1,0,6,"25,00","25,00",Saldo Excedendo o permitido!,"0,00 %","150,00"
+412,Esponja espuma,MANUTENÇÃO,UN,0,0,0,2,"55,50","55,50",Saldo Excedendo o permitido!,"0,00 %","111,00"
+554,Estribo,MANUTENÇÃO,UN,1,0,0,1,"40,00","40,00",sem observacao,"0,00 %","40,00"
+418,Luva pedreiro,MANUTENÇÃO,UN,1,1,0,1,"5,00","5,00",sem observacao,"0,00 %","5,00"
+685,Lápis Carpinteiro,MANUTENÇÃO,UN,0,0,0,36,"4,00","4,00",Saldo Excedendo o permitido!,"0,00 %","144,00"
+1018,Mascara Azul,MANUTENÇÃO,UN,1,1,0,5,"3,00","3,00",Saldo Excedendo o permitido!,"0,00 %","15,00"
+Totais:,,,,,,,369,,"1.739,00",,,
+1134,"Nylon 1,5m",MANUTENÇÃO,UN,50,10,0,87,"2,00","2,00",Saldo Excedendo o permitido!,"0,00 %","174,00"
+734,Relógio água,MANUTENÇÃO,UN,1,1,0,2,"80,00","80,00",Saldo Excedendo o permitido!,"0,00 %","160,00"
+688,Sapato Bota 42,MANUTENÇÃO,UN,0,1,0,1,"60,00","60,00",Saldo Excedendo o permitido!,"0,00 %","60,00"
+687,Sapato Bota 44,MANUTENÇÃO,UN,0,1,1,0,"60,00","60,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+407,Sapato Bota 7 léguas,MANUTENÇÃO,UN,10,1,0,1,"40,00","40,00",sem observacao,"0,00 %","40,00"
+1019,Óculos preto,MANUTENÇÃO,UN,1,1,0,7,"5,00","5,00",Saldo Excedendo o permitido!,"0,00 %","35,00"
+Totais:,,,,,,,369,,"1.739,00",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,369,,"1.739,00"

@@ -1,0 +1,10 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+377,Caprino (400g),ANIMAIS,UN,100,60,4,56,"1,56","1,56",Saldo Menor que o permitido!,"0,00 %","87,36"
+1064,Galinha,ANIMAIS,UN,100,60,7,53,"1,56","1,56",Saldo Menor que o permitido!,"0,00 %","82,68"
+1127,Pato,ANIMAIS,UN,100,60,12,48,"1,56","1,56",Saldo Menor que o permitido!,"0,00 %","74,88"
+375,Pássaro,ANIMAIS,UN,60,30,0,109,"1,25","1,25",Saldo Excedendo o permitido!,"0,00 %","136,25"
+376,Roedor (400g),ANIMAIS,UN,100,60,2,58,"1,56","1,56",Saldo Menor que o permitido!,"0,00 %","90,48"
+378,Sal mineral,ANIMAIS,UN,25,1,0,24,"1,05","1,05",sem observacao,"0,00 %","25,20"
+Totais:,,,,,,,348,,"496,85",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,348,,"496,85"

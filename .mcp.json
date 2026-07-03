@@ -3,6 +3,16 @@
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@latest"]
-    }
+    },
+		"hostinger-mcp": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"hostinger-api-mcp@latest"
+			],
+			"env": {
+				"API_TOKEN": "hhy4w3RzZUFenjLY28f5cK0g6Ck8GrxxKRmGSD6Ieea08674"
+			}
+		}
   }
 }

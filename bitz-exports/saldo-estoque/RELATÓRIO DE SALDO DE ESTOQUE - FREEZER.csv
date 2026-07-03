@@ -1,0 +1,28 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+629,Alho 200g,FREEZER,UN,20,2,0,50,"5,00","5,00",Saldo Excedendo o permitido!,"0,00 %","250,00"
+382,"Carne cupim bola 3,5kg",FREEZER,UN,20,0,0,2,"115,00","115,00",sem observacao,"0,00 %","230,00"
+380,Carne isca kg,FREEZER,UN,20,3,0,10,"30,00","30,00",sem observacao,"0,00 %","300,00"
+744,Carne moida 500g,FREEZER,UN,20,3,0,14,"15,00","15,00",sem observacao,"0,00 %","210,00"
+676,Carne para feijão - 200g,FREEZER,UN,0,0,0,65,"6,00","6,00",Saldo Excedendo o permitido!,"0,00 %","390,00"
+381,Carne picada kg,FREEZER,UN,20,3,0,7,"30,00","30,00",sem observacao,"0,00 %","210,00"
+561,Charque 500g,FREEZER,UN,30,5,0,8,"18,00","18,00",sem observacao,"0,00 %","144,00"
+1115,File de peixe,FREEZER,UN,20,3,0,10,"30,00","30,00",sem observacao,"0,00 %","300,00"
+384,"Frango coxa 1,7kg",FREEZER,UN,40,0,0,4,"17,00","17,00",sem observacao,"0,00 %","68,00"
+Totais:,,,,,,,607,,"3.969,40",,,
+385,Frango int - unid,FREEZER,UN,20,3,0,7,"15,00","15,00",sem observacao,"0,00 %","105,00"
+386,Frango peito kg,FREEZER,UN,30,5,0,24,"15,00","15,00",sem observacao,"0,00 %","360,00"
+986,Ling. Toscana,FREEZER,UN,20,6,0,23,"7,50","7,50",Saldo Excedendo o permitido!,"0,00 %","172,50"
+359,Ling. fininha,FREEZER,UN,20,20,0,161,"3,50","3,50",Saldo Excedendo o permitido!,"0,00 %","563,50"
+387,Ling. salsicha- 500g,FREEZER,UN,50,10,0,42,"6,50","6,50",sem observacao,"0,00 %","273,00"
+559,Macaxeira kg,FREEZER,UN,50,5,0,25,"5,00","5,00",sem observacao,"0,00 %","125,00"
+562,Molho de tomate KG,FREEZER,UN,20,3,3,0,"5,00","5,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+625,Peixe Anchova 5kg,FREEZER,UN,5,1,0,3,"50,00","50,00",sem observacao,"0,00 %","150,00"
+390,Polpa acerola,FREEZER,UN,100,8,0,26,"0,80","0,80",sem observacao,"0,00 %","20,80"
+391,Polpa cajá,FREEZER,UN,100,8,0,18,"1,10","1,10",sem observacao,"0,00 %","19,80"
+392,Polpa cajú,FREEZER,UN,100,8,0,8,"0,60","0,60",sem observacao,"0,00 %","4,80"
+393,Polpa goiaba,FREEZER,UN,100,8,0,40,"0,60","0,60",sem observacao,"0,00 %","24,00"
+394,Polpa graviola,FREEZER,UN,100,8,0,26,"1,10","1,10",sem observacao,"0,00 %","28,60"
+395,Polpa manga,FREEZER,UN,100,8,0,34,"0,60","0,60",sem observacao,"0,00 %","20,40"
+Totais:,,,,,,,607,,"3.969,40",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,607,,"3.969,40"

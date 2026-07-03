@@ -1,0 +1,15 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+430,Borrifador,EQUIPAMENTO,UN,3,1,1,0,"8,00","8,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+1085,Cabide,EQUIPAMENTO,UN,10,1,0,30,"1,10","1,10",Saldo Excedendo o permitido!,"0,00 %","33,00"
+543,Espanador,EQUIPAMENTO,UN,1,1,1,0,"10,00","10,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+431,Lixeira Cesto,EQUIPAMENTO,UN,10,1,0,3,"10,00","10,00",sem observacao,"0,00 %","30,00"
+921,Lixeira com Pedal,EQUIPAMENTO,UN,10,1,0,5,"20,00","20,00",sem observacao,"0,00 %","100,00"
+432,Porta papel higienico,EQUIPAMENTO,UN,2,1,0,4,"35,00","35,00",Saldo Excedendo o permitido!,"0,00 %","140,00"
+434,Porta papel toalha,EQUIPAMENTO,UN,2,1,0,1,"35,00","35,00",sem observacao,"0,00 %","35,00"
+Totais:,,,,,,,52,,"503,00",,,
+433,Porta sabonete,EQUIPAMENTO,UN,1,1,0,3,"35,00","35,00",Saldo Excedendo o permitido!,"0,00 %","105,00"
+435,Reservatório sabonete,EQUIPAMENTO,UN,1,1,0,3,"10,00","10,00",Saldo Excedendo o permitido!,"0,00 %","30,00"
+732,Tapete,EQUIPAMENTO,UN,10,1,0,3,"10,00","10,00",sem observacao,"0,00 %","30,00"
+Totais:,,,,,,,52,,"503,00",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,52,,"503,00"

@@ -1,0 +1,11 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+1141,Capacitor,REFRIGERAÇÃO,UN,10,1,0,2,"10,00","10,00",sem observacao,"0,00 %","20,00"
+700,Desengraxante 50ml,REFRIGERAÇÃO,UN,25,2,0,18,"2,50","2,50",sem observacao,"0,00 %","45,00"
+665,Fita pvc,REFRIGERAÇÃO,UN,10,1,0,5,"10,00","10,00",sem observacao,"0,00 %","50,00"
+627,Gás Maçarico,REFRIGERAÇÃO,UN,1,1,0,1,"50,00","50,00",sem observacao,"0,00 %","50,00"
+833,Gás azul R32,REFRIGERAÇÃO,UN,1,1,0,1,"649,29","649,29",sem observacao,"0,00 %","649,29"
+680,Maçarico,REFRIGERAÇÃO,UN,1,0,0,1,"180,00","180,00",sem observacao,"0,00 %","180,00"
+1140,Tubo isolante,REFRIGERAÇÃO,UN,25,2,0,9,"2,50","2,50",sem observacao,"0,00 %","22,50"
+Totais:,,,,,,,37,,"1.016,79",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,37,,"1.016,79"

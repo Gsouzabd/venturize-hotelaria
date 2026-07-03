@@ -1,0 +1,33 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+1148,Aspirador Lavagem a seco,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1149,Canhão Equipamento,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1151,Canhão Suporte,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1150,Canhão Tambor,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1153,Cavador Alongador,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+992,Cavador Broca,MAQUINARIO,UN,3,1,0,2,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1152,Cavador Combustão,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1155,Esteira Lona,MAQUINARIO,UN,3,1,0,1,"50,00","50,00",sem observacao,"0,00 %","50,00"
+1154,Lixadeira Elétrica Pintura,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1145,Motoserra Calça,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+Totais:,,,,,,,77,,"459,50",,,
+1146,Motoserra Capacete,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1088,Motoserra Combustão,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+1147,Motoserra Luvas,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+987,Pulverizador costa,MAQUINARIO,UN,3,1,0,1,"8,00","0,00",sem observacao,"100,00 %","8,00"
+989,Refrigeração Lava Jato,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+994,Refrigeração Máquina de Vácuo,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+988,Roçadeira Carrinho,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+995,Roçadeira Combustão,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+996,Roçadeira Energia,MAQUINARIO,UN,3,1,0,1,"0,00","0,00",sem observacao,"100,00 %","0,00"
+991,z Produto Gasolina - 1lt,MAQUINARIO,UN,3,1,0,1,"7,00","7,00",sem observacao,"0,00 %","7,00"
+1124,z Produto Lauril Espuma 5L,MAQUINARIO,UN,3,1,0,3,"53,90","53,90",sem observacao,"0,00 %","161,70"
+Totais:,,,,,,,77,,"459,50",,,
+990,z Produto Perfume Refrigeração,MAQUINARIO,UN,3,1,0,2,"8,00","8,00",sem observacao,"0,00 %","16,00"
+997,z Produto Óleo 2T - 20ml,MAQUINARIO,UN,75,1,0,48,"1,60","1,60",sem observacao,"0,00 %","76,80"
+1020,z Produto Óleo 4T - 1L,MAQUINARIO,UN,3,1,0,1,"40,00","40,00",sem observacao,"0,00 %","40,00"
+1157,z Produto Óleo Bomba a Vácuo,MAQUINARIO,UN,3,1,0,1,"50,00","50,00",sem observacao,"0,00 %","50,00"
+1156,z Produto Óleo Fluído de freio,MAQUINARIO,UN,3,1,1,0,"50,00","50,00",Saldo Menor que o permitido!,"0,00 %","0,00"
+993,z Produto Óleo Pneumático,MAQUINARIO,UN,3,1,0,1,"50,00","50,00",sem observacao,"0,00 %","50,00"
+Totais:,,,,,,,77,,"459,50",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,77,,"459,50"

@@ -1,0 +1,21 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+465,Acido - 5L,PISCINA,UN,12,4,0,4,"37,50","37,50",sem observacao,"0,00 %","150,00"
+466,Algicida choque,PISCINA,UN,3,2,0,8,"36,60","36,60",Saldo Excedendo o permitido!,"0,00 %","292,80"
+467,Algicida manutenção,PISCINA,UN,4,4,2,2,"21,66","21,66",Saldo Menor que o permitido!,"0,00 %","43,32"
+469,Clarificante - lt,PISCINA,UN,15,15,5,10,"16,50","16,50",Saldo Menor que o permitido!,"0,00 %","165,00"
+470,Cloro Pastilha (4),PISCINA,UN,1,0,0,4,"12,00","12,00",Saldo Excedendo o permitido!,"0,00 %","48,00"
+413,Filtro,PISCINA,UN,1,0,0,1,"50,00","50,00",sem observacao,"0,00 %","50,00"
+471,Fita medição,PISCINA,UN,1,1,0,1,"40,28","40,28",sem observacao,"0,00 %","40,28"
+735,Gel cubinho,PISCINA,UN,1,0,0,8,"5,90","5,90",Saldo Excedendo o permitido!,"0,00 %","47,20"
+468,Limpa Borda,PISCINA,UN,1,0,0,1,"20,00","20,00",sem observacao,"0,00 %","20,00"
+Totais:,,,,,,,49,,"1.861,10",,,
+472,Solução Cloro - A,PISCINA,UN,1,1,1,0,"7,50","7,50",Saldo Menor que o permitido!,"0,00 %","0,00"
+473,Solução Indicador,PISCINA,UN,1,1,0,1,"7,50","7,50",sem observacao,"0,00 %","7,50"
+474,Solução PH - V,PISCINA,UN,1,1,1,0,"7,50","7,50",Saldo Menor que o permitido!,"0,00 %","0,00"
+475,Solução Titulante,PISCINA,UN,1,1,0,2,"7,50","7,50",Saldo Excedendo o permitido!,"0,00 %","15,00"
+476,x Elevador kg,PISCINA,UN,25,24,20,4,"13,00","13,00",Saldo Menor que o permitido!,"0,00 %","52,00"
+477,zCl. pó - Dicloro,PISCINA,UN,1,1,0,1,"330,00","330,00",sem observacao,"0,00 %","330,00"
+478,zCl. pó - Hipoclorito,PISCINA,UN,5,5,3,2,"300,00","300,00",Saldo Menor que o permitido!,"0,00 %","600,00"
+Totais:,,,,,,,49,,"1.861,10",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,49,,"1.861,10"

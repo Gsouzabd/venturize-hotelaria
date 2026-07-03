@@ -1,0 +1,9 @@
+﻿Código,Produto,Categoria,Unidade,Estoque Maximo,Estoque Minimo,Necessidade,Saldo,Custo do Produto,Valor de Venda,Obs. Saldo,Lucro Previsto,R$ Total
+1185,BALÃO CORAÇÃO,DECORAÇÃO DIA DOS NAMORADOS,UN,0,0,0,19,"0,78","0,00",Saldo Excedendo o permitido!,"100,00 %","14,82"
+1183,PÉTALAS 100UNID,DECORAÇÃO DIA DOS NAMORADOS,UN,0,0,0,9,"6,00","0,00",Saldo Excedendo o permitido!,"100,00 %","54,00"
+1184,PÉTALAS 100UNID + GRAVATA + FLOR,DECORAÇÃO DIA DOS NAMORADOS,UN,0,0,0,13,"6,00","0,00",Saldo Excedendo o permitido!,"100,00 %","78,00"
+1187,ROSA MÉDIA,DECORAÇÃO DIA DOS NAMORADOS,UN,0,0,0,28,"6,00","0,00",Saldo Excedendo o permitido!,"100,00 %","168,00"
+1186,ROSA PEQUENA,DECORAÇÃO DIA DOS NAMORADOS,UN,0,0,0,28,"4,00","0,00",Saldo Excedendo o permitido!,"100,00 %","112,00"
+Totais:,,,,,,,97,,"426,82",,,
+,,,,,,,,Saldo,,Total
+Totais:,,,,,,,,97,,"426,82"
