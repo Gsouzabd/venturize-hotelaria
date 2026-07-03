@@ -24,7 +24,7 @@ class RelatorioController extends Controller
 
         $filters = $this->normalizarFiltrosEstoque($request);
         $estoques = $this->colecaoEstoqueParaRelatorio($filters);
-        $locaisEstoque = LocalEstoque::orderBy('nome')->get();
+        $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
 
         return view('admin.relatorios.estoque', compact('estoques', 'filters', 'locaisEstoque'));
     }
@@ -39,7 +39,7 @@ class RelatorioController extends Controller
         $unidades = Produto::UNIDADES;
         $dadosExcel = [];
         $dadosExcel[] = ['Relatório de estoque de produtos'];
-        $dadosExcel[] = ['Gerado em: ' . Carbon::now()->format('d/m/Y H:i')];
+        $dadosExcel[] = ['Gerado em: '.Carbon::now()->format('d/m/Y H:i')];
         $dadosExcel[] = [];
         $dadosExcel[] = [
             'ID',
@@ -55,7 +55,7 @@ class RelatorioController extends Controller
 
         foreach ($estoques as $row) {
             $p = $row->produto;
-            if (!$p) {
+            if (! $p) {
                 continue;
             }
             $dadosExcel[] = [
@@ -63,7 +63,7 @@ class RelatorioController extends Controller
                 $p->descricao,
                 $p->codigo_interno ?? '',
                 $p->categoria->nome ?? '',
-                $row->localEstoque->nome ?? '',
+                $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '').' › '.$row->localEstoque->nome, ' ›') : '',
                 $row->quantidade,
                 $unidades[$p->unidade] ?? $p->unidade,
                 $p->estoque_minimo ?? '',
@@ -71,7 +71,7 @@ class RelatorioController extends Controller
             ];
         }
 
-        $filename = 'relatorio_estoque_' . Carbon::now()->format('Y-m-d_His') . '.xls';
+        $filename = 'relatorio_estoque_'.Carbon::now()->format('Y-m-d_His').'.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório de estoque');
 
         return response()->download($tempFile, $filename, [
@@ -101,7 +101,7 @@ class RelatorioController extends Controller
             'nomeLocalFiltro'
         ))->render();
 
-        $filename = 'relatorio_estoque_' . Carbon::now()->format('Y-m-d') . '.pdf';
+        $filename = 'relatorio_estoque_'.Carbon::now()->format('Y-m-d').'.pdf';
 
         return $this->respostaPdf($html, $filename, 'landscape');
     }
@@ -117,9 +117,9 @@ class RelatorioController extends Controller
         $reservas = $this->queryReservasCafe($dataRef)->get();
         $linhas = $this->montarLinhasCafe($reservas);
 
-        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalAdultos = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
         $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
-        $totalGeral    = count($linhas);
+        $totalGeral = count($linhas);
 
         return view('admin.relatorios.cafe', compact('linhas', 'filters', 'totalAdultos', 'totalCriancas', 'totalGeral'));
     }
@@ -136,12 +136,12 @@ class RelatorioController extends Controller
         $linhas = $this->montarLinhasCafe($reservas);
 
         $dadosExcel = [];
-        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalAdultos = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
         $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
-        $totalGeral    = count($linhas);
+        $totalGeral = count($linhas);
 
         $dadosExcel[] = ['Listagem de café — hóspedes por quarto'];
-        $dadosExcel[] = ['Data de referência: ' . $dataRef->format('d/m/Y')];
+        $dadosExcel[] = ['Data de referência: '.$dataRef->format('d/m/Y')];
         $dadosExcel[] = [];
         $dadosExcel[] = ['Quarto', 'Tipo', 'Adulto/Criança', 'Qtd./Quarto', 'Nome', 'CPF'];
 
@@ -161,7 +161,7 @@ class RelatorioController extends Controller
         $dadosExcel[] = ['TOTAL CRIANÇAS', $totalCriancas, '', '', '', ''];
         $dadosExcel[] = ['TOTAL GERAL', $totalGeral, '', '', '', ''];
 
-        $filename = 'listagem_cafe_' . $dataRef->format('Y-m-d') . '.xls';
+        $filename = 'listagem_cafe_'.$dataRef->format('Y-m-d').'.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Listagem de café');
 
         return response()->download($tempFile, $filename, [
@@ -180,14 +180,14 @@ class RelatorioController extends Controller
         $reservas = $this->queryReservasCafe($dataRef)->get();
         $linhas = $this->montarLinhasCafe($reservas);
 
-        $totalAdultos  = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
+        $totalAdultos = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Adulto'));
         $totalCriancas = count(array_filter($linhas, fn ($l) => $l['tipo_pessoa'] === 'Criança'));
-        $totalGeral    = count($linhas);
+        $totalGeral = count($linhas);
 
         $dataReferencia = $dataRef->format('d/m/Y');
         $html = view('pdf.relatorio_cafe', compact('linhas', 'dataReferencia', 'totalAdultos', 'totalCriancas', 'totalGeral'))->render();
 
-        $filename = 'listagem_cafe_' . $dataRef->format('Y-m-d') . '.pdf';
+        $filename = 'listagem_cafe_'.$dataRef->format('Y-m-d').'.pdf';
 
         return $this->respostaPdf($html, $filename, 'portrait');
     }
@@ -213,7 +213,7 @@ class RelatorioController extends Controller
 
         $dadosExcel = [];
         $dadosExcel[] = ['Relatório de Pagamentos de Reservas'];
-        $dadosExcel[] = ['Gerado em: ' . Carbon::now()->format('d/m/Y H:i')];
+        $dadosExcel[] = ['Gerado em: '.Carbon::now()->format('d/m/Y H:i')];
         $dadosExcel[] = [];
         $dadosExcel[] = ['ID Reserva', 'Hóspede', 'Quarto', 'Tipo Quarto', 'Check-in', 'Check-out', 'Tipo Pagamento', 'Valor Pago', 'Status'];
 
@@ -241,7 +241,7 @@ class RelatorioController extends Controller
         $dadosExcel[] = [];
         $dadosExcel[] = ['TOTAL', '', '', '', '', '', '', $totalValor, ''];
 
-        $filename = 'relatorio_pagamentos_' . Carbon::now()->format('Y-m-d_His') . '.xls';
+        $filename = 'relatorio_pagamentos_'.Carbon::now()->format('Y-m-d_His').'.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório de Pagamentos');
 
         return response()->download($tempFile, $filename, [
@@ -261,7 +261,7 @@ class RelatorioController extends Controller
 
         $html = view('pdf.relatorio_pagamentos', compact('reservas', 'filters', 'tiposPagamento', 'geradoEm', 'totalValor'))->render();
 
-        $filename = 'relatorio_pagamentos_' . Carbon::now()->format('Y-m-d') . '.pdf';
+        $filename = 'relatorio_pagamentos_'.Carbon::now()->format('Y-m-d').'.pdf';
 
         return $this->respostaPdf($html, $filename, 'landscape');
     }
@@ -284,32 +284,32 @@ class RelatorioController extends Controller
         $query = Reserva::with(['pagamentos', 'quarto', 'clienteResponsavel', 'clienteSolicitante'])
             ->whereHas('pagamentos');
 
-        if (!empty($filters['tipo_pagamento'])) {
-            $query->whereHas('pagamentos', fn ($q) => $q->where('valores_recebidos', 'like', '%' . $filters['tipo_pagamento'] . '%'));
+        if (! empty($filters['tipo_pagamento'])) {
+            $query->whereHas('pagamentos', fn ($q) => $q->where('valores_recebidos', 'like', '%'.$filters['tipo_pagamento'].'%'));
         }
 
-        if (!empty($filters['tipo_quarto'])) {
+        if (! empty($filters['tipo_quarto'])) {
             $query->whereHas('quarto', fn ($q) => $q->where('classificacao', $filters['tipo_quarto']));
         }
 
-        if (!empty($filters['nome'])) {
+        if (! empty($filters['nome'])) {
             $nome = $filters['nome'];
             $query->where(function ($q) use ($nome) {
-                $q->whereHas('clienteSolicitante', fn ($sq) => $sq->where('nome', 'like', '%' . $nome . '%'))
-                  ->orWhereHas('clienteResponsavel', fn ($sq) => $sq->where('nome', 'like', '%' . $nome . '%'));
+                $q->whereHas('clienteSolicitante', fn ($sq) => $sq->where('nome', 'like', '%'.$nome.'%'))
+                    ->orWhereHas('clienteResponsavel', fn ($sq) => $sq->where('nome', 'like', '%'.$nome.'%'));
             });
         }
 
-        if (!empty($filters['data_checkin_inicial'])) {
+        if (! empty($filters['data_checkin_inicial'])) {
             $query->where('data_checkin', '>=', Carbon::createFromFormat('d/m/Y', $filters['data_checkin_inicial'])->startOfDay());
         }
-        if (!empty($filters['data_checkin_final'])) {
+        if (! empty($filters['data_checkin_final'])) {
             $query->where('data_checkin', '<=', Carbon::createFromFormat('d/m/Y', $filters['data_checkin_final'])->endOfDay());
         }
-        if (!empty($filters['data_checkout_inicial'])) {
+        if (! empty($filters['data_checkout_inicial'])) {
             $query->where('data_checkout', '>=', Carbon::createFromFormat('d/m/Y', $filters['data_checkout_inicial'])->startOfDay());
         }
-        if (!empty($filters['data_checkout_final'])) {
+        if (! empty($filters['data_checkout_final'])) {
             $query->where('data_checkout', '<=', Carbon::createFromFormat('d/m/Y', $filters['data_checkout_final'])->endOfDay());
         }
 
@@ -318,7 +318,7 @@ class RelatorioController extends Controller
 
     private function extrairMetodosPagamento(?Pagamento $pagamento): string
     {
-        if (!$pagamento || !$pagamento->valores_recebidos) {
+        if (! $pagamento || ! $pagamento->valores_recebidos) {
             return '';
         }
 
@@ -362,14 +362,16 @@ class RelatorioController extends Controller
     private function colecaoEstoqueParaRelatorio(array $filters): Collection
     {
         $query = Estoque::query()
-            ->with(['produto.categoria', 'localEstoque'])
+            ->with(['produto.categoria', 'localEstoque.parent'])
             ->join('produtos', 'produtos.id', '=', 'estoques.produto_id')
             ->select('estoques.*')
             ->orderBy('estoques.local_estoque_id')
             ->orderBy('produtos.descricao', 'asc');
 
         if ($filters['local_estoque_id'] !== '') {
-            $query->where('local_estoque_id', $filters['local_estoque_id']);
+            // Local pai agrega os sub-locais (ex.: Cozinha = Dispensa + Freezer + Geladeira)
+            $filhosIds = LocalEstoque::where('parent_id', $filters['local_estoque_id'])->pluck('id');
+            $query->whereIn('estoques.local_estoque_id', $filhosIds->push((int) $filters['local_estoque_id']));
         }
 
         if (($filters['somente_ativos'] ?? '') === '1') {
@@ -381,7 +383,7 @@ class RelatorioController extends Controller
 
     private function respostaPdf(string $html, string $filename, string $orientation = 'portrait')
     {
-        $pdfOptions = new Options();
+        $pdfOptions = new Options;
         $pdfOptions->set('defaultFont', 'DejaVu Sans');
         $pdfOptions->set('isHtml5ParserEnabled', true);
         $pdfOptions->set('isRemoteEnabled', false);
@@ -432,26 +434,26 @@ class RelatorioController extends Controller
             $qtdPessoas = 1 + $reserva->acompanhantes->count();
 
             $linhas[] = [
-                'quarto'             => (string) $numeroQuarto,
-                'tipo'               => 'Titular',
-                'tipo_pessoa'        => 'Adulto',
+                'quarto' => (string) $numeroQuarto,
+                'tipo' => 'Titular',
+                'tipo_pessoa' => 'Adulto',
                 'qtd_pessoas_quarto' => $qtdPessoas,
-                'nome'               => $nomeTitular,
-                'cpf'                => $cpfTitular,
-                'ordem'              => 0,
+                'nome' => $nomeTitular,
+                'cpf' => $cpfTitular,
+                'ordem' => 0,
             ];
 
             foreach ($reserva->acompanhantes as $ac) {
                 $nome = $ac->cliente->nome ?? $ac->nome ?? '—';
                 $cpf = $ac->cliente->cpf ?? $ac->cpf ?? '';
                 $linhas[] = [
-                    'quarto'             => (string) $numeroQuarto,
-                    'tipo'               => 'Acompanhante',
-                    'tipo_pessoa'        => $ac->tipo ?? 'Adulto',
+                    'quarto' => (string) $numeroQuarto,
+                    'tipo' => 'Acompanhante',
+                    'tipo_pessoa' => $ac->tipo ?? 'Adulto',
                     'qtd_pessoas_quarto' => $qtdPessoas,
-                    'nome'               => $nome,
-                    'cpf'                => $cpf,
-                    'ordem'              => 1,
+                    'nome' => $nome,
+                    'cpf' => $cpf,
+                    'ordem' => 1,
                 ];
             }
         }

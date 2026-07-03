@@ -23,10 +23,23 @@
                         <select name="local_estoque_id" class="form-control">
                             <option value="">Todos</option>
                             @foreach($locaisEstoque as $local)
-                                <option value="{{ $local->id }}"
-                                    {{ (string)($filters['local_estoque_id'] ?? '') === (string)$local->id ? 'selected' : '' }}>
-                                    {{ $local->nome }}
-                                </option>
+                                @if($local->children->isNotEmpty())
+                                    <option value="{{ $local->id }}"
+                                        {{ (string)($filters['local_estoque_id'] ?? '') === (string)$local->id ? 'selected' : '' }}>
+                                        {{ $local->nome }} (todos)
+                                    </option>
+                                    @foreach($local->children->sortBy('nome') as $filho)
+                                        <option value="{{ $filho->id }}"
+                                            {{ (string)($filters['local_estoque_id'] ?? '') === (string)$filho->id ? 'selected' : '' }}>
+                                            &nbsp;&nbsp;&nbsp;{{ $local->nome }} › {{ $filho->nome }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="{{ $local->id }}"
+                                        {{ (string)($filters['local_estoque_id'] ?? '') === (string)$local->id ? 'selected' : '' }}>
+                                        {{ $local->nome }}
+                                    </option>
+                                @endif
                             @endforeach
                         </select>
                     </div>
@@ -85,7 +98,7 @@
                                     <td>{{ $p->descricao }}</td>
                                     <td>{{ $p->codigo_interno ?? '—' }}</td>
                                     <td>{{ $p->categoria->nome ?? '—' }}</td>
-                                    <td>{{ $row->localEstoque->nome ?? '—' }}</td>
+                                    <td>{{ $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '') . ' › ' . $row->localEstoque->nome, ' ›') : '—' }}</td>
                                     <td>{{ $row->quantidade }}</td>
                                     <td>{{ $unidades[$p->unidade] ?? $p->unidade }}</td>
                                     <td>{{ $p->estoque_minimo ?? '—' }}</td>

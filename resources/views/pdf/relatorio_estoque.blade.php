@@ -45,7 +45,7 @@
                         <td>{{ $p->descricao }}</td>
                         <td>{{ $p->codigo_interno ?? '—' }}</td>
                         <td>{{ $p->categoria->nome ?? '—' }}</td>
-                        <td>{{ $row->localEstoque->nome ?? '—' }}</td>
+                        <td>{{ $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '') . ' › ' . $row->localEstoque->nome, ' ›') : '—' }}</td>
                         <td class="num">{{ $row->quantidade }}</td>
                         <td>{{ $unidades[$p->unidade] ?? $p->unidade }}</td>
                         <td class="num">{{ $p->estoque_minimo ?? '—' }}</td>
