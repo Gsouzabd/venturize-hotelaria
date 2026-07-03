@@ -96,6 +96,8 @@ Printer configs are stored in the `impressoras` DB table (model: `Impressora`) w
 
 O rsync do pipeline exclui `.env`, `vendor/`, `storage/`, `node_modules/`, `tests/`, `database/seeders/`, `resources/js|css`, `bitz-exports/` etc. — o `.env` de produção nunca é sobrescrito. Migrations que dependem de dados externos devem embutir os dados no próprio arquivo (padrão das migrations `import_bitz_*`).
 
+**Atenção — assets públicos:** o site serve o docroot `public_html/` (cópia de `laravel/public/`), mas o rsync do pipeline só atualiza `laravel/`. Após alterar arquivos em `public/` (ex.: `public/assets/admin/app.css`), copie manualmente via SSH: `cp .../laravel/public/assets/... .../public_html/assets/...`.
+
 O passo "Setup SSH key" do workflow falha esporadicamente (ssh-keyscan transitório). Se o deploy falhar aí, basta re-run: `POST /repos/Gsouzabd/venturize-hotelaria/actions/runs/<id>/rerun-failed-jobs` na API do GitHub (token disponível via `git credential fill`).
 
 ### Executar comandos no servidor (verificação, artisan avulso)
