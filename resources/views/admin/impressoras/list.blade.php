@@ -9,6 +9,23 @@
 @endsection
 
 @section('content')
+    <x-admin.ajuda titulo="Como funciona a impressão e como instalar o Agente?">
+        <p class="mb-2"><strong>Arquitetura:</strong> quando um pedido do bar/cozinha é criado, ele entra na fila de impressão com status <em>pendente</em>. A impressão acontece por duas vias:</p>
+        <ul class="pl-3">
+            <li><strong>Direta (servidor):</strong> o sistema envia comandos ESC/POS direto para a impressora térmica pelo IP e porta (padrão 9100) cadastrados nesta tela.</li>
+            <li><strong>PrintingAgent (computador local):</strong> um programa instalado no PC da recepção/cozinha consulta a fila da API (<code>/api/print/pedidos-pendentes</code>) a cada 5 segundos e imprime nas impressoras da rede local. O ciclo de cada impressão é: <em>pendente → processando → sucesso</em> ou <em>erro</em> (com nova tentativa registrada).</li>
+        </ul>
+        <p class="mb-2"><strong>Instalação do Agente (arquivo Agentimpressao.zip):</strong></p>
+        <ol class="pl-3 mb-2">
+            <li>Extraia o <code>Agentimpressao.zip</code> em uma pasta fixa do computador (ex.: <code>C:\PrintingAgent</code>) — não use pasta temporária.</li>
+            <li>Edite o arquivo <code>.env</code> da pasta: confira o <code>API_BASE_URL</code> apontando para <code>https://venturize.com.br/api/print</code>.</li>
+            <li>Execute o <code>setup-printers.exe</code> para configurar os IPs das impressoras (não preencha os IPs manualmente no .env).</li>
+            <li>Execute o <code>install-service.bat</code> <strong>como Administrador</strong> — isso cria a tarefa que inicia o agente junto com o Windows.</li>
+            <li>Use o <code>gerenciar-servico.bat</code> para iniciar/parar o agente. Os registros ficam na pasta <code>logs/</code>.</li>
+        </ol>
+        <p class="mb-0"><strong>Nesta tela</strong> você cadastra as impressoras (nome, IP e porta) que o sistema usa; a "Ordem" define a sequência de exibição e o "Status" ativa/desativa a impressora sem excluí-la. O IP precisa ser fixo na rede local (reserve no roteador).</p>
+    </x-admin.ajuda>
+
     <x-admin.filters route="admin.impressoras.index">
         <x-admin.filter cols="3">
             <x-admin.label label="Nome"/>
