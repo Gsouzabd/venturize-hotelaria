@@ -4,7 +4,7 @@
     <summary class="text-primary" style="cursor: pointer; outline: none; user-select: none;">
         <i class="fas fa-question-circle"></i> {{ $titulo }}
     </summary>
-    <div class="callout callout-info mt-2 mb-0" style="max-height: 220px; overflow-y: auto;">
+    <div class="callout callout-info mt-2 mb-0">
         {{ $slot }}
     </div>
 </details>

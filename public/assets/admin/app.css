@@ -829,3 +829,11 @@ a#removerTaxaServico {
     border-radius: 5px;
     font-weight: 500;
 }
+/* Listagens: limita a altura e rola verticalmente dentro do container */
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-y: scroll;
+    max-height: 90vh;
+    -webkit-overflow-scrolling: touch;
+}
