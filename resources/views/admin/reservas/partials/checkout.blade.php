@@ -1,8 +1,14 @@
 @php 
 
-    use App\Models\Reserva; 
+    use App\Models\Reserva;
     use Carbon\Carbon;
 
+    // Day Use não possui quarto associado — o pagamento vai em estrutura plana
+    $quartoLabel = $reserva->quarto
+        ? 'Quarto ' . $reserva->quarto->numero . ' - ' . $reserva->quarto->classificacao
+        : 'Day Use';
+    $namePrefix = $reserva->quarto ? "quartos[{$reserva->quarto_id}]" : '';
+    $fieldName = fn ($f) => $namePrefix ? "{$namePrefix}[{$f}][]" : "{$f}[]";
 @endphp
 
 <div class="tab-pane fade" id="checkout" role="tabpanel" aria-labelledby="checkout-tab">
@@ -105,13 +111,13 @@
                                 <tr>
                                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
-                                    <td>Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}
+                                    <td>{{ $quartoLabel }}
                                     <td>{{ $observacao }}</td>
                                     <td>
                                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                                        <input type="hidden" class="valores_recebidos" name="quartos[{{$reserva->quarto_id}}][valores_recebidos][]" value="{{ $valor }}">
-                                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
-                                        <input type="hidden" name="quartos[{{$reserva->quarto_id}}][observacoes_pagamento][]" value="{{ $submetodo }}">
+                                        <input type="hidden" class="valores_recebidos" name="{{ $fieldName('valores_recebidos') }}" value="{{ $valor }}">
+                                        <input type="hidden" name="{{ $fieldName('metodos_pagamento') }}" value="{{ $metodoPrincipal }}">
+                                        <input type="hidden" name="{{ $fieldName('observacoes_pagamento') }}" value="{{ $submetodo }}">
 
                                     </td>
                                 </tr>
@@ -212,7 +218,7 @@
                                     <x-admin.label label="Selecionar Quarto"/>
                                     <div class="input-group mb-3 mt-2">
                                         <select id="quarto-select" class="form-control">
-                                            <option value="{{$reserva->quarto->id}}"> {{$reserva->quarto->numero}} </option>
+                                            <option value="{{ $reserva->quarto->id ?? 'day-use' }}"> {{ $reserva->quarto->numero ?? 'Day Use' }} </option>
                                         </select>
                                     </div>
                                 </x-admin.field>
@@ -264,7 +270,7 @@
                         </thead>
                         <tbody>
                             <tr style="d-flex justify-content-between">
-                                <td>Reserva - Quarto {{ $reserva->quarto->numero .' - '.  $reserva->quarto->classificacao}}</td>
+                                <td>Reserva - {{ $quartoLabel }}</td>
                                 <td></td>
                                 <td>R$ {{ number_format($reserva->total, 2, ',', '.') }}</td>
                             </tr>
@@ -481,15 +487,10 @@ function atualizarValores() {
                 const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
                 const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
                 const observacoes_pagamento = document.getElementById('observacoes_pagamento').value;
-                const quartoSelect = document.getElementById('quarto-select');
-                const quartoId = quartoSelect.value;
-                const quartoLabel = quartoSelect.options[quartoSelect.selectedIndex].text;
-            
-                if (!quartoId) {
-                    alert('Selecione um quarto');
-                    return;
-                }
-            
+                const namePrefix = {!! json_encode($namePrefix) !!};
+                const fieldName = f => namePrefix ? `${namePrefix}[${f}][]` : `${f}[]`;
+                const quartoLabel = {!! json_encode($quartoLabel) !!};
+
                 if (!isNaN(valor) && valor > 0) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -499,10 +500,10 @@ function atualizarValores() {
                         <td>${observacoes_pagamento}</td>
                         <td>
                             <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
-                            <input type="hidden" class="valores_recebidos" name="quartos[${quartoId}][valores_recebidos][]" value="${valor.toFixed(2)}">
-                            <input type="hidden" name="quartos[${quartoId}][metodos_pagamento][]" value="${metodoPagamento}">
-                            <input type="hidden" name="quartos[${quartoId}][submetodos_pagamento][]" value="${submetodoPagamento}">
-                            <input type="hidden" name="quartos[${quartoId}][observacoes_pagamento][]" value="${observacoes_pagamento}">
+                            <input type="hidden" class="valores_recebidos" name="${fieldName('valores_recebidos')}" value="${valor.toFixed(2)}">
+                            <input type="hidden" name="${fieldName('metodos_pagamento')}" value="${metodoPagamento}">
+                            <input type="hidden" name="${fieldName('submetodos_pagamento')}" value="${submetodoPagamento}">
+                            <input type="hidden" name="${fieldName('observacoes_pagamento')}" value="${observacoes_pagamento}">
                         </td>
                     `;
                     valoresRecebidosTable.appendChild(row);
