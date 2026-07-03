@@ -71,6 +71,11 @@ class RelatorioController extends Controller
             ];
         }
 
+        if (trim($filters['produto'] ?? '') !== '' && $estoques->isNotEmpty()) {
+            $dadosExcel[] = [];
+            $dadosExcel[] = ['', '', '', '', 'Total em todos os locais:', $estoques->sum('quantidade'), '', '', ''];
+        }
+
         $filename = 'relatorio_estoque_'.Carbon::now()->format('Y-m-d_His').'.xls';
         $tempFile = ExcelExportService::criarExcel($dadosExcel, $filename, 'Relatório de estoque');
 
@@ -351,6 +356,7 @@ class RelatorioController extends Controller
         $filters = $request->all();
         $filters['local_estoque_id'] ??= '';
         $filters['somente_ativos'] ??= '1';
+        $filters['produto'] ??= '';
 
         return $filters;
     }
@@ -372,6 +378,15 @@ class RelatorioController extends Controller
             // Local pai agrega os sub-locais (ex.: Cozinha = Dispensa + Freezer + Geladeira)
             $filhosIds = LocalEstoque::where('parent_id', $filters['local_estoque_id'])->pluck('id');
             $query->whereIn('estoques.local_estoque_id', $filhosIds->push((int) $filters['local_estoque_id']));
+        }
+
+        if (trim($filters['produto'] ?? '') !== '') {
+            // Busca por nome ou código e mostra só os locais onde o produto tem saldo
+            $termo = trim($filters['produto']);
+            $query->where(function ($q) use ($termo) {
+                $q->where('produtos.descricao', 'like', '%'.$termo.'%')
+                    ->orWhere('produtos.codigo_interno', $termo);
+            })->where('estoques.quantidade', '>', 0);
         }
 
         if (($filters['somente_ativos'] ?? '') === '1') {

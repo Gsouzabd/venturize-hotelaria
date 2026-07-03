@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Produto;
-use App\Models\LocalEstoque;
-use Illuminate\Http\Request;
-use App\Models\MovimentacaoEstoque;
 use App\Http\Controllers\Controller;
+use App\Models\LocalEstoque;
+use App\Models\MovimentacaoEstoque;
+use App\Models\Produto;
 use App\Services\MovimentacaoEstoqueService;
+use Illuminate\Http\Request;
 
 class MovimentacaoEstoqueController extends Controller
 {
     protected $movimentacaoEstoqueService;
+
     protected $model;
 
     public function __construct(MovimentacaoEstoqueService $movimentacaoEstoqueService, MovimentacaoEstoque $model)
@@ -24,12 +25,22 @@ class MovimentacaoEstoqueController extends Controller
     {
         $this->authorize('visualizar_estoque');
 
-        // Carregar locais de estoque com movimentações de origem e destino
-        $locaisEstoque = LocalEstoque::with(['movimentacoesOrigem.produto', 'movimentacoesOrigem.usuario', 'movimentacoesDestino.produto', 'movimentacoesDestino.usuario'])->get();
-        
+        // Locais pais com sub-locais e movimentações (origem e destino) de todos
+        $relacoes = [
+            'movimentacoesOrigem.produto', 'movimentacoesOrigem.usuario',
+            'movimentacoesOrigem.localOrigem', 'movimentacoesOrigem.localDestino',
+            'movimentacoesDestino.produto', 'movimentacoesDestino.usuario',
+            'movimentacoesDestino.localOrigem', 'movimentacoesDestino.localDestino',
+        ];
+
+        $locaisEstoque = LocalEstoque::with(array_merge(
+            $relacoes,
+            array_map(fn ($r) => 'children.'.$r, $relacoes)
+        ))->whereNull('parent_id')->orderBy('nome')->get();
+
         return view('admin.movimentacao-estoque.list', compact('locaisEstoque'));
     }
-    
+
     public function edit($id = null)
     {
         $this->authorize('gerenciar_estoque');
@@ -40,15 +51,14 @@ class MovimentacaoEstoqueController extends Controller
             $transferencia = true;
         }
 
-        if($id == 'create') {
+        if ($id == 'create') {
             $id = null;
         }
         $edit = boolval($id);
-        $movimentacao = $edit ? $this->model->findOrFail($id) : new MovimentacaoEstoque();
+        $movimentacao = $edit ? $this->model->findOrFail($id) : new MovimentacaoEstoque;
 
         // Carrega hierarquia para optgroups nas dropdowns
         $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
-
 
         $produtos = Produto::all();
 
@@ -62,17 +72,14 @@ class MovimentacaoEstoqueController extends Controller
 
         // Processar movimentações
         $result = $this->movimentacaoEstoqueService->handleMovimentacoes($request);
-    
+
         // Verifica se há erro na resposta do serviço
         if (isset($result['error'])) {
             return redirect()->back()->withErrors(['error' => $result['error']]);
         }
-    
+
         return redirect()
             ->route('admin.movimentacoes-estoque.index')
-            ->with('notice', config('app.messages.' . ($request->get('id') ? 'update' : 'insert')));
+            ->with('notice', config('app.messages.'.($request->get('id') ? 'update' : 'insert')));
     }
-
-
-
 }

@@ -20,6 +20,9 @@
         @if(!empty($filters['local_estoque_id']) && $nomeLocalFiltro)
             Local filtrado: {{ $nomeLocalFiltro }}<br>
         @endif
+        @if(trim($filters['produto'] ?? '') !== '')
+            Produto pesquisado: {{ $filters['produto'] }} (apenas locais com saldo)<br>
+        @endif
         Produtos: {{ ($filters['somente_ativos'] ?? '1') === '1' ? 'somente ativos' : 'todos' }}
     </div>
     <table>
@@ -54,6 +57,15 @@
                 @endif
             @endforeach
         </tbody>
+        @if(trim($filters['produto'] ?? '') !== '' && $estoques->isNotEmpty())
+            <tfoot>
+                <tr>
+                    <th colspan="5" style="text-align: right;">Total em todos os locais:</th>
+                    <th class="num">{{ $estoques->sum('quantidade') }}</th>
+                    <th colspan="3"></th>
+                </tr>
+            </tfoot>
+        @endif
     </table>
 </body>
 </html>

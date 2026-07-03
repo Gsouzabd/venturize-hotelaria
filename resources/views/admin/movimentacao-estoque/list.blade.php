@@ -34,6 +34,7 @@
                             <tr>
                                 <th>ID Movimentação</th>
                                 <th>Produto</th>
+                                <th>Local</th>
                                 <th>Quantidade</th>
                                 <th>Tipo</th>
                                 <th>Justificativa</th>
@@ -44,16 +45,31 @@
                         </thead>
                         <tbody>
                             @php
-                                $movimentacoes = $local->movimentacoesOrigem->merge($local->movimentacoesDestino)->sortByDesc('data_movimentacao');
+                                // Movimentações do local pai e de todos os sub-locais, sem duplicar
+                                $grupo = collect([$local])->merge($local->children);
+                                $idsGrupo = $grupo->pluck('id');
+                                $movimentacoes = $grupo
+                                    ->flatMap(fn ($l) => $l->movimentacoesOrigem->merge($l->movimentacoesDestino))
+                                    ->unique('id')
+                                    ->sortByDesc('data_movimentacao');
                             @endphp
                             @forelse ($movimentacoes as $movimentacao)
                                 <tr>
                                     <td>{{ $movimentacao->id }}</td>
                                     <td>{{ $movimentacao->produto->descricao }}</td>
+                                    <td>
+                                        @if($movimentacao->tipo == 'transferencia')
+                                            {{ $movimentacao->localOrigem->nome ?? '—' }} → {{ $movimentacao->localDestino->nome ?? '—' }}
+                                        @else
+                                            {{ $movimentacao->localDestino->nome ?? $movimentacao->localOrigem->nome ?? '—' }}
+                                        @endif
+                                    </td>
                                     <td>{{ $movimentacao->quantidade }}</td>
                                     <td>
-                                        {{ ucfirst($movimentacao->tipo) }} 
-                                        @if( $movimentacao->tipo == 'transferencia')( {{$local->id == $movimentacao->local_estoque_destino_id ? 'Entrada' : 'Saída'}} ) @endif
+                                        {{ ucfirst($movimentacao->tipo) }}
+                                        @if($movimentacao->tipo == 'transferencia' && !($idsGrupo->contains($movimentacao->local_estoque_origem_id) && $idsGrupo->contains($movimentacao->local_estoque_destino_id)))
+                                            ( {{ $idsGrupo->contains($movimentacao->local_estoque_destino_id) ? 'Entrada' : 'Saída' }} )
+                                        @endif
                                     </td>
                                     <td>{{ $movimentacao->justificativa }}</td>
                                     <td>{{ $movimentacao->usuario->nome }}</td>
@@ -64,7 +80,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center">Nenhuma movimentação encontrada.</td>
+                                    <td colspan="9" class="text-center">Nenhuma movimentação encontrada.</td>
                                 </tr>
                             @endforelse
                         </tbody>

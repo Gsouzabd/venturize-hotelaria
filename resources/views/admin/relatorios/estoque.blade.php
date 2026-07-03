@@ -27,7 +27,13 @@
         <div class="card-body">
             <form method="GET" action="{{ route('admin.relatorios.estoque') }}">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label>Produto (nome ou código)</label>
+                        <input type="text" name="produto" class="form-control"
+                               value="{{ $filters['produto'] ?? '' }}"
+                               placeholder="Ex.: Arroz ou 303">
+                    </div>
+                    <div class="col-md-3">
                         <label>Local de estoque</label>
                         <select name="local_estoque_id" class="form-control">
                             <option value="">Todos</option>
@@ -52,14 +58,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label>Produtos</label>
                         <select name="somente_ativos" class="form-control">
                             <option value="1" {{ ($filters['somente_ativos'] ?? '1') === '1' ? 'selected' : '' }}>Somente ativos</option>
                             <option value="0" {{ ($filters['somente_ativos'] ?? '') === '0' ? 'selected' : '' }}>Todos</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label>&nbsp;</label>
                         <button type="submit" class="btn btn-primary form-control">
                             <i class="fas fa-search"></i> Filtrar
@@ -120,6 +126,15 @@
                             </tr>
                         @endforelse
                     </tbody>
+                    @if(trim($filters['produto'] ?? '') !== '' && $estoques->isNotEmpty())
+                        <tfoot>
+                            <tr class="font-weight-bold">
+                                <td colspan="5" class="text-right">Total em todos os locais:</td>
+                                <td>{{ $estoques->sum('quantidade') }}</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    @endif
                 </table>
             </div>
         </div>
