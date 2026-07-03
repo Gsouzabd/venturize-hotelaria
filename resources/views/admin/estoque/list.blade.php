@@ -23,7 +23,13 @@ use App\Models\Produto;
         </li>
         @foreach ($locaisEstoque as $local)
             @if($local->children->isNotEmpty())
-                {{-- Local pai com filhos: mostra cada filho como tab separada --}}
+                {{-- Local pai com filhos: tab do pai agrega os filhos + uma tab por filho --}}
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {{ request('local_estoque_id') == $local->id ? 'active' : '' }}"
+                       href="{{ route('admin.estoque.index', array_merge(request()->except('page'), ['local_estoque_id' => $local->id])) }}">
+                       <strong>{{ $local->nome }}</strong>
+                    </a>
+                </li>
                 @foreach($local->children as $filho)
                     <li class="nav-item" role="presentation">
                         <a class="nav-link {{ request('local_estoque_id') == $filho->id ? 'active' : '' }}"

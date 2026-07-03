@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Carbon\Carbon;
-use App\Models\Estoque;
-use App\Models\Produto;
-use App\Models\LocalEstoque;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Services\MovimentacaoEstoqueService;
+use App\Models\Estoque;
+use App\Models\LocalEstoque;
+use App\Models\Produto;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class EstoqueController extends Controller
 {
@@ -36,7 +35,9 @@ class EstoqueController extends Controller
         }
 
         if ($filters['local_estoque_id']) {
-            $query->where('local_estoque_id', $filters['local_estoque_id']);
+            // Local pai agrega os sub-locais (ex.: Cozinha = Dispensa + Freezer + Geladeira)
+            $filhosIds = LocalEstoque::where('parent_id', $filters['local_estoque_id'])->pluck('id');
+            $query->whereIn('local_estoque_id', $filhosIds->push((int) $filters['local_estoque_id']));
         }
 
         if ($filters['id']) {
@@ -61,7 +62,7 @@ class EstoqueController extends Controller
         $this->authorize('gerenciar_estoque');
 
         $edit = boolval($id);
-        $estoque = $edit ? $this->model->findOrFail($id) : new Estoque();
+        $estoque = $edit ? $this->model->findOrFail($id) : new Estoque;
         $locaisEstoque = LocalEstoque::all();
 
         $produtos = Produto::all();
@@ -74,7 +75,7 @@ class EstoqueController extends Controller
 
         return view('admin.estoque.form', compact('estoque', 'edit', 'locaisEstoque', 'produtos'));
     }
-    
+
     public function save(Request $request)
     {
         $this->authorize('gerenciar_estoque');
@@ -89,7 +90,7 @@ class EstoqueController extends Controller
 
         return redirect()
             ->route('admin.estoque.index')
-            ->with('notice', config('app.messages.' . ($id ? 'update' : 'insert')));
+            ->with('notice', config('app.messages.'.($id ? 'update' : 'insert')));
     }
 
     public function destroy($id)
@@ -103,5 +104,4 @@ class EstoqueController extends Controller
             ->route('admin.estoque.index')
             ->with('notice', config('app.messages.delete'));
     }
- 
 }
