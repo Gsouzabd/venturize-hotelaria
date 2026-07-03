@@ -90,76 +90,30 @@ Printer configs are stored in the `impressoras` DB table (model: `Impressora`) w
 
 ## Deploy to Production
 
+**O deploy é automático via GitHub Actions** (`.github/workflows/deploy.yml`): todo push na branch `main` roda rsync dos arquivos para o servidor e executa os comandos pós-deploy (`migrate --force`, limpeza e recache de config/rotas/views). **Para deployar, basta commit + push na `main`.** Não faça SFTP manual de arquivos.
+
 > **NUNCA use `deployStaticWebsite` ou `deployJsApplication` do MCP Hostinger para este projeto.** Essas ferramentas são para sites estáticos e apps Node.js — usá-las aqui destrói a estrutura PHP no servidor. Isso já aconteceu neste projeto.
 
-> **SSH no Windows: use Python `paramiko`.** `sshpass` não está disponível. Não tente passar senha por pipe no PowerShell.
+O rsync do pipeline exclui `.env`, `vendor/`, `storage/`, `node_modules/`, `tests/`, `database/seeders/`, `resources/js|css` etc. — o `.env` de produção nunca é sobrescrito.
 
-### Update rápido (apenas arquivos alterados, sem migração)
+### Executar comandos no servidor (verificação, artisan avulso)
+
+SSH no Windows: use Python `paramiko` (`sshpass` não está disponível; `gh` CLI também não está instalado localmente):
 
 ```python
 import paramiko
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 client.connect('147.79.94.231', port=65002, username='u529148852', password='<senha>', timeout=30)
-sftp = client.open_sftp()
-
-base_local  = r'C:\Users\ryanr\Desktop\ALDEIA DOS CAMARAS\venturize-hotelaria'
-base_remote = '/home/u529148852/domains/venturize.com.br/public_html/laravel'
-
-for f in [
-    'app/Http/Controllers/Api/ReservaController.php',
-    # ... listar apenas os arquivos alterados
-]:
-    sftp.put(f'{base_local}/{f.replace("/", chr(92))}', f'{base_remote}/{f}')
-    print(f'OK: {f}')
-
-sftp.close()
-
-# Limpar caches após upload
-for cmd in [
-    f'cd {base_remote} && php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear',
-    f'cd {base_remote} && php artisan route:cache && php artisan config:cache',
-]:
-    _, out, _ = client.exec_command(cmd, timeout=60)
-    print(out.read().decode())
-client.close()
-```
-
-### Deploy completo (com migrações ou rebuild de assets)
-
-```powershell
-# 1. Gerar zip (estrutura de diretórios preservada via ZipArchive)
-cd venturize-hotelaria
-.\make-deploy.ps1
-```
-
-```python
-# 2. Upload + extração + pós-deploy (NÃO sobrescreve .env do servidor)
-import paramiko
-client = paramiko.SSHClient()
-client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-client.connect('147.79.94.231', port=65002, username='u529148852', password='<senha>', timeout=30)
-
 base = '/home/u529148852/domains/venturize.com.br/public_html/laravel'
-
-sftp = client.open_sftp()
-sftp.put(r'venturize-hotelaria.zip', f'{base}/venturize-hotelaria.zip')
-sftp.close()
-
-for cmd in [
-    f'cd {base} && unzip -o venturize-hotelaria.zip && rm venturize-hotelaria.zip',
-    f'cd {base} && php artisan migrate --force',
-    f'cd {base} && php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear',
-    f'cd {base} && php artisan route:cache && php artisan config:cache',
-]:
-    _, out, err = client.exec_command(cmd, timeout=120)
-    print(out.read().decode('utf-8', errors='replace'))
+_, out, err = client.exec_command(f'cd {base} && php artisan <comando>', timeout=120)
+print(out.read().decode())
 client.close()
 ```
 
-**`make-deploy.ps1` exclui:** `.git`, `.mcp.json`, `.claude`, `node_modules`, `vendor`, `bitz-exports`, `tests`, `printingAgent`, `database/seeders`, `resources/js`, `resources/css`, `storage/logs`, `storage/app`, `storage/framework`, `bootstrap/cache`.
+### Scheduler em produção
 
-> `.env` não está no zip — as variáveis de produção nunca são sobrescritas pelo deploy.
+Um cron na Hostinger (conta `u529148852`) roda `php artisan schedule:run` a cada minuto no diretório do Laravel. As tarefas agendadas ficam em `routes/console.php` (ex.: `reservas:expirar` diariamente às 12:05, que marca reservas vencidas como NO SHOW).
 
 ## Important Notes
 
