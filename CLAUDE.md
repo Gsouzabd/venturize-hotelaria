@@ -94,7 +94,9 @@ Printer configs are stored in the `impressoras` DB table (model: `Impressora`) w
 
 > **NUNCA use `deployStaticWebsite` ou `deployJsApplication` do MCP Hostinger para este projeto.** Essas ferramentas são para sites estáticos e apps Node.js — usá-las aqui destrói a estrutura PHP no servidor. Isso já aconteceu neste projeto.
 
-O rsync do pipeline exclui `.env`, `vendor/`, `storage/`, `node_modules/`, `tests/`, `database/seeders/`, `resources/js|css` etc. — o `.env` de produção nunca é sobrescrito.
+O rsync do pipeline exclui `.env`, `vendor/`, `storage/`, `node_modules/`, `tests/`, `database/seeders/`, `resources/js|css`, `bitz-exports/` etc. — o `.env` de produção nunca é sobrescrito. Migrations que dependem de dados externos devem embutir os dados no próprio arquivo (padrão das migrations `import_bitz_*`).
+
+O passo "Setup SSH key" do workflow falha esporadicamente (ssh-keyscan transitório). Se o deploy falhar aí, basta re-run: `POST /repos/Gsouzabd/venturize-hotelaria/actions/runs/<id>/rerun-failed-jobs` na API do GitHub (token disponível via `git credential fill`).
 
 ### Executar comandos no servidor (verificação, artisan avulso)
 
@@ -121,3 +123,4 @@ Um cron na Hostinger (conta `u529148852`) roda `php artisan schedule:run` a cada
 - The `resources/views/admin/bar/` directory contains bar module views
 - Day-use reservations are a separate flow from regular room reservations (`DayUsePlanoPreco` model, `/reservas/day-use` route)
 - Despesas (expenses) routes are defined manually to avoid conflicts with the generic `/{id}` route pattern
+- Inventory locations (`locais_estoque`) are hierarchical (2 levels via `parent_id`): parents like Cozinha/Almoxarifado/Lavanderia/Inventário group leaf sub-locais (Dispensa, Freezer, etc.). Only leaves hold stock rows (`estoques`); the stock report filter aggregates a parent's children (`EstoqueController::index`). Balances were imported from Bitz by `2026_07_03_120000_import_bitz_saldo_estoque.php`
