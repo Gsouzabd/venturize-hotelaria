@@ -9,6 +9,15 @@
 @endsection
 
 @section('content')
+    <x-admin.ajuda titulo="Como funcionam os locais de estoque?">
+        <ul class="mb-0 pl-3">
+            <li><strong>Dois níveis:</strong> um <strong>local pai</strong> (ex.: Cozinha, Almoxarifado) agrupa <strong>sub-locais</strong> (ex.: Dispensa, Freezer, Geladeira). Os produtos ficam sempre nos sub-locais; o pai serve para agrupar e somar nos relatórios.</li>
+            <li><strong>Criar uma nova "categoria":</strong> clique em Cadastrar, dê o nome e selecione o "Local Pai" — ela vira um sub-local dele e passa a aceitar produtos.</li>
+            <li><strong>Estrutura atual:</strong> Cozinha (Dispensa, Freezer, Geladeira), Almoxarifado (Animal, Equipamento, Escritório, Jogo, Limpeza, Manutenção, Maquinário, Pintura, Piscina, Refrigeração, Utensílio de Cozinha), Lavanderia (Descartável) e Inventário (Decorações).</li>
+            <li><strong>Onde os produtos entram:</strong> pelas <a href="{{ route('admin.movimentacoes-estoque.index') }}">Movimentações de Estoque</a>, escolhendo o sub-local na entrada.</li>
+        </ul>
+    </x-admin.ajuda>
+
     <x-admin.filters route="admin.locais-estoque.index">
         <x-admin.filter cols="2">
             <x-admin.label label="Nome"/>

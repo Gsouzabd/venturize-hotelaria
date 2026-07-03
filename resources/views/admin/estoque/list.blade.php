@@ -14,6 +14,16 @@ use App\Models\Produto;
 @endsection
 
 @section('content')
+    <x-admin.ajuda titulo="Como funciona o estoque?">
+        <ul class="mb-0 pl-3">
+            <li><strong>O que aparece aqui:</strong> o saldo atual de cada produto por sub-local. As abas em negrito são os locais pais (ex.: <strong>Cozinha</strong> soma Dispensa + Freezer + Geladeira); as demais mostram cada sub-local separado.</li>
+            <li><strong>Como dar entrada:</strong> em <a href="{{ route('admin.movimentacoes-estoque.index') }}">Movimentações de Estoque</a> → "Inserir Entrada/Saída", escolha o produto, o sub-local e a quantidade. Compras e chegadas de mercadoria entram por lá.</li>
+            <li><strong>Como dar saída:</strong> mesma tela, tipo "Saída" — use para consumo, perdas e quebras, com a justificativa.</li>
+            <li><strong>Como mover entre locais:</strong> "Realizar Transferência" move a quantidade de um sub-local para outro (ex.: do Freezer para a Geladeira).</li>
+            <li><strong>Produto novo:</strong> cadastre primeiro em Produtos e depois dê a primeira entrada no sub-local correto.</li>
+        </ul>
+    </x-admin.ajuda>
+
     <ul class="nav nav-tabs mb-0 flex-wrap" id="estoqueTab" role="tablist">
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ !request('local_estoque_id') ? 'active' : '' }}"

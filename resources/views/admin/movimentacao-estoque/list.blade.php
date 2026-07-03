@@ -9,6 +9,15 @@
 @endsection
 
 @section('content')
+    <x-admin.ajuda titulo="Como funcionam as movimentações?">
+        <ul class="mb-0 pl-3">
+            <li><strong>Entrada:</strong> aumenta o saldo de um produto em um sub-local. Use quando chegar compra ou mercadoria ("Inserir Entrada/Saída", tipo Entrada).</li>
+            <li><strong>Saída:</strong> diminui o saldo. Use para consumo, perda ou quebra — informe a justificativa.</li>
+            <li><strong>Transferência:</strong> move quantidade de um sub-local para outro (ex.: Almoxarifado › Limpeza para Lavanderia › Descartável) sem alterar o total geral.</li>
+            <li><strong>Onde ver o resultado:</strong> o saldo atualizado aparece na tela <a href="{{ route('admin.estoque.index') }}">Estoque</a> e no <a href="{{ route('admin.relatorios.estoque') }}">Relatório de Estoque</a>. As abas abaixo listam o histórico de cada local.</li>
+        </ul>
+    </x-admin.ajuda>
+
     <ul class="nav nav-tabs" id="movimentacoesTab" role="tablist">
         @foreach ($locaisEstoque as $index => $local)
             <li class="nav-item" role="presentation">

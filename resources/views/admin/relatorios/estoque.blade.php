@@ -11,6 +11,15 @@
 @endphp
 
 <div class="container">
+    <x-admin.ajuda titulo="Como funciona o relatório de estoque?">
+        <ul class="mb-0 pl-3">
+            <li><strong>De onde vem o saldo:</strong> cada linha mostra a quantidade atual de um produto em um sub-local (ex.: Cozinha › Dispensa). O saldo muda apenas através das <a href="{{ route('admin.movimentacoes-estoque.index') }}">Movimentações de Estoque</a> (entrada, saída ou transferência).</li>
+            <li><strong>Filtro por local:</strong> escolher um local pai como "Cozinha (todos)" soma todos os sub-locais dele (Dispensa + Freezer + Geladeira). Para ver só um, escolha o sub-local (ex.: "Cozinha › Dispensa").</li>
+            <li><strong>Exportar:</strong> os botões Excel e PDF geram o relatório exatamente com o filtro aplicado na tela.</li>
+            <li><strong>Estoque mín./máx.:</strong> são os limites cadastrados no produto — use-os para saber o que precisa comprar.</li>
+        </ul>
+    </x-admin.ajuda>
+
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0">Filtros</h5>
