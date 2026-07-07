@@ -126,7 +126,18 @@ class ProdutoController extends Controller
         $this->authorize('visualizar_produtos');
 
         $query = $request->get('query');
-        $produtos = Produto::where('descricao', 'like', "%{$query}%")->get(['id', 'descricao', 'unidade']);
+        $produtos = Produto::query()
+            ->where(function ($q) use ($query) {
+                $q->where('descricao', 'like', "%{$query}%")
+                    ->orWhere('codigo_interno', $query);
+            })
+            ->when($request->get('local_estoque_id'), function ($q, $localId) {
+                // Restringe a produtos com registro de estoque no local (saída/perda/transferência)
+                $q->whereHas('estoques', fn ($e) => $e->where('local_estoque_id', $localId));
+            })
+            ->orderBy('descricao')
+            ->limit(20)
+            ->get(['id', 'descricao', 'unidade', 'codigo_interno', 'preco_custo', 'preco_venda']);
     
         // Map unit codes to full names
         $unidades = Produto::UNIDADES;
