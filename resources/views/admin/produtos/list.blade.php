@@ -44,6 +44,15 @@ use App\Models\Produto;
             <x-admin.label label="Data de Criação"/>
             <x-admin.datepicker name="created_at" :value="$filters['created_at']"/>
         </x-admin.filter>
+
+        <x-admin.filter cols="2">
+            <x-admin.label label="Situação"/>
+            <select name="ativo" class="form-control">
+                <option value="1" @selected($filters['ativo'] === '1')>Ativos</option>
+                <option value="0" @selected($filters['ativo'] === '0')>Inativos</option>
+                <option value="" @selected($filters['ativo'] === '')>Todos</option>
+            </select>
+        </x-admin.filter>
     </x-admin.filters>
 
     <div class="mb-2 text-muted small">
@@ -66,7 +75,12 @@ use App\Models\Produto;
             @forelse($produtos as $produto)
                 <tr>
                     <td>{{ $produto->id }}</td>
-                    <td>{{ $produto->descricao }}</td>
+                    <td>
+                        {{ $produto->descricao }}
+                        @unless($produto->ativo)
+                            <span class="badge badge-secondary">Inativo</span>
+                        @endunless
+                    </td>
                     <td>{{ $produto->categoria->nome ?? $produto->categoria_produto }}</td>
                     <td>R$ {{ number_format($produto->preco_venda, 2, ',', '.') }}</td>
                     <td>{{ Carbon::parse($produto->created_at)->format('d-m-Y') }}</td>

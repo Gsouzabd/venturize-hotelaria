@@ -65,7 +65,7 @@ class EstoqueController extends Controller
         $estoque = $edit ? $this->model->findOrFail($id) : new Estoque;
         $locaisEstoque = LocalEstoque::all();
 
-        $produtos = Produto::all();
+        $produtos = Produto::where('ativo', 1)->orderBy('descricao')->get();
 
         // Apenas folhas (sem filhos) podem receber estoque; carrega parent para exibir nome agrupado
         $locaisEstoque = LocalEstoque::with('parent')

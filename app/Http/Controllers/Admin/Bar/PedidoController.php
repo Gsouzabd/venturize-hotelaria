@@ -68,7 +68,7 @@ class PedidoController extends Controller
 
         $categoriaIds = Categoria::whereIn('nome', $categoriasPermitidas)->pluck('id');
         
-        $produtos = Produto::whereIn('categoria_produto', $categoriaIds)->get();
+        $produtos = Produto::where('ativo', 1)->whereIn('categoria_produto', $categoriaIds)->get();
 
         $produtosAgrupados = $produtos->groupBy('categoria_produto');
 

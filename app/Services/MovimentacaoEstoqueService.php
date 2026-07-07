@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\Estoque;
+use App\Models\MovimentacaoEstoque;
 use App\Models\Produto;
 use Illuminate\Http\Request;
-use App\Models\MovimentacaoEstoque;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -76,7 +76,7 @@ class MovimentacaoEstoqueService
         if ($movimentacaoCreated && $valorUnitario !== null) {
             $produto = Produto::find($movimentacao['produto_id']);
 
-            if ($produto->preco_custo != $valorUnitario || !$produto->preco_custo) {
+            if ($produto->preco_custo != $valorUnitario || ! $produto->preco_custo) {
                 $produto->preco_custo = $valorUnitario;
                 $produto->save();
             }
@@ -91,8 +91,7 @@ class MovimentacaoEstoqueService
             'local_estoque_id' => $movimentacao['local_estoque_id'],
         ])->first();
 
-        
-        if (!$estoque) {
+        if (! $estoque) {
             // Criar um novo estoque mesmo que o valor seja negativo
             $estoque = new Estoque([
                 'produto_id' => $movimentacao['produto_id'],
@@ -100,7 +99,6 @@ class MovimentacaoEstoqueService
                 'quantidade' => 0,
             ]);
         }
-
 
         $estoque->quantidade -= $movimentacao['quantidade'];
 
@@ -118,7 +116,6 @@ class MovimentacaoEstoqueService
             'justificativa' => $movimentacao['justificativa'] ?? null,
         ]);
     }
-
 
     public function registrarTransferencia(array $movimentacao)
     {

@@ -28,8 +28,13 @@ class ProdutoController extends Controller
         $filters['created_at'] ??= '';
         $filters['id'] ??= '';
         $filters['codigo_interno'] ??= '';
-    
+        $filters['ativo'] ??= '1';
+
         $query = $this->model->newQuery();
+
+        if ($filters['ativo'] !== '') {
+            $query->where('ativo', $filters['ativo']);
+        }
     
         if ($filters['nome']) {
             $query->where('descricao', 'like', '%' . $filters['nome'] . '%');
@@ -113,6 +118,21 @@ class ProdutoController extends Controller
         $this->authorize('gerenciar_produtos');
 
         $produto = $this->model->findOrFail($id);
+
+        // Excluir apagaria em cascata histórico de estoque/movimentações/pedidos —
+        // produto já referenciado é apenas inativado
+        $referenciado = $produto->estoques()->exists()
+            || $produto->itens()->exists()
+            || \App\Models\MovimentacaoEstoque::where('produto_id', $produto->id)->exists();
+
+        if ($referenciado) {
+            $produto->update(['ativo' => 0]);
+
+            return redirect()
+                ->route('admin.produtos.index')
+                ->with('notice', 'O produto possui histórico (estoque, movimentações ou pedidos) e foi inativado em vez de excluído. Ele deixa de aparecer nas buscas e listagens.');
+        }
+
         $produto->delete();
 
         return redirect()
@@ -127,6 +147,7 @@ class ProdutoController extends Controller
 
         $query = $request->get('query');
         $produtos = Produto::query()
+            ->where('ativo', 1)
             ->where(function ($q) use ($query) {
                 $q->where('descricao', 'like', "%{$query}%")
                     ->orWhere('codigo_interno', $query);

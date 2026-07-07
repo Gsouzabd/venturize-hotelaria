@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LocalEstoque;
 use App\Models\MovimentacaoEstoque;
-use App\Models\Produto;
 use App\Services\MovimentacaoEstoqueService;
 use Illuminate\Http\Request;
 
@@ -60,9 +59,7 @@ class MovimentacaoEstoqueController extends Controller
         // Carrega hierarquia para optgroups nas dropdowns
         $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
 
-        $produtos = Produto::all();
-
-        return view('admin.movimentacao-estoque.form', compact('movimentacao', 'edit', 'locaisEstoque', 'produtos', 'transferencia'));
+        return view('admin.movimentacao-estoque.form', compact('movimentacao', 'edit', 'locaisEstoque', 'transferencia'));
     }
 
     // Método unificado para movimentações
