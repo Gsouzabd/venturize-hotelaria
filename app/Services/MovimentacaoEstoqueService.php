@@ -7,28 +7,44 @@ use App\Models\Produto;
 use Illuminate\Http\Request;
 use App\Models\MovimentacaoEstoque;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class MovimentacaoEstoqueService
 {
     public function handleMovimentacoes(Request $request)
     {
-        foreach ($request->movimentacoes as $movimentacao) {
-            $tipo = $movimentacao['tipo_movimento'];
+        DB::transaction(function () use ($request) {
+            foreach ($request->movimentacoes as $movimentacao) {
+                $tipo = $movimentacao['tipo_movimento'];
 
-            switch ($tipo) {
-                case 'entrada':
-                    $this->registrarEntrada($movimentacao);
-                    break;
-                case 'saida':
-                    $this->registrarSaida($movimentacao);
-                    break;
-                case 'transferencia':
-                    $this->registrarTransferencia($movimentacao);
-                    break;
-                default:
-                    throw new \Exception("Tipo de movimentação desconhecido: $tipo");
+                switch ($tipo) {
+                    case 'entrada':
+                        $this->registrarEntrada($movimentacao);
+                        break;
+                    case 'saida':
+                        $this->registrarSaida($movimentacao);
+                        break;
+                    case 'perda':
+                        $this->registrarSaida($movimentacao, 'perda');
+                        break;
+                    case 'transferencia':
+                        $this->registrarTransferencia($movimentacao);
+                        break;
+                    default:
+                        throw new \Exception("Tipo de movimentação desconhecido: $tipo");
+                }
             }
+        });
+    }
+
+    // Aceita valores digitados com vírgula decimal ("12,50"); vazio vira null
+    private function normalizarDecimal(?string $valor): ?float
+    {
+        if ($valor === null || trim($valor) === '') {
+            return null;
         }
+
+        return (float) str_replace(',', '.', trim($valor));
     }
 
     public function registrarEntrada(array $movimentacao)
@@ -42,6 +58,8 @@ class MovimentacaoEstoqueService
         $estoque->quantidade += $movimentacao['quantidade'];
         $estoque->save();
 
+        $valorUnitario = $this->normalizarDecimal($movimentacao['valor_unitario'] ?? null);
+
         // Registrar a movimentação
         $movimentacaoCreated = MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
@@ -50,17 +68,14 @@ class MovimentacaoEstoqueService
             'tipo' => 'entrada',
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'preco_custo' => $movimentacao['valor_unitario'],
-            'justificativa' => $movimentacao['justificativa'],
+            'valor_unitario_custo' => $valorUnitario,
+            'justificativa' => $movimentacao['justificativa'] ?? null,
         ]);
 
         // Atualiando o preço de custo do produto caso o valor unitário seja diferente
-        if ($movimentacaoCreated) {
-            $produto = Produto::find($movimentacao['produto_id']);  
-        
-            // Converter valor_unitario para o formato correto
-            $valorUnitario = str_replace(',', '.', $movimentacao['valor_unitario']);
-        
+        if ($movimentacaoCreated && $valorUnitario !== null) {
+            $produto = Produto::find($movimentacao['produto_id']);
+
             if ($produto->preco_custo != $valorUnitario || !$produto->preco_custo) {
                 $produto->preco_custo = $valorUnitario;
                 $produto->save();
@@ -68,10 +83,8 @@ class MovimentacaoEstoqueService
         }
     }
 
-    public function registrarSaida(array $movimentacao)
+    public function registrarSaida(array $movimentacao, string $tipo = 'saida')
     {
-
-        // dd($movimentacao);
         // Atualizar o estoque
         $estoque = Estoque::where([
             'produto_id' => $movimentacao['produto_id'],
@@ -98,30 +111,24 @@ class MovimentacaoEstoqueService
             'produto_id' => $movimentacao['produto_id'],
             'local_estoque_origem_id' => $movimentacao['local_estoque_id'],
             'quantidade' => $movimentacao['quantidade'],
-            'tipo' => 'saida',
+            'tipo' => $tipo,
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'valor_unitario_venda' => $movimentacao['valor_unitario_venda'],
-            'justificativa' => $movimentacao['justificativa'],
+            'valor_unitario_venda' => $this->normalizarDecimal($movimentacao['valor_unitario'] ?? null),
+            'justificativa' => $movimentacao['justificativa'] ?? null,
         ]);
-
     }
 
 
-    public function registrarTransferencia(array $movimentacao) 
+    public function registrarTransferencia(array $movimentacao)
     {
-        // dd($movimentacao);
-        // Atualizar o estoque de origem
-        $estoqueOrigem = Estoque::where([
+        // Atualizar o estoque de origem (cria negativado se não existir, como na saída)
+        $estoqueOrigem = Estoque::firstOrNew([
             'produto_id' => $movimentacao['produto_id'],
             'local_estoque_id' => $movimentacao['estoque_origem_id'],
-        ])->first();
+        ]);
 
-        // if (!$estoqueOrigem || $estoqueOrigem->quantidade < $movimentacao['quantidade']) {
-        //     throw new \Exception('Estoque insuficiente para o produto ID: ' . $movimentacao['produto_id']);
-        // }
-
-        $estoqueOrigem->quantidade -= $movimentacao['quantidade'];
+        $estoqueOrigem->quantidade = ($estoqueOrigem->quantidade ?? 0) - $movimentacao['quantidade'];
         $estoqueOrigem->save();
 
         // Atualizar o estoque de destino
@@ -142,7 +149,7 @@ class MovimentacaoEstoqueService
             'tipo' => 'transferencia',
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'justificativa' => $movimentacao['justificativa'],
+            'justificativa' => $movimentacao['justificativa'] ?? null,
         ]);
     }
 

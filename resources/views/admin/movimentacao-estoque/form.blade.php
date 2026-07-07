@@ -39,12 +39,15 @@
             font-size: 1.2rem;
         }
         .btn-add {
-            background-color: #28a745;
-            color: white;
+            background-color: transparent;
+            color: #28a745;
+            border: 1px solid #28a745;
             width: 100%;
+            white-space: nowrap;
         }
         .btn-add:hover {
-            background-color: #218838;
+            background-color: #28a745;
+            color: white;
         }
         .checkbox-group {
             display: flex;
@@ -74,7 +77,7 @@
                 <div class="alert alert-warning">
                     <strong>Nota:</strong> Nos casos de justificativas diferentes para cada produto, os registros ficarão separados.
                 </div>
-                <x-admin.form method="POST" save-route="admin.movimentacoes-estoque.save" back-route="admin.movimentacoes-estoque.index">
+                <x-admin.form method="POST" save-route="admin.movimentacoes-estoque.save" back-route="admin.movimentacoes-estoque.index" submit-title="Salvar Movimentações">
                     @csrf
                     <input type="hidden" name="transferencia" value="{{ $transferencia }}">
                     <table class="table table-bordered">
@@ -178,7 +181,6 @@
                             </tr>
                         </tbody>
                     </table>
-                    <button type="submit" class="btn btn-primary">Salvar Movimentações</button>
                 </x-admin.form>
             </div>
         </div>
@@ -258,6 +260,17 @@
         });
 
         let movimentacaoIndex = 0;
+
+        // Submit só habilita depois de adicionar ao menos uma linha
+        const submitButton = document.querySelector('form.edit-form button[type="submit"]');
+        function atualizarEstadoSubmit() {
+            const temLinhas = productTableBody.querySelectorAll('input[name^="movimentacoes["]').length > 0;
+            if (submitButton) {
+                submitButton.disabled = !temLinhas;
+                submitButton.title = temLinhas ? '' : 'Adicione produtos à lista primeiro';
+            }
+        }
+        atualizarEstadoSubmit();
 
         addProductButton.addEventListener('click', function () {
             const produtoDescricaoInput = document.querySelector('[name="produto_descricao"]');
@@ -363,9 +376,11 @@
             // Add event listener to remove button
             newRow.querySelector('.btn-remove').addEventListener('click', function () {
                 newRow.remove();
+                atualizarEstadoSubmit();
             });
 
             movimentacaoIndex++;
+            atualizarEstadoSubmit();
         });
         
         // Remove the missing-to-checkin class on input
