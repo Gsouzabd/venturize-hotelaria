@@ -22,6 +22,7 @@ class MovimentacaoEstoque extends Model
         'valor_unitario_custo', // Novo campo
         'valor_unitario_venda', // Novo campo
         'justificativa',
+        'estornada_por_id', // Movimentação de estorno que cancelou esta
     ];
 
     public function produto()
@@ -42,5 +43,10 @@ class MovimentacaoEstoque extends Model
     public function localDestino()
     {
         return $this->belongsTo(LocalEstoque::class, 'local_estoque_destino_id');
+    }
+
+    public function estornadaPor()
+    {
+        return $this->belongsTo(self::class, 'estornada_por_id');
     }
 }

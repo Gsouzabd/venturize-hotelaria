@@ -41,6 +41,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/fornecedores/search', [FornecedorController::class, 'search'])->name('fornecedores.search');
 
         Route::match(['post', 'put'], '/estoque/movimentacoes/', [MovimentacaoEstoqueController::class, 'save'])->name('movimentacoes-estoque.save');
+        Route::post('/estoque/movimentacoes/{id}/estornar', [MovimentacaoEstoqueController::class, 'estornar'])->name('movimentacoes-estoque.estornar');
 
         Route::get('/estoque/movimentacoes/transf', [MovimentacaoEstoqueController::class, 'edit'])->name('movimentacoes-estoque.transf');
         Route::get('/estoque/movimentacoes', [MovimentacaoEstoqueController::class, 'index'])->name('movimentacoes-estoque.index');

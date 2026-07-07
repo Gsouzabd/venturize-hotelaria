@@ -153,4 +153,69 @@ class MovimentacaoEstoqueService
         ]);
     }
 
+    /**
+     * Reverte o efeito de uma movimentação no saldo e cria a movimentação-espelho
+     * (tipo 'estorno'). Retorna avisos (ex.: saldo negativado) para exibir ao usuário.
+     *
+     * @return string[] avisos
+     */
+    public function estornar(MovimentacaoEstoque $movimentacao, ?string $justificativa = null): array
+    {
+        if ($movimentacao->tipo === 'estorno') {
+            throw new \Exception('Não é possível estornar um estorno.');
+        }
+
+        if ($movimentacao->estornada_por_id) {
+            throw new \Exception('Esta movimentação já foi estornada (movimentação #'.$movimentacao->estornada_por_id.').');
+        }
+
+        return DB::transaction(function () use ($movimentacao, $justificativa) {
+            $avisos = [];
+
+            // Reversão do saldo: entrada devolve do destino; saída/perda devolvem à origem;
+            // transferência reverte os dois lados
+            $ajustes = match ($movimentacao->tipo) {
+                'entrada' => [[$movimentacao->local_estoque_destino_id, -$movimentacao->quantidade]],
+                'saida', 'perda' => [[$movimentacao->local_estoque_origem_id, +$movimentacao->quantidade]],
+                'transferencia' => [
+                    [$movimentacao->local_estoque_origem_id, +$movimentacao->quantidade],
+                    [$movimentacao->local_estoque_destino_id, -$movimentacao->quantidade],
+                ],
+                default => throw new \Exception("Tipo de movimentação não estornável: {$movimentacao->tipo}"),
+            };
+
+            foreach ($ajustes as [$localId, $delta]) {
+                $estoque = Estoque::firstOrNew([
+                    'produto_id' => $movimentacao->produto_id,
+                    'local_estoque_id' => $localId,
+                ]);
+
+                $estoque->quantidade = ($estoque->quantidade ?? 0) + $delta;
+                $estoque->save();
+
+                if ($estoque->quantidade < 0) {
+                    $avisos[] = "Atenção: o saldo de {$movimentacao->produto->descricao} em {$estoque->localEstoque->nome} ficou negativo ({$estoque->quantidade}).";
+                }
+            }
+
+            $motivo = $justificativa ? ": {$justificativa}" : '';
+
+            $estorno = MovimentacaoEstoque::create([
+                'produto_id' => $movimentacao->produto_id,
+                'local_estoque_origem_id' => $movimentacao->local_estoque_destino_id,
+                'local_estoque_destino_id' => $movimentacao->local_estoque_origem_id,
+                'quantidade' => $movimentacao->quantidade,
+                'tipo' => 'estorno',
+                'usuario_id' => Auth::id(),
+                'data_movimentacao' => now(),
+                'valor_unitario_custo' => $movimentacao->valor_unitario_custo,
+                'valor_unitario_venda' => $movimentacao->valor_unitario_venda,
+                'justificativa' => "Estorno da movimentação #{$movimentacao->id}{$motivo}",
+            ]);
+
+            $movimentacao->update(['estornada_por_id' => $estorno->id]);
+
+            return $avisos;
+        });
+    }
 }

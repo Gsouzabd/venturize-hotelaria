@@ -14,6 +14,7 @@
             <li><strong>Entrada:</strong> aumenta o saldo de um produto em um sub-local. Use quando chegar compra ou mercadoria ("Inserir Entrada/Saída", tipo Entrada).</li>
             <li><strong>Saída:</strong> diminui o saldo. Use para consumo, perda ou quebra — informe a justificativa.</li>
             <li><strong>Transferência:</strong> move quantidade de um sub-local para outro (ex.: Almoxarifado › Limpeza para Lavanderia › Descartável) sem alterar o total geral.</li>
+            <li><strong>Estornar:</strong> lançou errado? Clique em <em>Estornar</em> na linha da movimentação — o saldo é revertido e fica registrado um estorno no histórico. Depois é só lançar de novo do jeito certo.</li>
             <li><strong>Onde ver o resultado:</strong> o saldo atualizado aparece na tela <a href="{{ route('admin.estoque.index') }}">Estoque</a> e no <a href="{{ route('admin.relatorios.estoque') }}">Relatório de Estoque</a>. As abas abaixo listam o histórico de cada local.</li>
         </ul>
     </x-admin.ajuda>
@@ -74,8 +75,22 @@
                                     <td>{{ $movimentacao->justificativa }}</td>
                                     <td>{{ $movimentacao->usuario->nome }}</td>
                                     <td>{{ Carbon\Carbon::parse($movimentacao->data_movimentacao)->format('d-m-Y H:i') }}</td>
-                                    <td>
-                                        <!-- Add action buttons here -->
+                                    <td class="text-nowrap">
+                                        @if ($movimentacao->tipo === 'estorno')
+                                            <span class="badge badge-secondary">Estorno</span>
+                                        @elseif ($movimentacao->estornada_por_id)
+                                            <span class="badge badge-warning" title="Estornada pela movimentação #{{ $movimentacao->estornada_por_id }}">Estornada</span>
+                                        @else
+                                            @can('gerenciar_estoque')
+                                                <form method="POST" action="{{ route('admin.movimentacoes-estoque.estornar', $movimentacao->id) }}" class="d-inline-block"
+                                                      onsubmit="return confirm('Estornar a movimentação #{{ $movimentacao->id }}? O saldo do estoque será revertido.')">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancela esta movimentação revertendo o saldo">
+                                                        <i class="fas fa-undo"></i> Estornar
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

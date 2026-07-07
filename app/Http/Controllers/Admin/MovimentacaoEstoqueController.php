@@ -102,4 +102,28 @@ class MovimentacaoEstoqueController extends Controller
             ->route('admin.movimentacoes-estoque.index')
             ->with('notice', config('app.messages.'.($request->get('id') ? 'update' : 'insert')));
     }
+
+    public function estornar($id, Request $request)
+    {
+        $this->authorize('gerenciar_estoque');
+
+        $request->validate([
+            'justificativa' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $movimentacao = $this->model->findOrFail($id);
+
+        try {
+            $avisos = $this->movimentacaoEstoqueService->estornar($movimentacao, $request->get('justificativa'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        }
+
+        $mensagem = 'Movimentação #'.$movimentacao->id.' estornada com sucesso.';
+        if ($avisos) {
+            $mensagem .= ' '.implode(' ', $avisos);
+        }
+
+        return redirect()->back()->with('notice', $mensagem);
+    }
 }
