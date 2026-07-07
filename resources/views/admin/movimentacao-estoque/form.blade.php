@@ -168,14 +168,18 @@
 @endsection
 
 <!-- Script de busca de produtos com autocomplete -->
+@php
+    // Hierarquia de locais (categoria pai -> sub-locais folha) para os selects encadeados.
+    // Montado aqui pois @json() não aceita vírgulas na expressão (interpreta como flags do json_encode).
+    $locaisEstoqueJson = $locaisEstoque->map(fn ($l) => [
+        'id' => $l->id,
+        'nome' => $l->nome,
+        'children' => $l->children->map(fn ($c) => ['id' => $c->id, 'nome' => $c->nome])->values(),
+    ])->values();
+@endphp
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Hierarquia de locais (categoria pai -> sub-locais folha) para os selects encadeados
-        const LOCAIS = @json($locaisEstoque->map(fn ($l) => [
-            'id' => $l->id,
-            'nome' => $l->nome,
-            'children' => $l->children->map(fn ($c) => ['id' => $c->id, 'nome' => $c->nome])->values(),
-        ])->values());
+        const LOCAIS = @json($locaisEstoqueJson);
 
         const produtoDescricaoInput = document.getElementById('produto_descricao_input');
         const produtoIdInput = document.getElementById('produto_id');
