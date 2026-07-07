@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LocalEstoque;
 use App\Models\MovimentacaoEstoque;
+use App\Models\Produto;
 use App\Services\MovimentacaoEstoqueService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class MovimentacaoEstoqueController extends Controller
 {
@@ -67,7 +69,7 @@ class MovimentacaoEstoqueController extends Controller
     {
         $this->authorize('gerenciar_estoque');
 
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'movimentacoes' => ['required', 'array', 'min:1'],
             'movimentacoes.*.produto_id' => ['required', 'exists:produtos,id'],
             'movimentacoes.*.tipo_movimento' => ['required', 'in:entrada,saida,perda,transferencia'],
@@ -89,9 +91,34 @@ class MovimentacaoEstoqueController extends Controller
             'movimentacoes.*.valor_unitario.regex' => 'Valor unitário inválido — use números com até 2 casas decimais (ex.: 12,50).',
         ]);
 
+        // Quantidade inteira obrigatória, exceto para unidades fracionárias (KG, LT)
+        $validator->after(function ($validator) use ($request) {
+            $movimentacoes = $request->get('movimentacoes', []);
+            $produtos = Produto::whereIn('id', collect($movimentacoes)->pluck('produto_id'))->get()->keyBy('id');
+
+            foreach ($movimentacoes as $index => $movimentacao) {
+                $produto = $produtos->get($movimentacao['produto_id'] ?? null);
+                if (! $produto || $produto->permiteFracionado()) {
+                    continue;
+                }
+
+                $quantidade = trim((string) ($movimentacao['quantidade'] ?? ''));
+                if ($quantidade !== '' && ! preg_match('/^\d+$/', $quantidade)) {
+                    $validator->errors()->add(
+                        "movimentacoes.$index.quantidade",
+                        "Quantidade de \"{$produto->descricao}\" deve ser um número inteiro (unidade {$produto->unidade})."
+                    );
+                }
+            }
+        });
+
+        $validator->validate();
+
         try {
             $this->movimentacaoEstoqueService->handleMovimentacoes($request);
         } catch (\Throwable $e) {
+            \Log::error('Erro ao registrar movimentação de estoque: '.$e->getMessage(), ['exception' => $e]);
+
             return redirect()->back()->withErrors(['error' => 'Erro ao registrar movimentação: '.$e->getMessage()])->withInput();
         }
 

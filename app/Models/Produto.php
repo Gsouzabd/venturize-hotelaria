@@ -46,6 +46,14 @@ class Produto extends Model
         'TC' => 'Taça',
     ];
 
+    // Unidades cuja quantidade pode ser fracionada (ex.: queijo em KG). As demais exigem número inteiro.
+    const UNIDADES_FRACIONARIAS = ['KG', 'LT'];
+
+    public function permiteFracionado(): bool
+    {
+        return in_array($this->unidade, self::UNIDADES_FRACIONARIAS);
+    }
+
     public static function getImpressoras(): array
     {
         return Impressora::orderBy('ordem')->orderBy('nome')->pluck('nome', 'id')->toArray();

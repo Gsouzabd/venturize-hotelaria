@@ -49,10 +49,16 @@ class MovimentacaoEstoqueService
 
     public function registrarEntrada(array $movimentacao)
     {
+        $localEstoqueId = $movimentacao['local_estoque_id'] ?? null;
+
+        if (! $localEstoqueId) {
+            throw new \Exception('Local de estoque não informado para o produto #'.($movimentacao['produto_id'] ?? '?').'.');
+        }
+
         // Atualizar o estoque
         $estoque = Estoque::firstOrNew([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_id' => $movimentacao['local_estoque_id'],
+            'local_estoque_id' => $localEstoqueId,
         ]);
 
         $estoque->quantidade += $movimentacao['quantidade'];
@@ -63,7 +69,7 @@ class MovimentacaoEstoqueService
         // Registrar a movimentação
         $movimentacaoCreated = MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_destino_id' => $movimentacao['local_estoque_id'],
+            'local_estoque_destino_id' => $localEstoqueId,
             'quantidade' => $movimentacao['quantidade'],
             'tipo' => 'entrada',
             'usuario_id' => Auth::id(),
@@ -85,17 +91,23 @@ class MovimentacaoEstoqueService
 
     public function registrarSaida(array $movimentacao, string $tipo = 'saida')
     {
+        $localEstoqueId = $movimentacao['local_estoque_id'] ?? null;
+
+        if (! $localEstoqueId) {
+            throw new \Exception('Local de estoque não informado para o produto #'.($movimentacao['produto_id'] ?? '?').'.');
+        }
+
         // Atualizar o estoque
         $estoque = Estoque::where([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_id' => $movimentacao['local_estoque_id'],
+            'local_estoque_id' => $localEstoqueId,
         ])->first();
 
         if (! $estoque) {
             // Criar um novo estoque mesmo que o valor seja negativo
             $estoque = new Estoque([
                 'produto_id' => $movimentacao['produto_id'],
-                'local_estoque_id' => $movimentacao['local_estoque_id'],
+                'local_estoque_id' => $localEstoqueId,
                 'quantidade' => 0,
             ]);
         }
@@ -107,7 +119,7 @@ class MovimentacaoEstoqueService
         // Registrar a movimentação
         MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_origem_id' => $movimentacao['local_estoque_id'],
+            'local_estoque_origem_id' => $localEstoqueId,
             'quantidade' => $movimentacao['quantidade'],
             'tipo' => $tipo,
             'usuario_id' => Auth::id(),
@@ -119,10 +131,17 @@ class MovimentacaoEstoqueService
 
     public function registrarTransferencia(array $movimentacao)
     {
+        $origemId = $movimentacao['estoque_origem_id'] ?? null;
+        $destinoId = $movimentacao['estoque_destino_id'] ?? null;
+
+        if (! $origemId || ! $destinoId) {
+            throw new \Exception('Origem e destino da transferência são obrigatórios para o produto #'.($movimentacao['produto_id'] ?? '?').'.');
+        }
+
         // Atualizar o estoque de origem (cria negativado se não existir, como na saída)
         $estoqueOrigem = Estoque::firstOrNew([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_id' => $movimentacao['estoque_origem_id'],
+            'local_estoque_id' => $origemId,
         ]);
 
         $estoqueOrigem->quantidade = ($estoqueOrigem->quantidade ?? 0) - $movimentacao['quantidade'];
@@ -131,7 +150,7 @@ class MovimentacaoEstoqueService
         // Atualizar o estoque de destino
         $estoqueDestino = Estoque::firstOrNew([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_id' => $movimentacao['estoque_destino_id'],
+            'local_estoque_id' => $destinoId,
         ]);
 
         $estoqueDestino->quantidade += $movimentacao['quantidade'];
@@ -140,8 +159,8 @@ class MovimentacaoEstoqueService
         // Registrar a movimentação
         MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
-            'local_estoque_origem_id' => $movimentacao['estoque_origem_id'],
-            'local_estoque_destino_id' => $movimentacao['estoque_destino_id'],
+            'local_estoque_origem_id' => $origemId,
+            'local_estoque_destino_id' => $destinoId,
             'quantidade' => $movimentacao['quantidade'],
             'tipo' => 'transferencia',
             'usuario_id' => Auth::id(),

@@ -151,7 +151,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td><input type="number" step="0.01" min="0" class="form-control quantity-input" id="quantidade" name="quantidade" placeholder="Quantidade" value="1.00"></td>
+                                <td><input type="text" inputmode="decimal" class="form-control quantity-input" id="quantidade" name="quantidade" placeholder="Quantidade" value="1" data-fracionaria="0"></td>
                                 <td><input type="text" class="form-control" id="justificativa" name="justificativa" placeholder="Justificativa"></td>
                                 @if (!$transferencia)
                                     <td><input type="text" class="form-control" id="valor_unitario" name="valor_unitario" placeholder="Automático" inputmode="decimal" style="min-width: 90px;"></td>
@@ -238,6 +238,43 @@
             tipoMovimentoInput.addEventListener('change', preencherValorAutomatico);
         }
 
+        // ----- Quantidade inteira/fracionada conforme a unidade do produto -----
+        const quantidadeInputEl = document.getElementById('quantidade');
+
+        function aplicarRestricaoQuantidade(fracionaria) {
+            quantidadeInputEl.dataset.fracionaria = fracionaria ? '1' : '0';
+            quantidadeInputEl.step = fracionaria ? '0.01' : '1';
+            if (!fracionaria) {
+                const valorInteiro = parseInt(quantidadeInputEl.value, 10);
+                quantidadeInputEl.value = isNaN(valorInteiro) ? '1' : String(valorInteiro);
+            }
+        }
+
+        quantidadeInputEl.addEventListener('input', function () {
+            const fracionaria = quantidadeInputEl.dataset.fracionaria === '1';
+            let valor = quantidadeInputEl.value;
+            // Remove qualquer caractere que não seja dígito (e um único ponto decimal se fracionária)
+            valor = fracionaria
+                ? valor.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1')
+                : valor.replace(/[^\d]/g, '');
+            if (valor !== quantidadeInputEl.value) quantidadeInputEl.value = valor;
+        });
+
+        // ----- Auto-preenchimento do local quando o produto tem estoque em 1 único local -----
+        function autoPreencherLocal(estoquesLocais) {
+            if (transferencia || !estoquesLocais || estoquesLocais.length !== 1) return;
+
+            const unico = estoquesLocais[0];
+            const catSelect = document.getElementById('local_categoria');
+            const subSelect = document.getElementById('local_estoque_id');
+            if (!catSelect || !subSelect) return;
+
+            const parentId = unico.local_estoque_parent_id ?? unico.local_estoque_id;
+            catSelect.value = parentId;
+            catSelect.dispatchEvent(new Event('change'));
+            subSelect.value = unico.local_estoque_id;
+        }
+
         function selecionarProduto(produto) {
             produtoDescricaoInput.value = produto.descricao;
             produtoIdInput.value = produto.id;
@@ -245,6 +282,8 @@
             produtoIdInput.dataset.precoVenda = produto.preco_venda ?? '';
             codigoInput.value = produto.codigo_interno ?? '';
             suggestionsBox.style.display = 'none';
+            aplicarRestricaoQuantidade(!!produto.unidade_fracionaria);
+            autoPreencherLocal(produto.estoques_locais);
             preencherValorAutomatico();
         }
 
@@ -323,6 +362,7 @@
         codigoInput.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                event.stopPropagation();
                 buscarPorCodigo();
             }
         });
@@ -343,6 +383,18 @@
 
         // Submit só habilita depois de adicionar ao menos uma linha
         const submitButton = document.querySelector('form.edit-form button[type="submit"]');
+        const editForm = document.querySelector('form.edit-form');
+
+        // Enter em qualquer campo da linha tenta adicionar o produto em vez de
+        // submeter o formulário (e perder a linha em digitação)
+        if (editForm) {
+            editForm.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && event.target !== submitButton) {
+                    event.preventDefault();
+                    addProductButton.click();
+                }
+            });
+        }
         function atualizarEstadoSubmit() {
             const temLinhas = productTableBody.querySelectorAll('input[name^="movimentacoes["]').length > 0;
             if (submitButton) {
@@ -385,8 +437,15 @@
                 }
             }
 
-            if (!quantidadeInput.value.trim() || parseFloat(quantidadeInput.value) <= 0) {
-                messages.push('Quantidade deve ser maior que zero.');
+            const fracionaria = quantidadeInput.dataset.fracionaria === '1';
+            const formatoValido = fracionaria
+                ? /^\d+(\.\d{1,2})?$/.test(quantidadeInput.value.trim())
+                : /^\d+$/.test(quantidadeInput.value.trim());
+
+            if (!formatoValido || parseFloat(quantidadeInput.value) <= 0) {
+                messages.push(fracionaria
+                    ? 'Quantidade inválida — use um número maior que zero (ex.: 1.5).'
+                    : 'Quantidade inválida — este produto só aceita números inteiros maiores que zero.');
                 quantidadeInput.classList.add('missing-to-checkin', 'zoom-in');
                 if (!firstInvalidField) firstInvalidField = quantidadeInput;
             }
@@ -440,7 +499,8 @@
             delete produtoIdInput.dataset.precoCusto;
             delete produtoIdInput.dataset.precoVenda;
             codigoInput.value = '';
-            quantidadeInput.value = '1.00';
+            quantidadeInput.value = '1';
+            quantidadeInput.dataset.fracionaria = '0';
             if (valorUnitarioInput) valorUnitarioInput.value = '';
             justificativaInput.value = '';
 

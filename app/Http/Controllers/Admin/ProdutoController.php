@@ -156,16 +156,25 @@ class ProdutoController extends Controller
                 // Restringe a produtos com registro de estoque no local (saída/perda/transferência)
                 $q->whereHas('estoques', fn ($e) => $e->where('local_estoque_id', $localId));
             })
+            ->with(['estoques' => fn ($e) => $e->where('quantidade', '>', 0)->with('localEstoque:id,nome,parent_id')])
             ->orderBy('descricao')
             ->limit(20)
             ->get(['id', 'descricao', 'unidade', 'codigo_interno', 'preco_custo', 'preco_venda']);
-    
+
         // Map unit codes to full names
         $unidades = Produto::UNIDADES;
-    
+
         // Add full unit name to each product
         $produtos->transform(function ($produto) use ($unidades) {
             $produto->unidade_nome = $unidades[$produto->unidade] ?? $produto->unidade;
+            $produto->unidade_fracionaria = $produto->permiteFracionado();
+            $produto->estoques_locais = $produto->estoques->map(fn ($e) => [
+                'local_estoque_id' => $e->local_estoque_id,
+                'local_estoque_nome' => $e->localEstoque->nome ?? '',
+                'local_estoque_parent_id' => $e->localEstoque->parent_id ?? null,
+                'quantidade' => $e->quantidade,
+            ])->values();
+            unset($produto->estoques);
             return $produto;
         });
     
