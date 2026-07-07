@@ -80,8 +80,8 @@
                             <tr>
                                 <th>Movimentação</th>
                                 @if (!$transferencia)
+                                    <th>Local Estoque</th>
                                     <th>Categoria</th>
-                                    <th>Sub-local</th>
                                 @else
                                     <th>Estoque Origem</th>
                                     <th>Estoque Destino</th>
@@ -123,18 +123,18 @@
                                 @else
                                     <td>
                                         <select id="origem_categoria" class="form-control select-categoria select-local" data-sub="#estoque_origem_id">
-                                            <option value="">Categoria...</option>
+                                            <option value="">Local Estoque...</option>
                                         </select>
                                         <select name="estoque_origem_id" id="estoque_origem_id" class="form-control select-local" disabled>
-                                            <option value="">Sub-local...</option>
+                                            <option value="">Categoria...</option>
                                         </select>
                                     </td>
                                     <td>
                                         <select id="destino_categoria" class="form-control select-categoria select-local" data-sub="#estoque_destino_id">
-                                            <option value="">Categoria...</option>
+                                            <option value="">Local Estoque...</option>
                                         </select>
                                         <select name="estoque_destino_id" id="estoque_destino_id" class="form-control select-local" disabled>
-                                            <option value="">Sub-local...</option>
+                                            <option value="">Categoria...</option>
                                         </select>
                                     </td>
                                 @endif
