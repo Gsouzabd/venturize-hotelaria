@@ -261,6 +261,8 @@
         });
 
         // ----- Auto-preenchimento do local quando o produto tem estoque em 1 único local -----
+        let suprimirAutoBusca = false;
+
         function autoPreencherLocal(estoquesLocais) {
             if (transferencia || !estoquesLocais || estoquesLocais.length !== 1) return;
 
@@ -270,9 +272,11 @@
             if (!catSelect || !subSelect) return;
 
             const parentId = unico.local_estoque_parent_id ?? unico.local_estoque_id;
+            suprimirAutoBusca = true;
             catSelect.value = parentId;
             catSelect.dispatchEvent(new Event('change'));
             subSelect.value = unico.local_estoque_id;
+            suprimirAutoBusca = false;
         }
 
         function selecionarProduto(produto) {
@@ -350,7 +354,9 @@
         ['local_categoria', 'local_estoque_id', 'origem_categoria', 'estoque_origem_id', 'tipo_movimento']
             .forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.addEventListener('change', atualizarSugestoes);
+                if (el) el.addEventListener('change', function () {
+                    if (!suprimirAutoBusca) atualizarSugestoes();
+                });
             });
 
         // Busca por código interno exato (Enter ou ao sair do campo)
