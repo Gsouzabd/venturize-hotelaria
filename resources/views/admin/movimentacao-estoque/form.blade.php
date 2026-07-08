@@ -314,8 +314,8 @@
                 .catch(error => console.error('Fetch error:', error));
         }
 
-        produtoDescricaoInput.addEventListener('input', function () {
-            const query = this.value;
+        function atualizarSugestoes() {
+            const query = produtoDescricaoInput.value;
 
             if (query.length < 2) {
                 suggestionsBox.style.display = 'none';
@@ -340,7 +340,18 @@
                 }
                 suggestionsBox.style.display = 'block';
             });
-        });
+        }
+
+        produtoDescricaoInput.addEventListener('input', atualizarSugestoes);
+
+        // Se o usuário já digitou algo e só depois muda o local/tipo de movimento,
+        // a busca precisa ser refeita — senão a lista de sugestões fica com o
+        // resultado antigo (sem considerar o local recém-selecionado).
+        ['local_categoria', 'local_estoque_id', 'origem_categoria', 'estoque_origem_id', 'tipo_movimento']
+            .forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', atualizarSugestoes);
+            });
 
         // Busca por código interno exato (Enter ou ao sair do campo)
         function buscarPorCodigo() {
