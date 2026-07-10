@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 
 class SyncPrinters extends Command
 {
@@ -32,55 +32,66 @@ class SyncPrinters extends Command
         $this->info('🔄 Sincronizando impressoras...');
 
         // Determinar URL da API
-        $apiUrl = $this->option('api-url') 
-            ?: config('app.url') . '/api/print/impressoras';
+        $apiUrl = $this->option('api-url')
+            ?: config('app.url').'/api/print/impressoras';
 
-        // Determinar caminho do arquivo
-        $defaultPath = base_path('printingAgent/Agentimpressao/Agentimpressao/src/config/printers.json');
+        // Determinar caminho do arquivo (só para inspeção/debug local — o PrintingAgent
+        // real roda em outra máquina e lê seu próprio printers.json via /api/print/impressoras
+        // ou via o Sincronizador de Impressoras do próprio agente, não a partir deste arquivo)
+        $defaultPath = storage_path('app/printers-sync-debug.json');
         $printersJsonPath = $this->option('path') ?: $defaultPath;
 
         $this->line("   API URL: $apiUrl");
         $this->line("   Arquivo: $printersJsonPath");
+        $this->warn('   Nota: este arquivo é só para inspeção local. O PrintingAgent lê seu próprio printers.json na máquina onde roda.');
 
         // Buscar impressoras da API
         try {
-            $response = Http::timeout(10)->get($apiUrl);
-            
-            if (!$response->successful()) {
-                $this->error("❌ Erro ao buscar impressoras. Código HTTP: " . $response->status());
+            $token = config('services.print_agent.token');
+            $response = Http::timeout(10)
+                ->when($token, fn ($http) => $http->withHeaders(['X-Print-Agent-Token' => $token]))
+                ->get($apiUrl);
+
+            if (! $response->successful()) {
+                $this->error('❌ Erro ao buscar impressoras. Código HTTP: '.$response->status());
+
                 return Command::FAILURE;
             }
 
             $data = $response->json();
 
-            if (!isset($data['success']) || !$data['success']) {
+            if (! isset($data['success']) || ! $data['success']) {
                 $message = $data['message'] ?? 'Erro desconhecido';
                 $this->error("❌ Erro na API: $message");
+
                 return Command::FAILURE;
             }
 
-            if (empty($data['printers'])) {
-                $this->warn("⚠️  Nenhuma impressora encontrada na API.");
-                $this->line("   Verifique se há impressoras ativas no painel admin.");
-                
+            // A API padroniza o envelope de resposta em `data` (antes era `printers`)
+            $listaImpressoras = $data['data'] ?? $data['printers'] ?? [];
+
+            if (empty($listaImpressoras)) {
+                $this->warn('⚠️  Nenhuma impressora encontrada na API.');
+                $this->line('   Verifique se há impressoras ativas no painel admin.');
+
                 // Criar arquivo vazio
                 $printersData = ['printers' => []];
             } else {
                 // Formatar dados
                 $printersData = [
-                    'printers' => array_map(function($printer) {
+                    'printers' => array_map(function ($printer) {
                         return [
                             'name' => $printer['name'] ?? 'Impressora',
                             'ip' => $printer['ip'] ?? '127.0.0.1',
-                            'port' => $printer['port'] ?? 9100
+                            'port' => $printer['port'] ?? 9100,
                         ];
-                    }, $data['printers'])
+                    }, $listaImpressoras),
                 ];
             }
 
             // Garantir que o diretório existe
             $directory = dirname($printersJsonPath);
-            if (!File::exists($directory)) {
+            if (! File::exists($directory)) {
                 File::makeDirectory($directory, 0755, true);
             }
 
@@ -88,11 +99,11 @@ class SyncPrinters extends Command
             $jsonContent = json_encode($printersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             File::put($printersJsonPath, $jsonContent);
 
-            $this->info("✅ Impressoras sincronizadas com sucesso!");
+            $this->info('✅ Impressoras sincronizadas com sucesso!');
             $this->newLine();
-            
-            if (!empty($printersData['printers'])) {
-                $this->line("📋 Impressoras configuradas (" . count($printersData['printers']) . "):");
+
+            if (! empty($printersData['printers'])) {
+                $this->line('📋 Impressoras configuradas ('.count($printersData['printers']).'):');
                 foreach ($printersData['printers'] as $index => $printer) {
                     $num = $index + 1;
                     $this->line("   $num. {$printer['name']} - {$printer['ip']}:{$printer['port']}");
@@ -102,7 +113,8 @@ class SyncPrinters extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error("❌ Erro ao sincronizar: " . $e->getMessage());
+            $this->error('❌ Erro ao sincronizar: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

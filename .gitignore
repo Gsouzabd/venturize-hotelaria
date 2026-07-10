@@ -19,15 +19,6 @@ yarn-error.log
 /.idea
 /.vscode
 
-# Arquivos grandes do printing agent
-/printingAgent/**/*.exe
-/printingAgent/**/*.zip
-/printingAgent/Agentimpressao.zip
-/printingAgent/printing-agent.exe
-/printingAgent/**/printing-agent.exe
-/printingAgent/**/service-manager.exe
-/printingAgent/**/setup-printers.exe
-
 # MCP config (contém tokens de API)
 .mcp.json
 venturize-hotelaria.zip
