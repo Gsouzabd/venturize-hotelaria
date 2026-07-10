@@ -35,7 +35,14 @@ class BarHomeController extends Controller
 
         $quartos = Quarto::all();
 
-        $reservas = Reserva::where('situacao_reserva' , 'HOSPEDADO')->get();
+        $hoje = Carbon::today();
+        $reservas = Reserva::where('situacao_reserva', 'HOSPEDADO')
+            ->orWhere(function ($query) use ($hoje) {
+                $query->where('tipo_reserva', 'DAY_USE')
+                    ->where('situacao_reserva', '!=', 'CANCELADA')
+                    ->whereDate('data_checkin', $hoje);
+            })
+            ->get();
 
         // dd($statusMesaNoDia);
 

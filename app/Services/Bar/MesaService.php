@@ -49,7 +49,14 @@ class MesaService {
     {
         // Encontrar a mesa pelo ID
         $mesa = Mesa::find($data['mesa_id']);
-        $reserva = Reserva::find($data['reserva_id']);  
+        $reserva = Reserva::find($data['reserva_id']);
+
+        if (!$mesa) {
+            return "Mesa não encontrada";
+        }
+        if (!$reserva) {
+            return "Reserva não encontrada";
+        }
 
         // Verificar se a mesa está disponível
         if (strtolower($mesa->status) === 'disponível') {
