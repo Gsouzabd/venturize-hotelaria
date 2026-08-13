@@ -116,6 +116,12 @@ class MovimentacaoEstoqueService
 
         $estoque->save();
 
+        // Valor unitário de saída/perda nunca é digitável: sempre o preço de venda
+        // cadastrado no produto (ou custo, se não houver preço de venda). Qualquer
+        // valor_unitario vindo do request é ignorado aqui.
+        $produto = Produto::find($movimentacao['produto_id']);
+        $valorUnitarioVenda = $produto ? ($produto->preco_venda ?? $produto->preco_custo) : null;
+
         // Registrar a movimentação
         MovimentacaoEstoque::create([
             'produto_id' => $movimentacao['produto_id'],
@@ -124,7 +130,7 @@ class MovimentacaoEstoqueService
             'tipo' => $tipo,
             'usuario_id' => Auth::id(),
             'data_movimentacao' => now(),
-            'valor_unitario_venda' => $this->normalizarDecimal($movimentacao['valor_unitario'] ?? null),
+            'valor_unitario_venda' => $valorUnitarioVenda,
             'justificativa' => $movimentacao['justificativa'] ?? null,
         ]);
     }

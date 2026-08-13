@@ -103,9 +103,13 @@
                                         <input type="text" class="form-control" id="tipo_movimento" name="tipo_movimento" value="Transferência" readonly>
                                     @else
                                         <select class="form-control" id="tipo_movimento" name="tipo_movimento">
-                                            <option value="entrada" selected>Entrada</option>
-                                            <option value="saida">Saída</option>
-                                            <option value="perda">Perda</option>
+                                            @canany(['estoque_entrada', 'gerenciar_estoque'])
+                                                <option value="entrada" selected>Entrada</option>
+                                            @endcanany
+                                            @canany(['estoque_saida', 'gerenciar_estoque'])
+                                                <option value="saida">Saída</option>
+                                                <option value="perda">Perda</option>
+                                            @endcanany
                                         </select>
                                     @endif
                                 </td>

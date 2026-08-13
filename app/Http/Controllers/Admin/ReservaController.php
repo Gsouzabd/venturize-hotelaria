@@ -1,32 +1,32 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReservaRequest;
+use App\Models\Bar\Pedido;
+use App\Models\CheckIn;
+use App\Models\CheckOut;
+use App\Models\Cliente;
+use App\Models\Pagamento;
+use App\Models\Quarto;
+use App\Models\Reserva;
+use App\Models\Usuario;
+use App\Services\PagamentoService;
+use App\Services\ReservaService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use App\Models\Quarto;
-use App\Models\CheckIn;
-use App\Models\Cliente;
-use App\Models\Produto;
-use App\Models\Reserva;
-use App\Models\Usuario;
-use App\Models\Categoria;
-use App\Models\Pagamento;
-use App\Models\Bar\Pedido;
-use Termwind\Components\Dd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Services\ReservaService;
-use App\Services\PagamentoService;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ReservaRequest;
-use App\Models\Bar\ItemPedido;
-use App\Models\CheckOut;
+use Termwind\Components\Dd;
 
 class ReservaController extends Controller
 {
     protected $reservaService;
+
     protected $model;
+
     protected $pagamentoService;
 
     public function __construct(ReservaService $reservaService, Reserva $model, PagamentoService $pagamentoService)
@@ -62,6 +62,7 @@ class ReservaController extends Controller
             $criancasMais7 = (int) $request->input('criancas_mais_7', 0);
             $comCafe = filter_var($request->input('com_cafe'), FILTER_VALIDATE_BOOLEAN);
             $total = $this->reservaService->calcularTotalDayUse($dataUso, $adultos, $criancasAte7, $criancasMais7, $comCafe);
+
             return response()->json(['total' => round($total, 2)]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage(), 'total' => 0], 422);
@@ -85,13 +86,13 @@ class ReservaController extends Controller
         if (Route::currentRouteName() === 'admin.reservas.day-use') {
             $filters['tipo_reserva'] = 'DAY_USE';
         }
-    
+
         $query = $this->model->newQuery();
-    
+
         if ($filters['cliente_id']) {
             $query->where('cliente_id', $filters['cliente_id']);
         }
-    
+
         if ($filters['quarto_id']) {
             $query->where('quarto_id', $filters['quarto_id']);
         }
@@ -103,43 +104,41 @@ class ReservaController extends Controller
         if ($filters['data_checkin']) {
             $filters['data_checkin'] = Carbon::createFromFormat('d/m/Y', $filters['data_checkin'])->format('Y-m-d');
         }
-    
+
         if ($filters['data_checkout']) {
             $filters['data_checkout'] = Carbon::createFromFormat('d/m/Y', $filters['data_checkout'])->format('Y-m-d');
         }
-    
+
         if ($filters['created_at']) {
             $filters['created_at'] = Carbon::createFromFormat('d/m/Y', $filters['created_at'])->format('Y-m-d');
         }
-    
+
         if ($filters['data_checkin'] && $filters['data_checkout']) {
             $query->where(function ($query) use ($filters) {
                 $query->where(function ($query) use ($filters) {
                     $query->whereDate('data_checkin', '>=', $filters['data_checkin'])
-                          ->whereDate('data_checkin', '<=', $filters['data_checkout']);
+                        ->whereDate('data_checkin', '<=', $filters['data_checkout']);
                 })->orWhere(function ($query) use ($filters) {
                     $query->whereDate('data_checkout', '>=', $filters['data_checkin'])
-                          ->whereDate('data_checkout', '<=', $filters['data_checkout']);
+                        ->whereDate('data_checkout', '<=', $filters['data_checkout']);
                 });
             });
         }
-        
+
         if ($filters['created_at']) {
             $query->whereDate('created_at', $filters['created_at']);
         }
-        
+
         if ($filters['operador_id']) {
             $query->where('usuario_operador_id', $filters['operador_id']);
         }
-    
-            
-        
+
         $reservas = $query
             ->orderBy('id', 'desc')
             ->paginate(config('app.rows_per_page'));
 
         // Deixando as datas no formato dd/mm/YYYY
-        
+
         if ($filters['data_checkin']) {
             $filters['data_checkin'] = Carbon::createFromFormat('Y-m-d', $filters['data_checkin'])->format('d-m-Y');
         }
@@ -151,12 +150,12 @@ class ReservaController extends Controller
         if ($filters['created_at']) {
             $filters['created_at'] = Carbon::createFromFormat('Y-m-d', $filters['created_at'])->format('d-m-Y');
         }
-        
+
         // Pegando os quartos, clientes e operadores para os filtros
         $quartos = Quarto::pluck('numero', 'id')->toArray();
         $clientes = Cliente::pluck('nome', 'id')->toArray();
         $operadores = Usuario::pluck('nome', 'id')->toArray(); // Supondo que os operadores são usuários
-        
+
         // Passando os dados para a view
         return view('admin.reservas.list', compact('reservas', 'filters', 'quartos', 'clientes', 'operadores'));
     }
@@ -167,36 +166,35 @@ class ReservaController extends Controller
 
         // Validação e filtragem dos parâmetros
         $dataInicial = $request->input('data_inicial')
-        ? Carbon::parse($request->input('data_inicial'))->startOfWeek() 
+        ? Carbon::parse($request->input('data_inicial'))->startOfWeek()
         : Carbon::today();
         $intervaloDias = $request->input('intervalo', 30); // Intervalo padrão de 30 dias
         $intervaloDias = in_array($intervaloDias, [7, 15, 30, 60]) ? $intervaloDias : 30; // Verificação de intervalo
-    
+
         // Data final com base no intervalo fornecido
         $dataFinal = $dataInicial->copy()->addDays($intervaloDias - 1); // -1 para garantir que o último dia seja incluído
-    
 
         // Buscar reservas dentro do intervalo
         $reservas = Reserva::with(['clienteSolicitante', 'quarto'])
             ->where(function ($query) use ($dataInicial, $dataFinal) {
                 $query->whereBetween('data_checkin', [$dataInicial, $dataFinal]) // Chegada dentro do intervalo
-                      ->orWhereBetween('data_checkout', [$dataInicial, $dataFinal])  // Saída dentro do intervalo
-                      ->orWhere(function ($q) use ($dataInicial, $dataFinal) {
-                          $q->where('data_checkin', '<=', $dataInicial)           // Chegada antes ou no início do intervalo
+                    ->orWhereBetween('data_checkout', [$dataInicial, $dataFinal])  // Saída dentro do intervalo
+                    ->orWhere(function ($q) use ($dataInicial, $dataFinal) {
+                        $q->where('data_checkin', '<=', $dataInicial)           // Chegada antes ou no início do intervalo
                             ->where('data_checkout', '>=', $dataFinal);             // Saída depois ou no final do intervalo
-                      });
+                    });
             })
             ->get();
 
-    
         // Buscar todos os quartos
         $quartos = Quarto::all();
 
         // dd($reservas, $quartos, $dataInicial, $intervaloDias, $dataFinal);
-    
+
         // Retornar a view com as variáveis necessárias
         return view('admin.reservas.mapa', compact('reservas', 'quartos', 'dataInicial', 'intervaloDias', 'dataFinal'));
     }
+
     public function edit($id = null)
     {
         $this->authorize('gerenciar_reservas');
@@ -209,31 +207,29 @@ class ReservaController extends Controller
 
         $metodosPagamento = Pagamento::METODOS_PAGAMENTO;
 
-
         $totalCheckout = $reserva->total;
         // var_dump($totalCheckout);
         $totalPedido = 0;
         $totalTaxaServicoConsumo = 0;
-        if($reserva->pedidos()->count() > 0) {
+        if ($reserva->pedidos()->count() > 0) {
             foreach ($reserva->pedidos as $pedido) {
                 $totalPedido += floatval($pedido->total);
                 $totalTaxaServicoConsumo += $pedido->remover_taxa == false ? floatval($pedido->taxa_servico) : 0;
             }
-            if($reserva->remover_taxa_servico == 1){
+            if ($reserva->remover_taxa_servico == 1) {
                 $totalTaxaServicoConsumo = 0;
             }
-            $totalCheckout = floatval( $totalCheckout + $totalPedido + $totalTaxaServicoConsumo );
+            $totalCheckout = floatval($totalCheckout + $totalPedido + $totalTaxaServicoConsumo);
             $totalCheckout = number_format($totalCheckout, 2, ',', '.');
         }
 
         $totalConsumo = $totalPedido;
         // dd($totalPedido, $totalTaxaServicoConsumo, $totalCheckout);
-        
 
         $pedido = $reserva->pedidos()->where('pedido_apartamento', 1)->first();
         // dd($pedido);
-        if($edit){
-            if (!$pedido) {
+        if ($edit) {
+            if (! $pedido) {
                 $pedido = Pedido::create([
                     'reserva_id' => $reserva->id,
                     'cliente_id' => $reserva->clienteResponsavel->id ?? $reserva->clienteSolicitante->id,
@@ -245,9 +241,8 @@ class ReservaController extends Controller
             }
         }
 
- 
         return view('admin.reservas.form', compact('reserva', 'edit', 'clientes', 'quartos', 'operadores',
-         'metodosPagamento', 'totalCheckout', 'pedido', 'totalConsumo', 'totalTaxaServicoConsumo'));
+            'metodosPagamento', 'totalCheckout', 'pedido', 'totalConsumo', 'totalTaxaServicoConsumo'));
     }
 
     public function save(ReservaRequest $request)
@@ -256,35 +251,25 @@ class ReservaController extends Controller
 
         // dd($request->all());
         $data = $request->all();
-        
+
         // Cria ou atualiza a(s) reserva(s)
         $reservas = $this->reservaService->criarOuAtualizarReserva($data);
-        
+
         // Salva os pagamentos de cada reserva
         try {
             foreach ($reservas as $reserva) {
+                $statusPagamento = $data['status_pagamento'] ?? null;
+
                 if ($reserva->tipo_reserva === 'DAY_USE') {
                     // Day Use: pagamento em estrutura plana (valores_recebidos[], metodos_pagamento[], etc.)
                     $valoresRecebidos = $data['valores_recebidos'] ?? [];
                     $metodosPagamento = $data['metodos_pagamento'] ?? [];
                     $submetodosPagamento = $data['submetodos_pagamento'] ?? [];
                     $observacoesPagamento = $data['observacoes_pagamento'] ?? [];
+                    $datasPagamento = $data['data_pagamento'] ?? [];
 
-                    $pagamentos = [];
-                    $valorPago = 0;
-                    foreach ($valoresRecebidos as $index => $valor) {
-                        $metodoPagamento = $metodosPagamento[$index] ?? null;
-                        $submetodoPagamento = $submetodosPagamento[$index] ?? null;
-                        $observacaoPagamento = $observacoesPagamento[$index] ?? null;
-                        $key = "{$metodoPagamento}-{$submetodoPagamento}-{$observacaoPagamento}";
-                        if (!isset($pagamentos[$key])) {
-                            $pagamentos[$key] = 0;
-                        }
-                        $pagamentos[$key] += $valor;
-                        $valorPago += $valor;
-                    }
-                    $pagamentosJson = json_encode($pagamentos);
-                    $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                    $pagamentos = $this->montarPagamentos($valoresRecebidos, $metodosPagamento, $submetodosPagamento, $observacoesPagamento, $datasPagamento);
+                    $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentos, $reserva->total, $statusPagamento);
                 } else {
                     $quartoId = $reserva->quarto_id;
                     if (isset($data['quartos'][$quartoId])) {
@@ -294,22 +279,10 @@ class ReservaController extends Controller
                         $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
                         $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
                         $observacoesPagamento = $quartoData['observacoes_pagamento'] ?? [];
+                        $datasPagamento = $quartoData['data_pagamento'] ?? [];
 
-                        $pagamentos = [];
-                        $valorPago = 0;
-                        foreach ($valoresRecebidos as $index => $valor) {
-                            $metodoPagamento = $metodosPagamento[$index] ?? null;
-                            $submetodoPagamento = $submetodosPagamento[$index] ?? null;
-                            $observacaoPagamento = $observacoesPagamento[$index] ?? null;
-                            $key = "{$metodoPagamento}-{$submetodoPagamento}-{$observacaoPagamento}";
-                            if (!isset($pagamentos[$key])) {
-                                $pagamentos[$key] = 0;
-                            }
-                            $pagamentos[$key] += $valor;
-                            $valorPago += $valor;
-                        }
-                        $pagamentosJson = json_encode($pagamentos);
-                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                        $pagamentos = $this->montarPagamentos($valoresRecebidos, $metodosPagamento, $submetodosPagamento, $observacoesPagamento, $datasPagamento);
+                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentos, $reserva->total, $statusPagamento);
                     }
                 }
             }
@@ -320,14 +293,14 @@ class ReservaController extends Controller
 
                 // dd($data);
                 $situacao_reserva = $data['confirmCheckout'] ? 'FINALIZADO' : $data['situacao_reserva'];
-    
+
                 $this->updateSituacaoReserva($reserva->id, $situacao_reserva);
             }
 
         } catch (\Exception $e) {
             dd($e->getMessage());
         }
-        
+
         $reservaId = $request->get('reserva_id');
         if ($reservaId) {
             return redirect()
@@ -336,8 +309,8 @@ class ReservaController extends Controller
         }
 
         return redirect()
-                    ->route('admin.reservas.mapa')
-                    ->with('notice', config('app.messages.insert'));
+            ->route('admin.reservas.mapa')
+            ->with('notice', config('app.messages.insert'));
     }
 
     public function destroy($id)
@@ -351,9 +324,8 @@ class ReservaController extends Controller
             ->route('admin.reservas.index')
             ->with('notice', config('app.messages.delete'));
     }
-    
-    
-    function updateSituacaoReserva($id, $situacao_reserva)
+
+    public function updateSituacaoReserva($id, $situacao_reserva)
     {
         $this->authorize('gerenciar_reservas');
 
@@ -361,27 +333,26 @@ class ReservaController extends Controller
             $reserva = $this->model->findOrFail($id);
             $reserva->situacao_reserva = $situacao_reserva;
             $reserva->save();
-    
+
             if ($situacao_reserva && $situacao_reserva != 'FINALIZADO') {
                 CheckIn::updateOrCreate(
                     ['reserva_id' => $reserva->id],
                     ['checkin_at' => Carbon::now('America/Sao_Paulo')]
                 );
-            }
-            else if ($situacao_reserva == 'FINALIZADO') {
+            } elseif ($situacao_reserva == 'FINALIZADO') {
                 CheckOut::updateOrCreate(
                     ['reserva_id' => $reserva->id],
                     ['checkout_at' => Carbon::now('America/Sao_Paulo')]
                 );
             }
-    
+
             return redirect()
                 ->route('admin.reservas.edit', ['id' => $reserva->id])
                 ->with('notice', 'Situação da reserva atualizada com sucesso.');
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.reservas.edit', ['id' => $id])
-                ->with('error', 'Erro ao atualizar a situação da reserva: ' . $e->getMessage());
+                ->with('error', 'Erro ao atualizar a situação da reserva: '.$e->getMessage());
         }
     }
 
@@ -402,33 +373,33 @@ class ReservaController extends Controller
 
         $totalConsumo = $reserva->pedidos->sum('total');
         // dd($reserva->pedidos);
-        $totalTaxaServicoConsumoConsumo = $reserva->pedidos->filter(function($pedido) {
+        $totalTaxaServicoConsumoConsumo = $reserva->pedidos->filter(function ($pedido) {
             return $pedido->remover_taxa == 0;
         })->sum('taxa_servico');
 
         // dd($totalTaxaServicoConsumoConsumo);
 
-        if($reserva->remover_taxa_servico == 1){
+        if ($reserva->remover_taxa_servico == 1) {
             $totalTaxaServicoConsumoConsumo = 'Cliente optou por remover';
         }
 
         // dd($reserva->remover_taxa);
-        $itensConsumidos = $reserva->pedidos->flatMap(function($pedido) {
-            return $pedido->itens->map(function($item) {
+        $itensConsumidos = $reserva->pedidos->flatMap(function ($pedido) {
+            return $pedido->itens->map(function ($item) {
                 return [
                     'produto' => $item->produto->descricao,
                     'quantidade' => $item->quantidade,
                     'valor_unitario' => $item->preco,
                     'total' => $item->quantidade * $item->preco,
                     'data_adicao' => $item->created_at,
-                    'pedido' => $item->pedido
+                    'pedido' => $item->pedido,
                 ];
             });
         });
 
         // dd($itensConsumidos);
 
-        $pdfOptions = new Options();
+        $pdfOptions = new Options;
         $pdfOptions->set('defaultFont', 'Courier');
         $dompdf = new Dompdf($pdfOptions);
 
@@ -439,7 +410,6 @@ class ReservaController extends Controller
 
         return $dompdf->stream('extrato_reserva.pdf');
     }
-
 
     public function removerTaxaServico($id)
     {
@@ -457,26 +427,26 @@ class ReservaController extends Controller
         $this->authorize('gerenciar_reservas');
 
         $request->validate([
-            'quarto_id'    => 'required|integer|exists:quartos,id',
+            'quarto_id' => 'required|integer|exists:quartos,id',
             'data_checkin' => 'required|date',
-            'data_checkout'=> 'required|date|after:data_checkin',
+            'data_checkout' => 'required|date|after:data_checkin',
         ]);
 
-        $reserva     = Reserva::findOrFail($id);
-        $quartoId    = $request->input('quarto_id');
+        $reserva = Reserva::findOrFail($id);
+        $quartoId = $request->input('quarto_id');
         $dataCheckin = $request->input('data_checkin');
-        $dataCheckout= $request->input('data_checkout');
+        $dataCheckout = $request->input('data_checkout');
 
         $conflito = Reserva::where('quarto_id', $quartoId)
             ->where('id', '!=', $id)
             ->where('situacao_reserva', '!=', 'CANCELADA')
             ->where(function ($q) use ($dataCheckin, $dataCheckout) {
                 $q->whereBetween('data_checkin', [$dataCheckin, $dataCheckout])
-                  ->orWhereBetween('data_checkout', [$dataCheckin, $dataCheckout])
-                  ->orWhere(function ($q) use ($dataCheckin, $dataCheckout) {
-                      $q->where('data_checkin', '<', $dataCheckin)
-                        ->where('data_checkout', '>', $dataCheckout);
-                  });
+                    ->orWhereBetween('data_checkout', [$dataCheckin, $dataCheckout])
+                    ->orWhere(function ($q) use ($dataCheckin, $dataCheckout) {
+                        $q->where('data_checkin', '<', $dataCheckin)
+                            ->where('data_checkout', '>', $dataCheckout);
+                    });
             })
             ->exists();
 
@@ -484,9 +454,9 @@ class ReservaController extends Controller
             return response()->json(['success' => false, 'message' => 'Quarto não disponível para as datas selecionadas.'], 409);
         }
 
-        $reserva->quarto_id    = $quartoId;
+        $reserva->quarto_id = $quartoId;
         $reserva->data_checkin = $dataCheckin;
-        $reserva->data_checkout= $dataCheckout;
+        $reserva->data_checkout = $dataCheckout;
         $reserva->save();
 
         return response()->json(['success' => true]);
@@ -497,12 +467,12 @@ class ReservaController extends Controller
         $this->authorize('gerenciar_reservas');
 
         $request->validate([
-            'quarto_id'          => 'required|integer|exists:quartos,id',
+            'quarto_id' => 'required|integer|exists:quartos,id',
             'data_transferencia' => 'required|string',
         ]);
 
-        $reserva          = Reserva::findOrFail($id);
-        $novoQuartoId     = $request->input('quarto_id');
+        $reserva = Reserva::findOrFail($id);
+        $novoQuartoId = $request->input('quarto_id');
         $dataTransferenciaInput = trim((string) $request->input('data_transferencia'));
         $dataTransferencia = null;
         foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $format) {
@@ -514,7 +484,7 @@ class ReservaController extends Controller
             }
         }
 
-        if (!$dataTransferencia) {
+        if (! $dataTransferencia) {
             return redirect()->back()->with('error', 'O campo data transferência não é uma data válida.');
         }
 
@@ -544,11 +514,11 @@ class ReservaController extends Controller
             ->where('situacao_reserva', '!=', 'CANCELADA')
             ->where(function ($q) use ($novoCheckin, $novoCheckout) {
                 $q->whereBetween('data_checkin', [$novoCheckin, $novoCheckout])
-                  ->orWhereBetween('data_checkout', [$novoCheckin, $novoCheckout])
-                  ->orWhere(function ($q) use ($novoCheckin, $novoCheckout) {
-                      $q->where('data_checkin', '<', $novoCheckin)
-                        ->where('data_checkout', '>', $novoCheckout);
-                  });
+                    ->orWhereBetween('data_checkout', [$novoCheckin, $novoCheckout])
+                    ->orWhere(function ($q) use ($novoCheckin, $novoCheckout) {
+                        $q->where('data_checkin', '<', $novoCheckin)
+                            ->where('data_checkout', '>', $novoCheckout);
+                    });
             })
             ->exists();
 
@@ -557,7 +527,7 @@ class ReservaController extends Controller
         }
 
         $novoQuarto = Quarto::find($novoQuartoId);
-        $reserva->quarto_id    = $novoQuartoId;
+        $reserva->quarto_id = $novoQuartoId;
         $reserva->data_checkin = $novoCheckin->format('Y-m-d H:i:s');
         $reserva->data_checkout = $novoCheckout->format('Y-m-d H:i:s');
 
@@ -566,7 +536,7 @@ class ReservaController extends Controller
         $isCartList = is_array($cart) && isset($cart[0]) && is_array($cart[0]);
         $cartItem = $isCartList ? $cart[0] : (is_array($cart) ? $cart : []);
 
-        if (is_array($cartItem) && !empty($cartItem)) {
+        if (is_array($cartItem) && ! empty($cartItem)) {
             $cartItem['quartoId'] = (string) $novoQuartoId;
             $cartItem['quartoNumero'] = (string) ($novoQuarto->numero ?? ($cartItem['quartoNumero'] ?? ''));
             $cartItem['quartoAndar'] = (string) ($novoQuarto->andar ?? ($cartItem['quartoAndar'] ?? ''));
@@ -579,7 +549,7 @@ class ReservaController extends Controller
         $reserva->save();
 
         return redirect()
-            ->to(route('admin.reservas.edit', ['id' => $id]) . '#transferencia')
+            ->to(route('admin.reservas.edit', ['id' => $id]).'#transferencia')
             ->with('notice', 'Transferência realizada com sucesso.');
     }
 
@@ -590,12 +560,12 @@ class ReservaController extends Controller
         $reserva = Reserva::findOrFail($id);
 
         $request->validate([
-            'nome'           => 'required|string|max:255',
-            'cpf'            => 'nullable|string|max:20',
-            'tipo'           => 'required|in:Adulto,Criança 8 a 12 anos,Criança até 7 anos',
-            'data_nascimento'=> 'nullable|date',
-            'email'          => 'nullable|email|max:255',
-            'telefone'       => 'nullable|string|max:20',
+            'nome' => 'required|string|max:255',
+            'cpf' => 'nullable|string|max:20',
+            'tipo' => 'required|in:Adulto,Criança 8 a 12 anos,Criança até 7 anos',
+            'data_nascimento' => 'nullable|date',
+            'email' => 'nullable|email|max:255',
+            'telefone' => 'nullable|string|max:20',
         ]);
 
         // Tenta vincular a um cliente existente (por ID direto, CPF ou cria um novo)
@@ -609,16 +579,16 @@ class ReservaController extends Controller
                 ->first();
 
             $dadosAcompanhante = [
-                'nome'            => $request->nome,
-                'email'           => $request->email,
-                'telefone'        => $request->telefone,
+                'nome' => $request->nome,
+                'email' => $request->email,
+                'telefone' => $request->telefone,
                 'data_nascimento' => $request->data_nascimento,
             ];
 
             if ($cliente) {
                 // Preenche apenas campos vazios para não sobrescrever dados completos do cliente
                 foreach ($dadosAcompanhante as $campo => $valor) {
-                    if (!empty($valor) && empty($cliente->{$campo})) {
+                    if (! empty($valor) && empty($cliente->{$campo})) {
                         $cliente->{$campo} = $valor;
                     }
                 }
@@ -628,7 +598,7 @@ class ReservaController extends Controller
                 $clienteId = $cliente->id;
             } else {
                 $cliente = \App\Models\Cliente::create(array_merge($dadosAcompanhante, [
-                    'cpf'         => $cpfLimpo,
+                    'cpf' => $cpfLimpo,
                     'estrangeiro' => 'Não',
                 ]));
                 $clienteId = $cliente->id;
@@ -636,31 +606,31 @@ class ReservaController extends Controller
         } elseif ($request->filled('nome')) {
             // Criar cliente mesmo sem CPF para permitir edição
             $cliente = \App\Models\Cliente::create([
-                'nome'            => $request->nome,
-                'email'           => $request->email,
-                'telefone'        => $request->telefone,
+                'nome' => $request->nome,
+                'email' => $request->email,
+                'telefone' => $request->telefone,
                 'data_nascimento' => $request->data_nascimento,
-                'estrangeiro'     => 'Não',
+                'estrangeiro' => 'Não',
             ]);
             $clienteId = $cliente->id;
         }
 
         $acompanhante = \App\Models\Acompanhante::create([
-            'reserva_id'     => $reserva->id,
-            'cliente_id'     => $clienteId,
-            'nome'           => $request->nome,
-            'cpf'            => $request->cpf,
-            'tipo'           => $request->tipo,
-            'data_nascimento'=> $request->data_nascimento,
-            'email'          => $request->email,
-            'telefone'       => $request->telefone,
+            'reserva_id' => $reserva->id,
+            'cliente_id' => $clienteId,
+            'nome' => $request->nome,
+            'cpf' => $request->cpf,
+            'tipo' => $request->tipo,
+            'data_nascimento' => $request->data_nascimento,
+            'email' => $request->email,
+            'telefone' => $request->telefone,
         ]);
 
         return response()->json([
-            'success'      => true,
+            'success' => true,
             'acompanhante' => $acompanhante,
-            'cliente_id'   => $clienteId,
-            'edit_url'     => $clienteId ? route('admin.clientes.edit', ['id' => $clienteId]) : null,
+            'cliente_id' => $clienteId,
+            'edit_url' => $clienteId ? route('admin.clientes.edit', ['id' => $clienteId]) : null,
         ]);
     }
 
@@ -698,20 +668,54 @@ class ReservaController extends Controller
 
         foreach ($request->input('refeicoes', []) as $refeicao) {
             \App\Models\ReservaRefeicao::create([
-                'reserva_id'     => $id,
-                'hospede_nome'   => $refeicao['hospede_nome'] ?? '',
-                'hospede_tipo'   => $refeicao['hospede_tipo'] ?? 'titular',
-                'acompanhante_id'=> $refeicao['acompanhante_id'] ?? null,
-                'cafe'           => isset($refeicao['cafe']) ? 1 : 0,
-                'almoco'         => isset($refeicao['almoco']) ? 1 : 0,
-                'jantar'         => isset($refeicao['jantar']) ? 1 : 0,
+                'reserva_id' => $id,
+                'hospede_nome' => $refeicao['hospede_nome'] ?? '',
+                'hospede_tipo' => $refeicao['hospede_tipo'] ?? 'titular',
+                'acompanhante_id' => $refeicao['acompanhante_id'] ?? null,
+                'cafe' => isset($refeicao['cafe']) ? 1 : 0,
+                'almoco' => isset($refeicao['almoco']) ? 1 : 0,
+                'jantar' => isset($refeicao['jantar']) ? 1 : 0,
             ]);
         }
 
         return redirect()
-            ->to(route('admin.reservas.edit', ['id' => $id]) . '#refeicoes')
+            ->to(route('admin.reservas.edit', ['id' => $id]).'#refeicoes')
             ->with('notice', 'Refeições salvas com sucesso.');
     }
+
+    /**
+     * Monta o array de pagamentos (um item por entrada "Incluir") a partir dos
+     * arrays paralelos vindos do formulário de pagamento.
+     */
+    private function montarPagamentos(array $valoresRecebidos, array $metodosPagamento, array $submetodosPagamento, array $observacoesPagamento, array $datasPagamento): array
+    {
+        $pagamentos = [];
+
+        foreach ($valoresRecebidos as $index => $valor) {
+            $dataRaw = $datasPagamento[$index] ?? null;
+            $data = null;
+
+            if ($dataRaw) {
+                try {
+                    $data = Carbon::createFromFormat('d/m/Y', $dataRaw)->startOfDay();
+                } catch (\Exception $e) {
+                    $data = null;
+                }
+            }
+
+            if (! $data) {
+                $data = now();
+            }
+
+            $pagamentos[] = [
+                'data' => $data->format('Y-m-d H:i:s'),
+                'valor' => (float) $valor,
+                'metodo' => $metodosPagamento[$index] ?? null,
+                'submetodo' => $submetodosPagamento[$index] ?? null,
+                'observacao' => $observacoesPagamento[$index] ?? null,
+            ];
+        }
+
+        return $pagamentos;
+    }
 }
-
-

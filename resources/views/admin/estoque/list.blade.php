@@ -89,7 +89,7 @@ use App\Models\Produto;
                         <td>{{ $estoque->id }}</td>
                         <td>{{ $estoque->produto->id }}</td>
                         <td>{{ $estoque->produto->descricao }}</td>
-                        <td>{{ $estoque->quantidade }}</td>
+                        <td>{{ number_format($estoque->quantidade, $estoque->produto->permiteFracionado() ? 3 : 0, ',', '.') }}</td>
                         <td>{{ $estoque->produto->unidade }} - {{ \App\Models\Produto::UNIDADES[$estoque->produto->unidade] }}</td>
                         <td>R$ {{ number_format($estoque->produto->preco_custo ?? 0, 2, ',', '.') }}</td>
                         <td>R$ {{ number_format($estoque->produto->preco_venda ?? 0, 2, ',', '.') }}</td>

@@ -8,6 +8,7 @@ use App\Models\LocalEstoque;
 use App\Models\Produto;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class EstoqueController extends Controller
 {
@@ -46,6 +47,7 @@ class EstoqueController extends Controller
 
         if ($filters['created_at']) {
             $filters['created_at'] = Carbon::createFromFormat('d/m/Y', $filters['created_at'])->format('Y-m-d');
+            $query->whereDate('created_at', $filters['created_at']);
         }
 
         $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
@@ -79,6 +81,13 @@ class EstoqueController extends Controller
     public function save(Request $request)
     {
         $this->authorize('gerenciar_estoque');
+
+        $validator = Validator::make($request->all(), [
+            'produto_id' => ['required', 'exists:produtos,id'],
+            'local_estoque_id' => ['required', 'exists:locais_estoque,id'],
+            'quantidade' => ['required', 'numeric', 'gte:0'],
+        ]);
+        $validator->validate();
 
         $data = $request->all();
 

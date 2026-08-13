@@ -19,6 +19,44 @@
         </ul>
     </x-admin.ajuda>
 
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.movimentacoes-estoque.index') }}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label>Produto</label>
+                        <select name="produto_id" class="form-control">
+                            <option value="">Todos</option>
+                            @foreach($produtos as $produto)
+                                <option value="{{ $produto->id }}"
+                                    {{ (string)($filters['produto_id'] ?? '') === (string)$produto->id ? 'selected' : '' }}>
+                                    {{ $produto->descricao }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Data inicial</label>
+                        <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Data final</label>
+                        <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''"/>
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary form-control">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <ul class="nav nav-tabs" id="movimentacoesTab" role="tablist">
         @foreach ($locaisEstoque as $index => $local)
             <li class="nav-item" role="presentation">
@@ -65,7 +103,7 @@
                                             {{ $movimentacao->localDestino->nome ?? $movimentacao->localOrigem->nome ?? '—' }}
                                         @endif
                                     </td>
-                                    <td>{{ $movimentacao->quantidade }}</td>
+                                    <td>{{ number_format($movimentacao->quantidade, $movimentacao->produto->permiteFracionado() ? 3 : 0, ',', '.') }}</td>
                                     <td>
                                         {{ ucfirst($movimentacao->tipo) }}
                                         @if($movimentacao->tipo == 'transferencia' && !($idsGrupo->contains($movimentacao->local_estoque_origem_id) && $idsGrupo->contains($movimentacao->local_estoque_destino_id)))

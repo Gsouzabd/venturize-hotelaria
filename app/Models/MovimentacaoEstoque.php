@@ -25,6 +25,10 @@ class MovimentacaoEstoque extends Model
         'estornada_por_id', // Movimentação de estorno que cancelou esta
     ];
 
+    protected $casts = [
+        'quantidade' => 'decimal:3',
+    ];
+
     public function produto()
     {
         return $this->belongsTo(Produto::class);

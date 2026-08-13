@@ -7,6 +7,7 @@ use App\Models\LocalEstoque;
 use App\Models\MovimentacaoEstoque;
 use App\Models\Produto;
 use App\Services\MovimentacaoEstoqueService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,29 +23,60 @@ class MovimentacaoEstoqueController extends Controller
         $this->movimentacaoEstoqueService = $movimentacaoEstoqueService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('visualizar_estoque');
 
+        $filters = $request->all();
+        $filters['produto_id'] ??= '';
+        $filters['data_inicial'] ??= '';
+        $filters['data_final'] ??= '';
+
+        $produtoId = $filters['produto_id'] !== '' ? $filters['produto_id'] : null;
+        $dataInicial = $filters['data_inicial'] !== '' ? Carbon::createFromFormat('d/m/Y', $filters['data_inicial'])->startOfDay() : null;
+        $dataFinal = $filters['data_final'] !== '' ? Carbon::createFromFormat('d/m/Y', $filters['data_final'])->endOfDay() : null;
+
+        $filtroMovimentacoes = function ($query) use ($produtoId, $dataInicial, $dataFinal) {
+            $query->when($produtoId, fn ($q) => $q->where('produto_id', $produtoId))
+                ->when($dataInicial && $dataFinal, fn ($q) => $q->whereBetween('created_at', [$dataInicial, $dataFinal]))
+                ->when($dataInicial && ! $dataFinal, fn ($q) => $q->where('created_at', '>=', $dataInicial))
+                ->when($dataFinal && ! $dataInicial, fn ($q) => $q->where('created_at', '<=', $dataFinal));
+        };
+
         // Locais pais com sub-locais e movimentações (origem e destino) de todos
         $relacoes = [
-            'movimentacoesOrigem.produto', 'movimentacoesOrigem.usuario',
-            'movimentacoesOrigem.localOrigem', 'movimentacoesOrigem.localDestino',
-            'movimentacoesDestino.produto', 'movimentacoesDestino.usuario',
-            'movimentacoesDestino.localOrigem', 'movimentacoesDestino.localDestino',
+            'produto', 'usuario', 'localOrigem', 'localDestino',
         ];
 
+        $comFiltro = function ($base) use ($filtroMovimentacoes, $relacoes) {
+            $with = [];
+            foreach (['movimentacoesOrigem', 'movimentacoesDestino'] as $rel) {
+                $with[$base.$rel] = $filtroMovimentacoes;
+                foreach ($relacoes as $sub) {
+                    $with[] = $base.$rel.'.'.$sub;
+                }
+            }
+
+            return $with;
+        };
+
         $locaisEstoque = LocalEstoque::with(array_merge(
-            $relacoes,
-            array_map(fn ($r) => 'children.'.$r, $relacoes)
+            $comFiltro(''),
+            $comFiltro('children.')
         ))->whereNull('parent_id')->orderBy('nome')->get();
 
-        return view('admin.movimentacao-estoque.list', compact('locaisEstoque'));
+        $produtos = Produto::orderBy('descricao')->get();
+
+        return view('admin.movimentacao-estoque.list', compact('locaisEstoque', 'filters', 'produtos'));
     }
 
     public function edit($id = null)
     {
-        $this->authorize('gerenciar_estoque');
+        $usuario = auth('admin')->user();
+
+        if (! $usuario || (! $usuario->temPermissao('estoque_entrada') && ! $usuario->temPermissao('estoque_saida') && ! $usuario->temPermissao('gerenciar_estoque'))) {
+            abort(403);
+        }
 
         $transferencia = false;
 
@@ -67,7 +99,32 @@ class MovimentacaoEstoqueController extends Controller
     // Método unificado para movimentações
     public function save(Request $request)
     {
-        $this->authorize('gerenciar_estoque');
+        $usuario = auth('admin')->user();
+
+        foreach ($request->get('movimentacoes', []) as $movimentacao) {
+            $tipo = $movimentacao['tipo_movimento'] ?? null;
+
+            $autorizado = match ($tipo) {
+                'entrada' => $usuario && ($usuario->temPermissao('estoque_entrada') || $usuario->temPermissao('gerenciar_estoque')),
+                'saida', 'perda' => $usuario && ($usuario->temPermissao('estoque_saida') || $usuario->temPermissao('gerenciar_estoque')),
+                'transferencia' => $usuario && $usuario->temPermissao('gerenciar_estoque'),
+                default => false,
+            };
+
+            if (! $autorizado) {
+                abort(403);
+            }
+        }
+
+        // Defesa em profundidade: valor_unitario nunca deve ser levado em conta em saída/perda,
+        // o service sempre usa o preço cadastrado do produto.
+        $movimentacoesInput = $request->get('movimentacoes', []);
+        foreach ($movimentacoesInput as $index => $movimentacao) {
+            if (in_array($movimentacao['tipo_movimento'] ?? null, ['saida', 'perda'], true)) {
+                $movimentacoesInput[$index]['valor_unitario'] = null;
+            }
+        }
+        $request->merge(['movimentacoes' => $movimentacoesInput]);
 
         $validator = Validator::make($request->all(), [
             'movimentacoes' => ['required', 'array', 'min:1'],

@@ -2,27 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
-use Log;
-use Carbon\Carbon;
-use App\Models\Quarto;
+use App\Http\Controllers\Controller;
 use App\Models\CheckIn;
-use App\Models\Cliente;
-use App\Models\Reserva;
-use App\Models\Usuario;
 use App\Models\CheckOut;
 use App\Models\Pagamento;
-use App\Models\Bar\Pedido;
-use Illuminate\Http\Request;
-use App\Models\Bar\ItemPedido;
-use App\Services\ReservaService;
+use App\Models\Quarto;
+use App\Models\Reserva;
 use App\Services\PagamentoService;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\ReservaRequest;
+use App\Services\ReservaService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Log;
 
 class ReservaController extends Controller
 {
     protected $reservaService;
+
     protected $model;
+
     protected $pagamentoService;
 
     public function __construct(ReservaService $reservaService, Reserva $model, PagamentoService $pagamentoService)
@@ -41,13 +38,13 @@ class ReservaController extends Controller
         $filters['data_checkout'] ??= '';
         $filters['created_at'] ??= '';
         $filters['operador_id'] ??= '';
-    
+
         $query = $this->model->newQuery();
-    
+
         if ($filters['cliente_id']) {
             $query->where('cliente_id', $filters['cliente_id']);
         }
-    
+
         if ($filters['quarto_id']) {
             $query->where('quarto_id', $filters['quarto_id']);
         }
@@ -55,35 +52,35 @@ class ReservaController extends Controller
         if ($filters['data_checkin']) {
             $filters['data_checkin'] = Carbon::createFromFormat('d/m/Y', $filters['data_checkin'])->format('Y-m-d');
         }
-    
+
         if ($filters['data_checkout']) {
             $filters['data_checkout'] = Carbon::createFromFormat('d/m/Y', $filters['data_checkout'])->format('Y-m-d');
         }
-    
+
         if ($filters['created_at']) {
             $filters['created_at'] = Carbon::createFromFormat('d/m/Y', $filters['created_at'])->format('Y-m-d');
         }
-    
+
         if ($filters['data_checkin'] && $filters['data_checkout']) {
             $query->where(function ($query) use ($filters) {
                 $query->where(function ($query) use ($filters) {
                     $query->whereDate('data_checkin', '>=', $filters['data_checkin'])
-                          ->whereDate('data_checkin', '<=', $filters['data_checkout']);
+                        ->whereDate('data_checkin', '<=', $filters['data_checkout']);
                 })->orWhere(function ($query) use ($filters) {
                     $query->whereDate('data_checkout', '>=', $filters['data_checkin'])
-                          ->whereDate('data_checkout', '<=', $filters['data_checkout']);
+                        ->whereDate('data_checkout', '<=', $filters['data_checkout']);
                 });
             });
         }
-        
+
         if ($filters['created_at']) {
             $query->whereDate('created_at', $filters['created_at']);
         }
-        
+
         if ($filters['operador_id']) {
             $query->where('usuario_operador_id', $filters['operador_id']);
         }
-    
+
         $reservas = $query
             ->orderBy('id', 'desc')
             ->paginate(config('app.rows_per_page'));
@@ -94,6 +91,7 @@ class ReservaController extends Controller
     public function show($id)
     {
         $reserva = $this->model->with(['pagamentos', 'acompanhantes'])->findOrFail($id);
+
         return response()->json($reserva);
     }
 
@@ -102,7 +100,7 @@ class ReservaController extends Controller
         $data = $request->all();
         try {
             // Idempotency guard: return existing reservations if this WooCommerce order was already processed
-            if (!empty($data['woocommerce_order_id']) && !isset($data['edit'])) {
+            if (! empty($data['woocommerce_order_id']) && ! isset($data['edit'])) {
                 $existing = Reserva::where('woocommerce_order_id', $data['woocommerce_order_id'])
                     ->where('situacao_reserva', '!=', 'CANCELADA')
                     ->get();
@@ -112,59 +110,67 @@ class ReservaController extends Controller
                         'woocommerce_order_id' => $data['woocommerce_order_id'],
                         'reserva_ids' => $existing->pluck('id'),
                     ]);
+
                     return response()->json($existing, 200);
                 }
             }
 
-            if(isset($data['reserva_site']) && !isset($data['edit'])){
-                if($data['reserva_site'] == true){
+            if (isset($data['reserva_site']) && ! isset($data['edit'])) {
+                if ($data['reserva_site'] == true) {
                     $quartosAtualizados = [];
-                    
+
                     foreach ($data['quartos'] as $index => $quarto) {
                         $quartoDisponivel = $this->reservaService->encontrarQuartoDisponível($quarto['data_checkin'], $quarto['data_checkout'], $quarto['tipo_quarto']);
                         // log o tipo_quarto
                         Log::warning($quarto['tipo_quarto']);
-                    
-                        if (!$quartoDisponivel) {
+
+                        if (! $quartoDisponivel) {
                             throw new \Exception('Quarto não disponível.');
                         }
-                    
+
                         $quartosAtualizados[$quartoDisponivel->id] = $quarto;
                         $quartosAtualizados[$quartoDisponivel->id]['quarto_id'] = $quartoDisponivel->id;
                         $quartosAtualizados[$quartoDisponivel->id]['numero'] = $quartoDisponivel->numero;
                         $quartosAtualizados[$quartoDisponivel->id]['andar'] = $quartoDisponivel->andar;
                         $quartosAtualizados[$quartoDisponivel->id]['classificacao'] = $quartoDisponivel->classificacao;
                     }
-                    
+
                     $data['quartos'] = $quartosAtualizados;
                 }
             }
             $reservas = $this->reservaService->criarOuAtualizarReserva($data);
-            
+
             // Salva os pagamentos de cada reserva
             try {
                 foreach ($reservas as $reserva) {
                     $quartoId = $reserva->quarto_id;
 
-                    if (!empty($data['reserva_site']) && !empty($data['tipo_pagamento'])) {
+                    if (! empty($data['reserva_site']) && ! empty($data['tipo_pagamento'])) {
                         // Reserva do site: registrar pagamento com método e status corretos
-                        $total  = floatval($reserva->total);
+                        $total = floatval($reserva->total);
                         $metodo = $this->mapearMetodoPagamentoSite($data['tipo_pagamento']);
-                        $pagamentosJson = json_encode([$metodo => $total]);
+                        $pagamentos = [[
+                            'data' => now()->format('Y-m-d H:i:s'),
+                            'valor' => $total,
+                            'metodo' => $metodo,
+                            'submetodo' => null,
+                            'observacao' => 'Pagamento via site: '.$data['tipo_pagamento'],
+                        ]];
                         $pagamento = Pagamento::where('reserva_id', $reserva->id)->first();
                         $payload = [
-                            'valores_recebidos' => $pagamentosJson,
-                            'valor_pago'        => $total,
-                            'valor_total'       => $total,
-                            'status_pagamento'  => 'PAGO',
-                            'data_pagamento'    => now(),
-                            'observacoes'       => 'Pagamento via site: ' . $data['tipo_pagamento'],
+                            'valores_recebidos' => json_encode($pagamentos),
+                            'valor_pago' => $total,
+                            'valor_total' => $total,
+                            'status_pagamento' => 'PAGO',
+                            'data_pagamento' => now(),
+                            'observacoes' => 'Pagamento via site: '.$data['tipo_pagamento'],
                         ];
                         if ($pagamento) {
                             $pagamento->update($payload);
                         } else {
                             Pagamento::create(array_merge(['reserva_id' => $reserva->id], $payload));
                         }
+
                         continue;
                     }
 
@@ -174,33 +180,43 @@ class ReservaController extends Controller
                         $valoresRecebidos = $quartoData['valores_recebidos'] ?? [];
                         $metodosPagamento = $quartoData['metodos_pagamento'] ?? [];
                         $submetodosPagamento = $quartoData['submetodos_pagamento'] ?? [];
+                        $observacoesPagamento = $quartoData['observacoes_pagamento'] ?? [];
+                        $datasPagamento = $quartoData['data_pagamento'] ?? [];
 
                         $pagamentos = [];
-                        $valorPago = 0;
 
                         foreach ($valoresRecebidos as $index => $valor) {
-                            $metodoPagamento = $metodosPagamento[$index] ?? null;
-                            $submetodoPagamento = $submetodosPagamento[$index] ?? null;
-                            $key = "{$metodoPagamento}-{$submetodoPagamento}";
-
-                            if (!isset($pagamentos[$key])) {
-                                $pagamentos[$key] = 0;
+                            $dataRaw = $datasPagamento[$index] ?? null;
+                            $dataItem = null;
+                            if ($dataRaw) {
+                                try {
+                                    $dataItem = Carbon::createFromFormat('d/m/Y', $dataRaw)->startOfDay();
+                                } catch (\Exception $e) {
+                                    $dataItem = null;
+                                }
+                            }
+                            if (! $dataItem) {
+                                $dataItem = now();
                             }
 
-                            $pagamentos[$key] += $valor;
-                            $valorPago += $valor;
+                            $pagamentos[] = [
+                                'data' => $dataItem->format('Y-m-d H:i:s'),
+                                'valor' => (float) $valor,
+                                'metodo' => $metodosPagamento[$index] ?? null,
+                                'submetodo' => $submetodosPagamento[$index] ?? null,
+                                'observacao' => $observacoesPagamento[$index] ?? null,
+                            ];
                         }
 
-                        $pagamentosJson = json_encode($pagamentos);
-
-                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentosJson, $valorPago, $reserva->total);
+                        $this->pagamentoService->salvarPagamentos($reserva->id, $pagamentos, $reserva->total, $data['status_pagamento'] ?? null);
                     }
                 }
+
                 return response()->json($reservas, 201);
 
             } catch (\Throwable $th) {
                 return response()->json(['error' => $th->getMessage()], 400);
-            }  
+            }
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 400);
         }
@@ -226,9 +242,16 @@ class ReservaController extends Controller
     private function mapearMetodoPagamentoSite(string $titulo): string
     {
         $t = mb_strtolower($titulo, 'UTF-8');
-        if (str_contains($t, 'pix'))                                   return 'PIX_SITE';
-        if (str_contains($t, 'créd') || str_contains($t, 'cred'))     return 'CARTAO_CREDITO_VISTA_SITE';
-        if (str_contains($t, 'déb')  || str_contains($t, 'deb'))      return 'CARTAO_DEBITO_CIELO';
+        if (str_contains($t, 'pix')) {
+            return 'PIX_SITE';
+        }
+        if (str_contains($t, 'créd') || str_contains($t, 'cred')) {
+            return 'CARTAO_CREDITO_VISTA_SITE';
+        }
+        if (str_contains($t, 'déb') || str_contains($t, 'deb')) {
+            return 'CARTAO_DEBITO_CIELO';
+        }
+
         return 'PIX_SITE';
     }
 
@@ -238,23 +261,22 @@ class ReservaController extends Controller
             $reserva = $this->model->findOrFail($id);
             $reserva->situacao_reserva = $situacao_reserva;
             $reserva->save();
-    
+
             if ($situacao_reserva && $situacao_reserva != 'FINALIZADO') {
                 CheckIn::updateOrCreate(
                     ['reserva_id' => $reserva->id],
                     ['checkin_at' => Carbon::now('America/Sao_Paulo')]
                 );
-            }
-            else if ($situacao_reserva == 'FINALIZADO') {
+            } elseif ($situacao_reserva == 'FINALIZADO') {
                 CheckOut::updateOrCreate(
                     ['reserva_id' => $reserva->id],
                     ['checkout_at' => Carbon::now('America/Sao_Paulo')]
                 );
             }
-    
+
             return response()->json(['message' => 'Situação da reserva atualizada com sucesso.']);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Erro ao atualizar a situação da reserva: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Erro ao atualizar a situação da reserva: '.$e->getMessage()], 500);
         }
     }
 }

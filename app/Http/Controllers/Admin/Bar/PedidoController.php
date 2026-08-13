@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers\Admin\Bar;
 
-use App\Events\MyEvent;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Bar\TransferirConsumoRequest;
+use App\Models\Bar\Mesa;
+use App\Models\Bar\Pedido;
+use App\Models\Categoria;
 use App\Models\Cliente;
 use App\Models\Produto;
-use App\Models\Bar\Mesa;
-use App\Models\Categoria;
-use App\Models\Bar\Pedido;
-use App\Models\Bar\ImpressaoPedido;
 use App\Models\Reserva;
-use Illuminate\Http\Request;
-use App\Http\Requests\Admin\Bar\TransferirConsumoRequest;
 use App\Services\Bar\MesaService;
 use App\Services\PrinterService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 
 class PedidoController extends Controller
 {
     private Pedido $model;
+
     private MesaService $mesaService;
+
     private PrinterService $printerService;
 
     public function __construct(Pedido $model, MesaService $mesaService, PrinterService $printerService)
@@ -39,7 +39,7 @@ class PedidoController extends Controller
         $query = $this->model->newQuery();
 
         if ($filters['numero']) {
-            $query->where('id', 'like', '%' . $filters['numero'] . '%');
+            $query->where('id', 'like', '%'.$filters['numero'].'%');
         }
 
         if ($filters['status']) {
@@ -59,15 +59,15 @@ class PedidoController extends Controller
         $pedido = $edit ? $this->model->findOrFail($id) : $this->model->newInstance();
         $mesas = Mesa::all();
         $clientes = Cliente::all();
-        
+
         // Consumo de reserva (pedido_apartamento): exibir produtos da Recepção e Frigobar.
         // Pedidos de mesa: manter conjunto padrão atual.
         $categoriasPermitidas = $pedido->pedido_apartamento
-            ? ['Recepção', 'Recepcao', 'Frigobar']
-            : ['Alimentos', 'Bebidas', 'Drinks', 'Gelo'];
+            ? ['Recepção', 'Recepcao', 'Frigobar', 'Serviços']
+            : ['Alimentos', 'Bebidas', 'Drinks', 'Gelo', 'Serviços'];
 
         $categoriaIds = Categoria::whereIn('nome', $categoriasPermitidas)->pluck('id');
-        
+
         $produtos = Produto::where('ativo', 1)->whereIn('categoria_produto', $categoriaIds)->get();
 
         $produtosAgrupados = $produtos->groupBy('categoria_produto');
@@ -85,10 +85,11 @@ class PedidoController extends Controller
         // dd($data);
         if (isset($data['pedido_id'])) {
             if (isset($data['action'])) {
-                if ($data['action'] == "add-obs") {
+                if ($data['action'] == 'add-obs') {
                     $pedido = $this->model->findOrFail($data['pedido_id']);
                     $pedido->observacoes = $data['observacoes'];
                     $pedido->save();
+
                     return redirect()
                         ->route('admin.bar.pedidos.edit', ['id' => $pedido->id])
                         ->with('notice', 'Observações salvas com sucesso.');
@@ -97,7 +98,7 @@ class PedidoController extends Controller
                     $this->mesaService->adicionarItemPedido($data);
 
                     $pedido = $this->model->findOrFail($data['pedido_id']);
-                    if (!$pedido->temImpressaoPendente()) {
+                    if (! $pedido->temImpressaoPendente()) {
                         $pedido->impressoes()->create([
                             'agente_impressao' => 'sistema_web',
                             'ip_origem' => $request->ip(),
@@ -114,25 +115,25 @@ class PedidoController extends Controller
                     return response()->json([
                         'success' => 'Itens adicionados ao pedido com sucesso.',
                     ]);
-                } elseif ($data['action'] == "remove-item") {
+                } elseif ($data['action'] == 'remove-item') {
                     $itensCancelados = $this->mesaService->cancelarItemPedido($data);
-                    
+
                     $justificativa = $data['justificativa'];
                     $itensCancelados[0]['justificativa'] = $justificativa;
-        
+
                     $pdfContent = $this->mesaService->gerarCupomCancelamento($data['pedido_id'], $itensCancelados);
-        
+
                     // Salvar o PDF em um arquivo temporário
                     $pdfPath = storage_path("app/public/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf");
                     file_put_contents($pdfPath, $pdfContent);
-        
+
                     // Retornar uma resposta que abre o PDF em uma nova aba
                     return response()->json([
                         'success' => 'Item removido com sucesso.',
-                        'pdf_url' => asset("storage/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf")
+                        'pdf_url' => asset("storage/cupom_cancelamento_pedido_{$data['pedido_id']}.pdf"),
                     ]);
-                } elseif ($data['action'] == "fechar-pedido") {
-                    // dd($data);  
+                } elseif ($data['action'] == 'fechar-pedido') {
+                    // dd($data);
                     // var_dump($data);
                     $removerTaxaServico = $data['removeServiceFee'];
                     // dd($removerTaxaServico);
@@ -140,19 +141,19 @@ class PedidoController extends Controller
 
                     if ($pedidoId) {
                         $pdfContent = $this->mesaService->gerarCupomFechamento($pedidoId);
-        
+
                         // Salvar o PDF em um arquivo temporário
                         $pdfPath = storage_path("app/public/cupom_fechamento_pedido_{$pedidoId}.pdf");
                         file_put_contents($pdfPath, $pdfContent);
-        
+
                         // Retornar uma resposta que abre o PDF em uma nova aba
                         return response()->json([
                             'success' => 'Pedido fechado com sucesso.',
-                            'pdf_url' => asset("storage/cupom_fechamento_pedido_{$pedidoId}.pdf")
+                            'pdf_url' => asset("storage/cupom_fechamento_pedido_{$pedidoId}.pdf"),
                         ]);
                     } else {
                         return response()->json([
-                            'error' => 'Erro ao fechar a mesa.'
+                            'error' => 'Erro ao fechar a mesa.',
                         ]);
                     }
                 }
@@ -165,14 +166,14 @@ class PedidoController extends Controller
 
         // Verificar se o pedido foi criado com sucesso
         if ($pedido instanceof Pedido) {
-                return redirect()
-                    ->route('admin.bar.pedidos.edit', ['id' => $pedido->id])
+            return redirect()
+                ->route('admin.bar.pedidos.edit', ['id' => $pedido->id])
                 ->with('notice', config('app.messages.insert'));
         }
 
         return redirect()
             ->route('admin.bar.pedidos.index')
-            ->with('error', 'Erro ao abrir a mesa. "' . $pedido . '"');
+            ->with('error', 'Erro ao abrir a mesa. "'.$pedido.'"');
     }
 
     public function destroy($id)
@@ -189,7 +190,7 @@ class PedidoController extends Controller
     {
         $pedido = $this->model->with(['reserva'])->findOrFail($id);
 
-        if (!$pedido->pedido_apartamento || $pedido->status !== 'aberto' || !$pedido->reserva) {
+        if (! $pedido->pedido_apartamento || $pedido->status !== 'aberto' || ! $pedido->reserva) {
             return response()->json(['data' => []], 403);
         }
 
@@ -252,16 +253,16 @@ class PedidoController extends Controller
     public function showCupomParcial($idPedido)
     {
         $pedido = $this->model->findOrFail($idPedido);
-        
+
         $pdfOutput = $this->mesaService->gerarCupomParcial($idPedido);
-        
+
         // Verificar se deve pular o registro de impressão (caso já tenha sido feito pela API ou já exista pendente)
         // Usando helper request() para garantir acesso aos parâmetros query string
         // Adicionada verificação de impressão pendente para evitar duplicidade
         if ((request()->has('no_log') && request()->input('no_log') == '1') || $pedido->temImpressaoPendente()) {
             // Log::info('Pulando registro de impressão (no_log=1 ou já existe pendente)');
             return response($pdfOutput, 200, [
-                'Content-Type' => 'application/pdf'
+                'Content-Type' => 'application/pdf',
             ]);
         }
 
@@ -274,21 +275,22 @@ class PedidoController extends Controller
             'dados_impressao' => [
                 'user_agent' => request()->userAgent(),
                 'timestamp_criacao' => now()->toISOString(),
-                'tipo_cupom' => 'parcial'
-            ]
+                'tipo_cupom' => 'parcial',
+            ],
         ]);
-        
+
         // Retornar o PDF
         return response($pdfOutput, 200, [
             'Content-Type' => 'application/pdf',
             'X-Impressao-ID' => $impressao->id,
-            'X-Impressao-Status' => 'pendente'
+            'X-Impressao-Status' => 'pendente',
         ]);
     }
 
     public function showExtratoParcial($idPedido)
     {
         $pdfOutput = $this->mesaService->gerarExtratoParcial($idPedido);
+
         return response($pdfOutput, 200, ['Content-Type' => 'application/pdf']);
     }
 
@@ -298,7 +300,7 @@ class PedidoController extends Controller
     public function statusImpressao($idPedido)
     {
         $pedido = $this->model->findOrFail($idPedido);
-        
+
         return response()->json([
             'pedido_id' => $idPedido,
             'foi_impresso' => $pedido->foiImpresso(),
@@ -309,17 +311,17 @@ class PedidoController extends Controller
                 'status' => $pedido->ultimaImpressao->status_impressao,
                 'agente' => $pedido->ultimaImpressao->agente_impressao,
                 'data' => $pedido->ultimaImpressao->created_at->format('d/m/Y H:i:s'),
-                'detalhes_erro' => $pedido->ultimaImpressao->detalhes_erro
+                'detalhes_erro' => $pedido->ultimaImpressao->detalhes_erro,
             ] : null,
-            'historico_impressoes' => $pedido->impressoes()->orderBy('created_at', 'desc')->get()->map(function($impressao) {
+            'historico_impressoes' => $pedido->impressoes()->orderBy('created_at', 'desc')->get()->map(function ($impressao) {
                 return [
                     'id' => $impressao->id,
                     'status' => $impressao->status_impressao,
                     'agente' => $impressao->agente_impressao,
                     'data' => $impressao->created_at->format('d/m/Y H:i:s'),
-                    'detalhes_erro' => $impressao->detalhes_erro
+                    'detalhes_erro' => $impressao->detalhes_erro,
                 ];
-            })
+            }),
         ]);
     }
 }

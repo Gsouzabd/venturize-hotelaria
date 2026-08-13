@@ -17,6 +17,10 @@ class Pagamento extends Model
         'observacoes',      // Novo campo para observações
     ];
 
+    protected $casts = [
+        'data_pagamento' => 'datetime',
+    ];
+
     const METODOS_PAGAMENTO = [
         'PIX' => [
             'label' => 'Pix',
@@ -49,6 +53,7 @@ class Pagamento extends Model
             'submetodos' => [],
         ],
     ];
+
     const STATUS_PAGAMENTO = [
         'PAGO' => 'Pago',
         'PARCIAL' => 'Parcialmente Pago',

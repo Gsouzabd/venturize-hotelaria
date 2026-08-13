@@ -2,21 +2,20 @@
 
 namespace App\Services\Bar;
 
+use App\Models\Bar\Mesa;
+use App\Models\Bar\Pedido;
+use App\Models\Estoque;
+use App\Models\LocalEstoque;
+use App\Models\Produto;
+use App\Models\Reserva;
+use App\Services\MovimentacaoEstoqueService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use App\Models\Produto;
-use App\Models\Reserva;
-use App\Models\Estoque;
-use App\Models\Bar\Mesa;
-use App\Models\Bar\Pedido;
-use App\Models\LocalEstoque;
 use Illuminate\Support\Facades\DB;
-use App\Services\MovimentacaoEstoqueService;
-use Illuminate\Support\Facades\Log;
 
-class MesaService {
-
+class MesaService
+{
     private $movimentacaoEstoqueService;
 
     public function __construct(MovimentacaoEstoqueService $movimentacaoEstoqueService)
@@ -51,18 +50,18 @@ class MesaService {
         $mesa = Mesa::find($data['mesa_id']);
         $reserva = Reserva::find($data['reserva_id']);
 
-        if (!$mesa) {
-            return "Mesa não encontrada";
+        if (! $mesa) {
+            return 'Mesa não encontrada';
         }
-        if (!$reserva) {
-            return "Reserva não encontrada";
+        if (! $reserva) {
+            return 'Reserva não encontrada';
         }
 
         // Verificar se a mesa está disponível
         if (strtolower($mesa->status) === 'disponível') {
             // Criar um novo pedido para essa mesa
             $pedido = Pedido::create([
-                'reserva_id' =>  $reserva->id,   
+                'reserva_id' => $reserva->id,
                 'mesa_id' => $mesa->id,
                 'cliente_id' => $reserva->clienteResponsavel ? $reserva->clienteResponsavel->id : $reserva->clienteSolicitante->id,
                 'status' => 'aberto', // Pedido está em andamento
@@ -70,8 +69,7 @@ class MesaService {
                 'created_at' => Carbon::now('America/Sao_Paulo'),
             ]);
 
-
-            if($pedido->reserva_id){
+            if ($pedido->reserva_id) {
                 // Alterar o status da mesa para 'ocupada'
                 $mesa->status = 'ocupada';
                 $mesa->save();
@@ -80,8 +78,9 @@ class MesaService {
             return $pedido; // Retorna o pedido recém-criado
         }
 
-        return "Mesa Ocupada";
+        return 'Mesa Ocupada';
     }
+
     public function statusMesaNoDia()
     {
         $mesas = Mesa::all();
@@ -93,7 +92,7 @@ class MesaService {
             $status[$mesa->id] = [
                 'mesa' => $mesa,
                 'status' => 'Livre',
-                'pedido' => null
+                'pedido' => null,
             ];
         }
 
@@ -103,7 +102,7 @@ class MesaService {
                 $status[$pedido->mesa->id] = [
                     'mesa' => $pedido->mesa,
                     'status' => $pedido->status === 'aberto' ? 'Ocupada' : 'Livre',
-                    'pedido' => $pedido
+                    'pedido' => $pedido,
                 ];
             }
         }
@@ -115,21 +114,21 @@ class MesaService {
 
         return $status;
     }
-    
 
-    public function cancelarItemPedido($data) {
+    public function cancelarItemPedido($data)
+    {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($data['pedido_id']);
-    
+
         // Verificar se o pedido está aberto
         if ($pedido->status === 'aberto') {
             $itensCancelados = [];
-    
+
             // Iterar sobre os itens a serem removidos
             foreach ($data['itens_cart'] as $item) {
                 // Encontrar o item no pedido
                 $itemPedido = $pedido->itens()->where('produto_id', $item['produto_id'])->first();
-    
+
                 if ($itemPedido) {
                     // Adicionar o item à lista de itens cancelados
                     $itensCancelados[] = [
@@ -137,7 +136,7 @@ class MesaService {
                         'preco' => $itemPedido->preco,
                         'quantidade' => $item['quantidade'], // Usar a quantidade recebida na requisição
                     ];
-    
+
                     // Verificar a quantidade a ser cancelada
                     if ($itemPedido->quantidade > $item['quantidade']) {
                         // Diminuir a quantidade do item no pedido
@@ -147,92 +146,97 @@ class MesaService {
                         // Remover o item do pedido
                         $itemPedido->delete();
                     }
-    
-                    // Registrar a entrada no estoque
+
+                    // Registrar a entrada no estoque (reversão) — pula para itens de serviço,
+                    // que não têm controle de estoque real.
                     $produto = Produto::find($item['produto_id']);
-                    if ($produto->composicoes()->exists()) {
-                        foreach ($produto->composicoes as $composicao) {
+                    if ($produto->produto_servico !== 'servico') {
+                        if ($produto->composicoes()->exists()) {
+                            foreach ($produto->composicoes as $composicao) {
+                                $this->movimentacaoEstoqueService->registrarEntrada([
+                                    'produto_id' => $composicao->insumo_id,
+                                    'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
+                                    'quantidade' => $composicao->quantidade * $item['quantidade'],
+                                    'valor_unitario' => Produto::find($composicao->insumo_id)->preco_custo,
+                                    'justificativa' => 'Cancelamento de venda de produto no bar',
+                                ]);
+                            }
+                        } else {
                             $this->movimentacaoEstoqueService->registrarEntrada([
-                                'produto_id' => $composicao->insumo_id,
-                                'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
-                                'quantidade' => $composicao->quantidade * $item['quantidade'],
-                                'valor_unitario' => Produto::find($composicao->insumo_id)->preco_custo,
+                                'produto_id' => $item['produto_id'],
+                                'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
+                                'quantidade' => $item['quantidade'],
+                                'valor_unitario' => Produto::find($item['produto_id'])->preco_custo,
                                 'justificativa' => 'Cancelamento de venda de produto no bar',
                             ]);
                         }
-                    } else {
-                        $this->movimentacaoEstoqueService->registrarEntrada([
-                            'produto_id' => $item['produto_id'],
-                            'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
-                            'quantidade' => $item['quantidade'],
-                            'valor_unitario' => Produto::find($item['produto_id'])->preco_custo,
-                            'justificativa' => 'Cancelamento de venda de produto no bar',
-                        ]);
                     }
                 }
             }
-    
+
             // Atualizar o total do pedido
             $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
             $taxaServico = $pedido->pedido_apartamento ? 0 : $total * 0.1;
 
             $pedido->update([
                 'total' => $total,
-                'total_com_taxa' => $total + $taxaServico
+                'total_com_taxa' => $total + $taxaServico,
             ]);
-    
+
             return $itensCancelados; // Retorna os itens cancelados
         }
-    
-        return "Pedido Fechado";
+
+        return 'Pedido Fechado';
     }
-    
-    public function gerarCupomCancelamento($idPedido, $itensCancelados) {
+
+    public function gerarCupomCancelamento($idPedido, $itensCancelados)
+    {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($idPedido);
-    
+
         // Configurar Dompdf
-        $options = new Options();
+        $options = new Options;
         $options->set('defaultFont', 'Courier');
         $options->set('isHtml5ParserEnabled', true);
         $dompdf = new Dompdf($options);
-    
+
         // Definir o tamanho do papel para impressora térmica (80mm de largura)
-        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $customPaper = [0, 0, 226.77, 841.89]; // 80mm x 297mm (A4 height for long receipts)
         $dompdf->setPaper($customPaper);
-    
+
         // Dados do pedido e itens cancelados
-        $html = view('pdf.cupom_cancelamento', compact('pedido', 'itensCancelados',))->render();
-    
+        $html = view('pdf.cupom_cancelamento', compact('pedido', 'itensCancelados'))->render();
+
         // Carregar o HTML no Dompdf
         $dompdf->loadHtml($html);
-    
+
         // Renderizar o PDF
         $dompdf->render();
-    
+
         // Enviar o PDF para o navegador
         return $dompdf->output();
     }
 
-    public function adicionarItemPedido($data) {
+    public function adicionarItemPedido($data)
+    {
         // Encontrar o pedido pelo ID
         $pedido = Pedido::find($data['pedido_id']);
-    
+
         // Verificar se o pedido está aberto
         if ($pedido->status === 'aberto') {
             $itens = [];
-    
+
             // Iterar sobre os itens temporários
             foreach ($data['itens_temp'] as $item) {
                 // Verificar se o item já existe no pedido
                 $existingItem = $pedido->itens()->where('produto_id', $item['produto_id'])->first();
                 $produto = Produto::find($item['produto_id']);
-    
+
                 if ($existingItem) {
                     // Atualizar a quantidade do item existente
                     $existingItem->quantidade += $item['quantidade'];
                     $existingItem->save();
-                
+
                     // Criar uma cópia do item existente para adicionar ao array de itens
                     $updatedItem = clone $existingItem;
                     $updatedItem->quantidade = $item['quantidade']; // Usar a quantidade recebida na requisição
@@ -249,28 +253,32 @@ class MesaService {
                 }
                 // dd($item);
 
-                if($produto->composicoes()->exists()){
-                    foreach ($produto->composicoes as $composicao) {
+                // Itens de serviço (produto_servico === 'servico') não têm controle de estoque real:
+                // pula qualquer movimentação de saída/composição para eles.
+                if ($produto->produto_servico !== 'servico') {
+                    if ($produto->composicoes()->exists()) {
+                        foreach ($produto->composicoes as $composicao) {
+                            $this->movimentacaoEstoqueService->registrarSaida([
+                                'produto_id' => $composicao->insumo_id,
+                                'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
+                                'quantidade' => $item['quantidade'],
+                                'valor_unitario_venda' => Produto::find($composicao->insumo_id)->preco_venda,
+                                'justificativa' => 'Venda de produto no bar',
+                            ]);
+                        }
+                    } else {
                         $this->movimentacaoEstoqueService->registrarSaida([
-                            'produto_id' => $composicao->insumo_id,
-                            'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $composicao->insumo_id),
-                            'quantidade' =>  $item['quantidade'],
-                            'valor_unitario_venda' => Produto::find($composicao->insumo_id)->preco_venda,
+                            'produto_id' => $item['produto_id'],
+                            'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
+                            'quantidade' => $item['quantidade'],
+                            'valor_unitario_venda' => Produto::find($item['produto_id'])->preco_venda,
                             'justificativa' => 'Venda de produto no bar',
                         ]);
                     }
-                }else{
-                    $this->movimentacaoEstoqueService->registrarSaida([
-                        'produto_id' => $item['produto_id'],
-                        'local_estoque_id' => $this->resolverLocalEstoqueId($pedido, (int) $item['produto_id']),
-                        'quantidade' => $item['quantidade'],
-                        'valor_unitario_venda' => Produto::find($item['produto_id'])->preco_venda,
-                        'justificativa' => 'Venda de produto no bar',
-                    ]);
                 }
 
             }
-    
+
             // Atualizar o total do pedido
             $total = $pedido->itens()->sum(DB::raw('quantidade * preco'));
             $taxaServico = $pedido->pedido_apartamento ? 0 : $total * 0.1;
@@ -278,18 +286,18 @@ class MesaService {
                 'total' => $total,
                 'taxa_servico' => $taxaServico,
                 'removar_taxa' => $pedido->pedido_apartamento ? 1 : $pedido->remover_taxa,
-                'total_com_taxa' => $total + $taxaServico
+                'total_com_taxa' => $total + $taxaServico,
             ]);
-    
+
             // Adicionar a descrição do produto aos itens
             foreach ($itens as $item) {
                 $item['descricao'] = Produto::find($item['produto_id'])->descricao;
             }
-    
+
             return $itens; // Retorna os itens recém-criados ou atualizados
         }
-    
-        return "Pedido Fechado";
+
+        return 'Pedido Fechado';
     }
 
     public function fecharConta($idPedido, $removerTaxaServico = false)
@@ -304,8 +312,8 @@ class MesaService {
         if ($pedido && $pedido->status === 'aberto') {
             // Atualizar o status do pedido para 'fechado'
             $pedido->status = 'fechado';
-            $pedido->remover_taxa = $removerTaxaServico != "false" ? 1 : 0;
-            if($pedido->pedido_apartamento) {
+            $pedido->remover_taxa = $removerTaxaServico != 'false' ? 1 : 0;
+            if ($pedido->pedido_apartamento) {
                 $pedido->remover_taxa = 1;
             }
             $pedido->save();
@@ -335,13 +343,13 @@ class MesaService {
         }
         // dd($pedido);
         // Configurar Dompdf
-        $options = new Options();
+        $options = new Options;
         $options->set('defaultFont', 'Courier');
         $options->set('isHtml5ParserEnabled', true);
         $dompdf = new Dompdf($options);
 
         // Definir o tamanho do papel para impressora térmica (80mm de largura)
-        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $customPaper = [0, 0, 226.77, 841.89]; // 80mm x 297mm (A4 height for long receipts)
         $dompdf->setPaper($customPaper);
 
         // Dados do pedido e itens
@@ -357,7 +365,6 @@ class MesaService {
         return $dompdf->output();
     }
 
-
     public function gerarCupomParcial($idPedido)
     {
         // Encontrar o pedido pelo ID
@@ -367,13 +374,13 @@ class MesaService {
         }
 
         // Configurar Dompdf
-        $options = new Options();
+        $options = new Options;
         $options->set('defaultFont', 'Courier');
         $options->set('isHtml5ParserEnabled', true);
         $dompdf = new Dompdf($options);
 
         // Definir o tamanho do papel para impressora térmica (80mm de largura)
-        $customPaper = array(0, 0, 226.77, 841.89); // 80mm x 297mm (A4 height for long receipts)
+        $customPaper = [0, 0, 226.77, 841.89]; // 80mm x 297mm (A4 height for long receipts)
         $dompdf->setPaper($customPaper);
 
         // Dados do pedido e itens
@@ -407,11 +414,10 @@ class MesaService {
         }
 
         // Configurar Dompdf
-        $options = new Options();
+        $options = new Options;
         $options->set('defaultFont', 'Courier');
         $options->set('isHtml5ParserEnabled', true);
         $dompdf = new Dompdf($options);
-
 
         // Dados do pedido e itens
         $html = view('pdf.extrato_parcial', compact('pedido', 'reserva', 'totalTaxaServicoConsumoConsumo'))->render();
@@ -451,7 +457,7 @@ class MesaService {
         DB::transaction(function () use ($pedidoOrigemId, $reservaDestinoId, $porProduto) {
             $pedidoOrigem = Pedido::lockForUpdate()->with(['reserva', 'itens'])->findOrFail($pedidoOrigemId);
 
-            if (!$pedidoOrigem->pedido_apartamento) {
+            if (! $pedidoOrigem->pedido_apartamento) {
                 throw new \InvalidArgumentException('Apenas pedidos de apartamento podem usar esta transferência.');
             }
             if ($pedidoOrigem->status !== 'aberto') {
@@ -459,7 +465,7 @@ class MesaService {
             }
 
             $reservaOrigem = $pedidoOrigem->reserva;
-            if (!$reservaOrigem) {
+            if (! $reservaOrigem) {
                 throw new \InvalidArgumentException('Pedido sem reserva associada.');
             }
 
@@ -476,7 +482,7 @@ class MesaService {
             }
 
             if (
-                !($reservaDest->data_checkin < $reservaOrigem->data_checkout
+                ! ($reservaDest->data_checkin < $reservaOrigem->data_checkout
                 && $reservaDest->data_checkout > $reservaOrigem->data_checkin)
             ) {
                 throw new \InvalidArgumentException('O período da reserva de destino não coincide com o desta reserva.');
@@ -487,9 +493,9 @@ class MesaService {
                 ->where('pedido_apartamento', true)
                 ->first();
 
-            if (!$pedidoDest) {
+            if (! $pedidoDest) {
                 $clienteId = $reservaDest->clienteResponsavel->id ?? $reservaDest->clienteSolicitante->id ?? null;
-                if (!$clienteId) {
+                if (! $clienteId) {
                     throw new \InvalidArgumentException('Reserva de destino sem cliente associado.');
                 }
                 $pedidoDest = Pedido::create([
@@ -509,7 +515,7 @@ class MesaService {
             foreach ($porProduto as $produtoId => $quantidadeTransferir) {
                 $itemOrigem = $pedidoOrigem->itens()->where('produto_id', $produtoId)->lockForUpdate()->first();
 
-                if (!$itemOrigem || $itemOrigem->quantidade < $quantidadeTransferir) {
+                if (! $itemOrigem || $itemOrigem->quantidade < $quantidadeTransferir) {
                     throw new \InvalidArgumentException(
                         'Quantidade indisponível para o produto ID '.$produtoId.' no pedido de origem.'
                     );
@@ -557,5 +563,4 @@ class MesaService {
             'total_com_taxa' => $total + $taxaServico,
         ]);
     }
-
-    }
+}

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Categoria;
 use App\Models\Estoque;
 use App\Models\LocalEstoque;
+use App\Models\MovimentacaoEstoque;
 use App\Models\Pagamento;
 use App\Models\Produto;
 use App\Models\Quarto;
@@ -25,8 +27,9 @@ class RelatorioController extends Controller
         $filters = $this->normalizarFiltrosEstoque($request);
         $estoques = $this->colecaoEstoqueParaRelatorio($filters);
         $locaisEstoque = LocalEstoque::with('children')->whereNull('parent_id')->orderBy('nome')->get();
+        $categorias = Categoria::orderBy('nome')->get();
 
-        return view('admin.relatorios.estoque', compact('estoques', 'filters', 'locaisEstoque'));
+        return view('admin.relatorios.estoque', compact('estoques', 'filters', 'locaisEstoque', 'categorias'));
     }
 
     public function exportarEstoque(Request $request)
@@ -51,6 +54,7 @@ class RelatorioController extends Controller
             'Unidade',
             'Estoque mínimo',
             'Estoque máximo',
+            'Situação',
         ];
 
         foreach ($estoques as $row) {
@@ -58,16 +62,18 @@ class RelatorioController extends Controller
             if (! $p) {
                 continue;
             }
+            $abaixoDoMinimo = $p->ativo && $p->estoque_minimo !== null && $row->quantidade < $p->estoque_minimo;
             $dadosExcel[] = [
                 $row->id,
                 $p->descricao,
                 $p->codigo_interno ?? '',
                 $p->categoria->nome ?? '',
                 $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '').' › '.$row->localEstoque->nome, ' ›') : '',
-                $row->quantidade,
+                (float) $row->quantidade,
                 $unidades[$p->unidade] ?? $p->unidade,
                 $p->estoque_minimo ?? '',
                 $p->estoque_maximo ?? '',
+                $abaixoDoMinimo ? 'ABAIXO DO MÍNIMO — COMPRAR' : '',
             ];
         }
 
@@ -357,6 +363,10 @@ class RelatorioController extends Controller
         $filters['local_estoque_id'] ??= '';
         $filters['somente_ativos'] ??= '1';
         $filters['produto'] ??= '';
+        $filters['categoria_id'] ??= '';
+        $filters['data'] ??= '';
+        $filters['data_inicial'] ??= '';
+        $filters['data_final'] ??= '';
 
         return $filters;
     }
@@ -391,6 +401,25 @@ class RelatorioController extends Controller
 
         if (($filters['somente_ativos'] ?? '') === '1') {
             $query->whereHas('produto', fn ($q) => $q->where('ativo', 1));
+        }
+
+        if (($filters['categoria_id'] ?? '') !== '') {
+            $query->whereHas('produto', fn ($q) => $q->where('categoria_produto', $filters['categoria_id']));
+        }
+
+        $dataInicial = trim($filters['data_inicial'] ?? '');
+        $dataFinal = trim($filters['data_final'] ?? '');
+        $dataUnica = trim($filters['data'] ?? '');
+
+        if ($dataInicial !== '' && $dataFinal !== '') {
+            $inicio = Carbon::createFromFormat('d/m/Y', $dataInicial)->startOfDay();
+            $fim = Carbon::createFromFormat('d/m/Y', $dataFinal)->endOfDay();
+            $produtoIds = MovimentacaoEstoque::whereBetween('created_at', [$inicio, $fim])->pluck('produto_id');
+            $query->whereIn('estoques.produto_id', $produtoIds);
+        } elseif ($dataUnica !== '') {
+            $data = Carbon::createFromFormat('d/m/Y', $dataUnica);
+            $produtoIds = MovimentacaoEstoque::whereDate('created_at', $data)->pluck('produto_id');
+            $query->whereIn('estoques.produto_id', $produtoIds);
         }
 
         return $query->get();

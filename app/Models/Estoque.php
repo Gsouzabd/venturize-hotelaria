@@ -17,6 +17,10 @@ class Estoque extends Model
         'quantidade',
     ];
 
+    protected $casts = [
+        'quantidade' => 'decimal:3',
+    ];
+
     public function produto()
     {
         return $this->belongsTo(Produto::class, 'produto_id');

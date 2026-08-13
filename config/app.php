@@ -123,9 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-
     'pagination' => 'bootstrap-4', // This is the default pagination template that comes with Laravel
-
 
     'enums' => [
         'tipos_usuario' => [
@@ -153,6 +151,8 @@ return [
             // Estoque
             'visualizar_estoque' => 'Visualizar Estoque',
             'gerenciar_estoque' => 'Gerenciar Estoque',
+            'estoque_entrada' => 'Estoque - Entrada',
+            'estoque_saida' => 'Estoque - Saída',
             // Despesas
             'visualizar_despesas' => 'Visualizar Despesas',
             'gerenciar_despesas' => 'Gerenciar Despesas',
@@ -170,8 +170,6 @@ return [
             'gerenciar_financeiro' => 'Gerenciar Financeiro',
         ],
     ],
-
-
 
     'messages' => [
         'logged_in' => 'Login efetuado com sucesso.',

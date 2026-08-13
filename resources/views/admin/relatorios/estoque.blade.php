@@ -66,10 +66,43 @@
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <label>Categoria</label>
+                        <select name="categoria_id" class="form-control">
+                            <option value="">Todas</option>
+                            @foreach($categorias as $categoria)
+                                <option value="{{ $categoria->id }}"
+                                    {{ (string)($filters['categoria_id'] ?? '') === (string)$categoria->id ? 'selected' : '' }}>
+                                    {{ $categoria->nome }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <label>Data (movimentação)</label>
+                        <x-admin.datepicker name="data" :value="$filters['data'] ?? ''"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Movimentação de</label>
+                        <x-admin.datepicker name="data_inicial" :value="$filters['data_inicial'] ?? ''"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Movimentação até</label>
+                        <x-admin.datepicker name="data_final" :value="$filters['data_final'] ?? ''"/>
+                    </div>
+                    <div class="col-md-3">
                         <label>&nbsp;</label>
                         <button type="submit" class="btn btn-primary form-control">
                             <i class="fas fa-search"></i> Filtrar
                         </button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            Filtra produtos com movimentação na data (ou período) informado. O saldo exibido é sempre o atual, não recalculado historicamente.
+                        </small>
                     </div>
                 </div>
             </form>
@@ -102,11 +135,15 @@
                             <th>Unidade</th>
                             <th>Estoque mín.</th>
                             <th>Estoque máx.</th>
+                            <th>Situação</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($estoques as $row)
-                            @php $p = $row->produto; @endphp
+                            @php
+                                $p = $row->produto;
+                                $abaixoDoMinimo = $p && $p->ativo && $p->estoque_minimo !== null && $row->quantidade < $p->estoque_minimo;
+                            @endphp
                             @if($p)
                                 <tr>
                                     <td>{{ $row->id }}</td>
@@ -114,10 +151,17 @@
                                     <td>{{ $p->codigo_interno ?? '—' }}</td>
                                     <td>{{ $p->categoria->nome ?? '—' }}</td>
                                     <td>{{ $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '') . ' › ' . $row->localEstoque->nome, ' ›') : '—' }}</td>
-                                    <td>{{ $row->quantidade }}</td>
+                                    <td>{{ number_format($row->quantidade, $p->permiteFracionado() ? 3 : 0, ',', '.') }}</td>
                                     <td>{{ $unidades[$p->unidade] ?? $p->unidade }}</td>
                                     <td>{{ $p->estoque_minimo ?? '—' }}</td>
                                     <td>{{ $p->estoque_maximo ?? '—' }}</td>
+                                    <td>
+                                        @if($abaixoDoMinimo)
+                                            <span class="badge bg-danger">ESTOQUE ABAIXO DO MÍNIMO — COMPRAR</span>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                 </tr>
                             @endif
                         @empty

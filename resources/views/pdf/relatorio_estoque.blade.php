@@ -37,11 +37,15 @@
                 <th>Un.</th>
                 <th>Mín.</th>
                 <th>Máx.</th>
+                <th>Situação</th>
             </tr>
         </thead>
         <tbody>
             @foreach($estoques as $row)
-                @php $p = $row->produto; @endphp
+                @php
+                    $p = $row->produto;
+                    $abaixoDoMinimo = $p && $p->ativo && $p->estoque_minimo !== null && $row->quantidade < $p->estoque_minimo;
+                @endphp
                 @if($p)
                     <tr>
                         <td>{{ $row->id }}</td>
@@ -49,10 +53,11 @@
                         <td>{{ $p->codigo_interno ?? '—' }}</td>
                         <td>{{ $p->categoria->nome ?? '—' }}</td>
                         <td>{{ $row->localEstoque ? trim(($row->localEstoque->parent->nome ?? '') . ' › ' . $row->localEstoque->nome, ' ›') : '—' }}</td>
-                        <td class="num">{{ $row->quantidade }}</td>
+                        <td class="num">{{ number_format($row->quantidade, $p->permiteFracionado() ? 3 : 0, ',', '.') }}</td>
                         <td>{{ $unidades[$p->unidade] ?? $p->unidade }}</td>
                         <td class="num">{{ $p->estoque_minimo ?? '—' }}</td>
                         <td class="num">{{ $p->estoque_maximo ?? '—' }}</td>
+                        <td>{{ $abaixoDoMinimo ? 'ABAIXO DO MÍNIMO — COMPRAR' : '—' }}</td>
                     </tr>
                 @endif
             @endforeach

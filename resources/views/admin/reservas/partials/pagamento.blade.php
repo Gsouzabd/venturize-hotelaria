@@ -124,6 +124,13 @@
                     </div>
                 </x-admin.field>
 
+                <x-admin.field cols="3">
+                    <x-admin.label label="Data do Pagamento"/>
+                    <div class="mb-3 mt-2">
+                        <x-admin.datepicker id="data_pagamento_input" name="data_pagamento_input"/>
+                    </div>
+                </x-admin.field>
+
                 <!-- Lista de Valores Recebidos -->
               <!-- Lista de Valores Recebidos -->
 <x-admin.field cols="8">
@@ -135,22 +142,66 @@
         $metodosPagamentoOld = old('metodos_pagamento');
         $submetodosPagamentoOld = old('submetodos_pagamento');
         $observacoesPagamentoOld = old('observacoes_pagamento');
+        $datasPagamentoOld = old('data_pagamento');
 
         if ($valoresRecebidosOld && $metodosPagamentoOld && $submetodosPagamentoOld) {
-            $valoresRecebidos = [];
+            $itensPagamento = [];
             foreach ($valoresRecebidosOld as $index => $valor) {
-                $metodo = $metodosPagamentoOld[$index];
-                $submetodo = $submetodosPagamentoOld[$index] ?? '';
-                $observacao = $observacoesPagamentoOld[$index] ?? '';
-                $key = $submetodo ? "{$metodo}-{$submetodo}-observacao:{$observacao}" : $metodo;
-                if (isset($valoresRecebidos[$key])) {
-                    $valoresRecebidos[$key] += $valor;
-                } else {
-                    $valoresRecebidos[$key] = $valor;
-                }
+                $itensPagamento[] = [
+                    'data' => $datasPagamentoOld[$index] ?? now()->format('d/m/Y'),
+                    'valor' => $valor,
+                    'metodo' => $metodosPagamentoOld[$index] ?? '',
+                    'submetodo' => $submetodosPagamentoOld[$index] ?? '',
+                    'observacao' => $observacoesPagamentoOld[$index] ?? '',
+                ];
             }
         } else {
-            $valoresRecebidos = $pagamento ? (json_decode($pagamento->valores_recebidos ?? '{}', true) ?: []) : [];
+            $rawValoresRecebidos = $pagamento ? (json_decode($pagamento->valores_recebidos ?? '[]', true) ?: []) : [];
+            $itensPagamento = [];
+
+            if (array_is_list($rawValoresRecebidos)) {
+                // Formato novo: array de objetos {data, valor, metodo, submetodo, observacao}
+                foreach ($rawValoresRecebidos as $item) {
+                    $dataItem = $item['data'] ?? null;
+                    $itensPagamento[] = [
+                        'data' => $dataItem ? \Carbon\Carbon::parse($dataItem)->format('d/m/Y') : ($pagamento->created_at ?? now())->format('d/m/Y'),
+                        'valor' => $item['valor'] ?? 0,
+                        'metodo' => $item['metodo'] ?? '',
+                        'submetodo' => $item['submetodo'] ?? '',
+                        'observacao' => $item['observacao'] ?? '',
+                    ];
+                }
+            } else {
+                // Formato legado: mapa agregado chave=>valor, sem data por item.
+                // Usa created_at do registro de Pagamento como fallback de data.
+                $dataFallback = ($pagamento->created_at ?? now())->format('d/m/Y');
+                foreach ($rawValoresRecebidos as $metodo => $valor) {
+                    if (preg_match('/^([^-]+)-([^-]+)-(.+)$/', $metodo, $matches)) {
+                        $metodoPrincipal = $matches[1];
+                        $submetodo = $matches[2];
+                        $observacao = $matches[3];
+                    } elseif (preg_match('/^([^-]+)--(.+)$/', $metodo, $matches)) {
+                        $metodoPrincipal = $matches[1];
+                        $observacao = $matches[2];
+                        $submetodo = '';
+                    } elseif (preg_match('/^([^-]+)-(.+)$/', $metodo, $matches)) {
+                        $metodoPrincipal = $matches[1];
+                        $observacao = $matches[2];
+                        $submetodo = '';
+                    } else {
+                        $metodoPrincipal = $metodo;
+                        $submetodo = '';
+                        $observacao = '';
+                    }
+                    $itensPagamento[] = [
+                        'data' => $dataFallback,
+                        'valor' => $valor,
+                        'metodo' => $metodoPrincipal,
+                        'submetodo' => $submetodo,
+                        'observacao' => $observacao,
+                    ];
+                }
+            }
         }
         $selectedMetodo = old('metodo_pagamento', $pagamento->metodo_pagamento ?? '');
     @endphp
@@ -158,6 +209,7 @@
     <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
         <thead>
             <tr>
+                <th>Data</th>
                 <th>Valor</th>
                 <th>Método de Pagamento</th>
                 <th>Quarto</th>
@@ -166,27 +218,16 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($valoresRecebidos as $metodo => $valor)  
+            @foreach($itensPagamento as $item)
             @php
-                if (preg_match('/^([^-]+)-([^-]+)-(.+)$/', $metodo, $matches)) {
-                    $metodoPrincipal = $matches[1];
-                    $submetodo = $matches[2];
-                    $observacao = $matches[3];
-                } elseif (preg_match('/^([^-]+)--(.+)$/', $metodo, $matches)) {
-                    $metodoPrincipal = $matches[1];
-                    $observacao = $matches[2];
-                    $submetodo = '';
-                } elseif (preg_match('/^([^-]+)-(.+)$/', $metodo, $matches)) {
-                    $metodoPrincipal = $matches[1];
-                    $observacao = $matches[2];
-                    $submetodo = '';
-                } else {
-                    $metodoPrincipal = $metodo;
-                    $submetodo = '';
-                    $observacao = '';
-                }
+                $metodoPrincipal = $item['metodo'];
+                $submetodo = $item['submetodo'];
+                $observacao = $item['observacao'];
+                $valor = $item['valor'];
+                $dataItem = $item['data'];
             @endphp
                 <tr>
+                    <td>{{ $dataItem }}</td>
                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
                     <td>{{ $reserva->tipo_reserva === 'DAY_USE' ? 'Day Use' : ('Quarto ' . ($reserva->quarto->numero ?? '') . ' - ' . ($reserva->quarto->classificacao ?? '')) }}</td>
@@ -198,11 +239,13 @@
                         <input type="hidden" name="metodos_pagamento[]" value="{{ $metodoPrincipal }}">
                         <input type="hidden" name="submetodos_pagamento[]" value="{{ $submetodo }}">
                         <input type="hidden" name="observacoes_pagamento[]" value="{{ $observacao }}">
+                        <input type="hidden" name="data_pagamento[]" value="{{ $dataItem }}">
                         @else
                         <input type="hidden" class="valores_recebidos" name="quartos[{{ $reserva->quarto_id }}][valores_recebidos][]" value="{{ $valor }}">
                         <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][metodos_pagamento][]" value="{{ $metodoPrincipal }}">
                         <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][submetodos_pagamento][]" value="{{ $submetodo }}">
                         <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][observacoes_pagamento][]" value="{{ $observacao }}">
+                        <input type="hidden" name="quartos[{{ $reserva->quarto_id }}][data_pagamento][]" value="{{ $dataItem }}">
                         @endif
                     </td>
                 </tr>
@@ -299,6 +342,8 @@
             const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
             const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
             const observacoes_pagamento = document.getElementById('observacoes_pagamento').value;
+            const dataPagamentoInput = document.getElementById('data_pagamento_input');
+            const dataPagamento = dataPagamentoInput && dataPagamentoInput.value ? dataPagamentoInput.value : new Date().toLocaleDateString('pt-BR');
 
             const dayUse = isDayUse();
             const quartoSelect = document.getElementById('quarto-select');
@@ -316,7 +361,7 @@
             if (!isNaN(valor) && valor > 0) {
                 const row = document.createElement('tr');
                 if (dayUse) {
-                    row.innerHTML = '<td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
+                    row.innerHTML = '<td>' + dataPagamento + '</td><td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
                         '<td>' + metodoPagamento + (submetodoPagamento ? ' - ' + submetodoPagamentoLabel : '') + '</td>' +
                         '<td>Day Use</td><td>' + observacoes_pagamento + '</td><td>' +
                         '<button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>' +
@@ -324,9 +369,10 @@
                         '<input type="hidden" name="metodos_pagamento[]" value="' + metodoPagamento + '">' +
                         '<input type="hidden" name="submetodos_pagamento[]" value="' + submetodoPagamento + '">' +
                         '<input type="hidden" name="observacoes_pagamento[]" value="' + observacoes_pagamento + '">' +
+                        '<input type="hidden" name="data_pagamento[]" value="' + dataPagamento + '">' +
                         '</td>';
                 } else {
-                    row.innerHTML = '<td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
+                    row.innerHTML = '<td>' + dataPagamento + '</td><td>R$ ' + valor.toFixed(2).replace('.', ',') + '</td>' +
                         '<td>' + metodoPagamento + (submetodoPagamento ? ' - ' + submetodoPagamentoLabel : '') + '</td>' +
                         '<td>' + quartoLabel + '</td><td>' + observacoes_pagamento + '</td><td>' +
                         '<button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>' +
@@ -334,6 +380,7 @@
                         '<input type="hidden" name="quartos[' + quartoId + '][metodos_pagamento][]" value="' + metodoPagamento + '">' +
                         '<input type="hidden" name="quartos[' + quartoId + '][submetodos_pagamento][]" value="' + submetodoPagamento + '">' +
                         '<input type="hidden" name="quartos[' + quartoId + '][observacoes_pagamento][]" value="' + observacoes_pagamento + '">' +
+                        '<input type="hidden" name="quartos[' + quartoId + '][data_pagamento][]" value="' + dataPagamento + '">' +
                         '</td>';
                 }
                 valoresRecebidosTable.appendChild(row);
@@ -355,6 +402,15 @@
         });
 
         atualizarValores();
+
+        // Default da data de pagamento para hoje
+        (function initDataPagamentoDefault() {
+            var dataPagamentoInput = document.getElementById('data_pagamento_input');
+            if (dataPagamentoInput && !dataPagamentoInput.value) {
+                dataPagamentoInput.value = new Date().toLocaleDateString('pt-BR');
+            }
+        })();
+
     document.querySelectorAll('input[name="metodo_pagamento"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
             var metodo = this.value;
