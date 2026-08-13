@@ -257,9 +257,10 @@
         quantidadeInputEl.addEventListener('input', function () {
             const fracionaria = quantidadeInputEl.dataset.fracionaria === '1';
             let valor = quantidadeInputEl.value;
-            // Remove qualquer caractere que não seja dígito (e um único ponto decimal se fracionária)
+            // Remove qualquer caractere que não seja dígito (e um único separador decimal se fracionária).
+            // Aceita vírgula (padrão brasileiro) além de ponto, normalizando sempre para ponto.
             valor = fracionaria
-                ? valor.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1')
+                ? valor.replace(/,/g, '.').replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1')
                 : valor.replace(/[^\d]/g, '');
             if (valor !== quantidadeInputEl.value) quantidadeInputEl.value = valor;
         });
