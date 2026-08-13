@@ -53,43 +53,41 @@
                         $valoresRecebidosOld = old('valores_recebidos');
                         $metodosPagamentoOld = old('metodos_pagamento');
                         $submetodosPagamentoOld = old('submetodos_pagamento');
+                        $observacoesPagamentoOld = old('observacoes_pagamento');
+                        $datasPagamentoOld = old('data_pagamento');
 
-                        if ($valoresRecebidosOld && $metodosPagamentoOld && $submetodosPagamentoOld) {
-                            // Reconstroi os valores recebidos a partir dos dados antigos
-                            $valoresRecebidos = [];
+                        if ($valoresRecebidosOld && $metodosPagamentoOld) {
+                            $itensPagamento = [];
                             foreach ($valoresRecebidosOld as $index => $valor) {
-                                $metodo = $metodosPagamentoOld[$index];
-                                $submetodo = $submetodosPagamentoOld[$index] ?? '';
-                                $key = $submetodo ? "{$metodo}-{$submetodo}" : $metodo;
-                                if (isset($valoresRecebidos[$key])) {
-                                    $valoresRecebidos[$key] += $valor;
-                                } else {
-                                    $valoresRecebidos[$key] = $valor;
-                                }
+                                $itensPagamento[] = [
+                                    'data' => $datasPagamentoOld[$index] ?? now()->format('d/m/Y'),
+                                    'valor' => $valor,
+                                    'metodo' => $metodosPagamentoOld[$index] ?? '',
+                                    'submetodo' => $submetodosPagamentoOld[$index] ?? '',
+                                    'observacao' => $observacoesPagamentoOld[$index] ?? '',
+                                ];
                             }
                         } else {
-                            // Utiliza os valores do banco de dados
-                            $valoresRecebidos = json_decode($pagamento->valores_recebidos ?? '{}', true);
-                        }
+                            // Utiliza os valores do banco de dados — suporta o formato novo
+                            // (array de objetos {data, valor, metodo, submetodo, observacao})
+                            // e o formato legado (mapa agregado chave=>valor, sem data por item).
+                            $rawValoresRecebidos = $pagamento ? (json_decode($pagamento->valores_recebidos ?? '[]', true) ?: []) : [];
+                            $itensPagamento = [];
 
-                        // Determina o método de pagamento selecionado
-                        $selectedMetodo = old('metodo_pagamento', $pagamento->metodo_pagamento ?? '');
-                    @endphp
-                </x-admin.field>
-                    <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
-                        <thead>
-                            <tr>
-                                <th>Valor</th>
-                                <th>Método de Pagamento</th>
-                                <th>Quarto</th>
-                                <TH>Observações</TH>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($valoresRecebidos as $metodo => $valor)
-                                @php
-                                    // Verifica se o método possui um submétodo
+                            if (array_is_list($rawValoresRecebidos)) {
+                                foreach ($rawValoresRecebidos as $item) {
+                                    $dataItem = $item['data'] ?? null;
+                                    $itensPagamento[] = [
+                                        'data' => $dataItem ? \Carbon\Carbon::parse($dataItem)->format('d/m/Y') : ($pagamento->created_at ?? now())->format('d/m/Y'),
+                                        'valor' => $item['valor'] ?? 0,
+                                        'metodo' => $item['metodo'] ?? '',
+                                        'submetodo' => $item['submetodo'] ?? '',
+                                        'observacao' => $item['observacao'] ?? '',
+                                    ];
+                                }
+                            } else {
+                                $dataFallback = ($pagamento->created_at ?? now())->format('d/m/Y');
+                                foreach ($rawValoresRecebidos as $metodo => $valor) {
                                     if (preg_match('/^([^-]+)-([^-]+)-(.+)$/', $metodo, $matches)) {
                                         $metodoPrincipal = $matches[1];
                                         $submetodo = $matches[2];
@@ -107,8 +105,43 @@
                                         $submetodo = '';
                                         $observacao = '';
                                     }
+                                    $itensPagamento[] = [
+                                        'data' => $dataFallback,
+                                        'valor' => $valor,
+                                        'metodo' => $metodoPrincipal,
+                                        'submetodo' => $submetodo,
+                                        'observacao' => $observacao,
+                                    ];
+                                }
+                            }
+                        }
+
+                        // Determina o método de pagamento selecionado
+                        $selectedMetodo = old('metodo_pagamento', $pagamento->metodo_pagamento ?? '');
+                    @endphp
+                </x-admin.field>
+                    <table id="valores-recebidos-table" class="table table-striped" style="border-left: 1px solid #b4b4b4;">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Valor</th>
+                                <th>Método de Pagamento</th>
+                                <th>Quarto</th>
+                                <TH>Observações</TH>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($itensPagamento as $item)
+                                @php
+                                    $metodoPrincipal = $item['metodo'];
+                                    $submetodo = $item['submetodo'];
+                                    $observacao = $item['observacao'];
+                                    $valor = $item['valor'];
+                                    $dataItem = $item['data'];
                                 @endphp
                                 <tr>
+                                    <td>{{ $dataItem }}</td>
                                     <td>R$ {{ number_format($valor, 2, ',', '.') }}</td>
                                     <td>{{ $metodoPrincipal }}{{ $submetodo ? ' - ' . $submetodo : '' }}</td>
                                     <td>{{ $quartoLabel }}
@@ -117,7 +150,9 @@
                                         <button class="btn btn-danger btn-sm remove-valor-recebido" type="button">Remover</button>
                                         <input type="hidden" class="valores_recebidos" name="{{ $fieldName('valores_recebidos') }}" value="{{ $valor }}">
                                         <input type="hidden" name="{{ $fieldName('metodos_pagamento') }}" value="{{ $metodoPrincipal }}">
-                                        <input type="hidden" name="{{ $fieldName('observacoes_pagamento') }}" value="{{ $submetodo }}">
+                                        <input type="hidden" name="{{ $fieldName('submetodos_pagamento') }}" value="{{ $submetodo }}">
+                                        <input type="hidden" name="{{ $fieldName('observacoes_pagamento') }}" value="{{ $observacao }}">
+                                        <input type="hidden" name="{{ $fieldName('data_pagamento') }}" value="{{ $dataItem }}">
 
                                     </td>
                                 </tr>
@@ -213,7 +248,14 @@
                                             value="" placeholder="Observações"/>
                                     </div>
                                 </x-admin.field>
-                                
+
+                                <x-admin.field cols="6">
+                                    <x-admin.label label="Data do Pagamento"/>
+                                    <div class="mb-3 mt-2">
+                                        <x-admin.datepicker id="data_pagamento_input" name="data_pagamento_input"/>
+                                    </div>
+                                </x-admin.field>
+
                                 <x-admin.field cols="12" style="display: none;">
                                     <x-admin.label label="Selecionar Quarto"/>
                                     <div class="input-group mb-3 mt-2">
@@ -487,6 +529,8 @@ function atualizarValores() {
                 const submetodoPagamento = submetodoPagamentoSelect ? submetodoPagamentoSelect.value : '';
                 const submetodoPagamentoLabel = submetodoPagamentoSelect ? submetodoPagamentoSelect.options[submetodoPagamentoSelect.selectedIndex].text : '';
                 const observacoes_pagamento = document.getElementById('observacoes_pagamento').value;
+                const dataPagamentoInput = document.getElementById('data_pagamento_input');
+                const data_pagamento = (dataPagamentoInput && dataPagamentoInput.value) || new Date().toLocaleDateString('pt-BR');
                 const namePrefix = {!! json_encode($namePrefix) !!};
                 const fieldName = f => namePrefix ? `${namePrefix}[${f}][]` : `${f}[]`;
                 const quartoLabel = {!! json_encode($quartoLabel) !!};
@@ -494,6 +538,7 @@ function atualizarValores() {
                 if (!isNaN(valor) && valor > 0) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td>${data_pagamento}</td>
                         <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
                         <td>${metodoPagamento} ${submetodoPagamento ? ' - ' + submetodoPagamentoLabel : ''}</td>
                         <td>${quartoLabel}</td>
@@ -504,10 +549,12 @@ function atualizarValores() {
                             <input type="hidden" name="${fieldName('metodos_pagamento')}" value="${metodoPagamento}">
                             <input type="hidden" name="${fieldName('submetodos_pagamento')}" value="${submetodoPagamento}">
                             <input type="hidden" name="${fieldName('observacoes_pagamento')}" value="${observacoes_pagamento}">
+                            <input type="hidden" name="${fieldName('data_pagamento')}" value="${data_pagamento}">
                         </td>
                     `;
                     valoresRecebidosTable.appendChild(row);
                     valorRecebidoInput.value = '';
+                    if (dataPagamentoInput) dataPagamentoInput.value = '';
             
                     atualizarValores();
             
