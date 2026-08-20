@@ -372,57 +372,97 @@ class RelatorioController extends Controller
     }
 
     /**
+     * Parte de Produto (não de Estoque) para que produtos recém-cadastrados, ainda sem
+     * nenhuma movimentação/saldo em `estoques`, também apareçam no relatório (com saldo 0).
+     *
      * @param  array<string, mixed>  $filters
      * @return Collection<int, Estoque>
      */
     private function colecaoEstoqueParaRelatorio(array $filters): Collection
     {
-        $query = Estoque::query()
-            ->with(['produto.categoria', 'localEstoque.parent'])
-            ->join('produtos', 'produtos.id', '=', 'estoques.produto_id')
-            ->select('estoques.*')
-            ->orderBy('estoques.local_estoque_id')
-            ->orderBy('produtos.descricao', 'asc');
+        $termo = trim($filters['produto'] ?? '');
 
+        $localFilhosIds = null;
         if ($filters['local_estoque_id'] !== '') {
             // Local pai agrega os sub-locais (ex.: Cozinha = Dispensa + Freezer + Geladeira)
-            $filhosIds = LocalEstoque::where('parent_id', $filters['local_estoque_id'])->pluck('id');
-            $query->whereIn('estoques.local_estoque_id', $filhosIds->push((int) $filters['local_estoque_id']));
+            $localFilhosIds = LocalEstoque::where('parent_id', $filters['local_estoque_id'])
+                ->pluck('id')
+                ->push((int) $filters['local_estoque_id']);
         }
 
-        if (trim($filters['produto'] ?? '') !== '') {
-            // Busca por nome ou código e mostra só os locais onde o produto tem saldo
-            $termo = trim($filters['produto']);
-            $query->where(function ($q) use ($termo) {
-                $q->where('produtos.descricao', 'like', '%'.$termo.'%')
-                    ->orWhere('produtos.codigo_interno', $termo);
-            })->where('estoques.quantidade', '>', 0);
-        }
+        $produtoQuery = Produto::query()
+            ->with('categoria')
+            ->with(['estoques' => function ($q) use ($localFilhosIds, $termo) {
+                $q->with('localEstoque.parent');
+                if ($localFilhosIds) {
+                    $q->whereIn('local_estoque_id', $localFilhosIds);
+                }
+                if ($termo !== '') {
+                    // Busca por nome/código mostra só os locais onde o produto tem saldo
+                    $q->where('quantidade', '>', 0);
+                }
+            }])
+            ->orderBy('descricao');
 
         if (($filters['somente_ativos'] ?? '') === '1') {
-            $query->whereHas('produto', fn ($q) => $q->where('ativo', 1));
+            $produtoQuery->where('ativo', 1);
         }
 
         if (($filters['categoria_id'] ?? '') !== '') {
-            $query->whereHas('produto', fn ($q) => $q->where('categoria_produto', $filters['categoria_id']));
+            $produtoQuery->where('categoria_produto', $filters['categoria_id']);
+        }
+
+        if ($termo !== '') {
+            $produtoQuery->where(function ($q) use ($termo) {
+                $q->where('descricao', 'like', '%'.$termo.'%')
+                    ->orWhere('codigo_interno', $termo);
+            });
         }
 
         $dataInicial = trim($filters['data_inicial'] ?? '');
         $dataFinal = trim($filters['data_final'] ?? '');
         $dataUnica = trim($filters['data'] ?? '');
 
+        $filtraPorMovimentacao = $dataInicial !== '' && $dataFinal !== '' || $dataUnica !== '';
         if ($dataInicial !== '' && $dataFinal !== '') {
             $inicio = Carbon::createFromFormat('d/m/Y', $dataInicial)->startOfDay();
             $fim = Carbon::createFromFormat('d/m/Y', $dataFinal)->endOfDay();
             $produtoIds = MovimentacaoEstoque::whereBetween('created_at', [$inicio, $fim])->pluck('produto_id');
-            $query->whereIn('estoques.produto_id', $produtoIds);
+            $produtoQuery->whereIn('id', $produtoIds);
         } elseif ($dataUnica !== '') {
             $data = Carbon::createFromFormat('d/m/Y', $dataUnica);
             $produtoIds = MovimentacaoEstoque::whereDate('created_at', $data)->pluck('produto_id');
-            $query->whereIn('estoques.produto_id', $produtoIds);
+            $produtoQuery->whereIn('id', $produtoIds);
         }
 
-        return $query->get();
+        $rows = collect();
+
+        foreach ($produtoQuery->get() as $produto) {
+            if ($produto->estoques->isNotEmpty()) {
+                foreach ($produto->estoques as $estoque) {
+                    $estoque->setRelation('produto', $produto);
+                    $rows->push($estoque);
+                }
+
+                continue;
+            }
+
+            // Produto sem nenhum saldo lançado ainda: mostra uma linha com quantidade 0,
+            // exceto quando o filtro exige saldo/local específico (busca por nome, local ou movimentação).
+            if ($termo === '' && ! $localFilhosIds && ! $filtraPorMovimentacao) {
+                $placeholder = new Estoque([
+                    'produto_id' => $produto->id,
+                    'local_estoque_id' => null,
+                    'quantidade' => 0,
+                ]);
+                $placeholder->exists = false;
+                $placeholder->setRelation('produto', $produto);
+                $placeholder->setRelation('localEstoque', null);
+                $rows->push($placeholder);
+            }
+        }
+
+        return $rows->sortBy(fn ($row) => [$row->local_estoque_id ?? 0, $row->produto->descricao])->values();
     }
 
     private function respostaPdf(string $html, string $filename, string $orientation = 'portrait')
